@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="162.5mm"
+   height="125mm"
+   viewBox="0 0 162.5 125"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   sodipodi:docname="logo_tagliandonline.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showguides="true"
+     inkscape:zoom="1"
+     inkscape:cx="142.5"
+     inkscape:cy="223.5"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect16"
+       is_visible="true"
+       lpeversion="1" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect15"
+       is_visible="true"
+       lpeversion="1" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect14"
+       is_visible="true"
+       lpeversion="1" />
+  </defs>
+  <g
+     inkscape:label="Livello 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       style="display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.265;stroke-dasharray:none;stroke-opacity:1"
+       d="M 15,125 V 15 H 0 V 0 h 100 c 0,0 62.5,0.00253934 62.5,62.5 0,62.49746 -62.5,62.5 -62.5,62.5 v -15 c 0,0 47.5,0.12583 47.5,-47.5 C 147.5,14.874172 100,15 100,15 H 30 V 125 Z M 89.241295,39.101532 H 49.578497 c 0,0 -30.590253,-12.756801 0,0"
+       id="path2"
+       sodipodi:nodetypes="ccccczcczcccccc" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:7.88724;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+       id="rect16"
+       width="39.999237"
+       height="7.5006084"
+       x="45.000256"
+       y="31.250008" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:7.50001;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+       id="rect17"
+       width="55.000092"
+       height="7.4962831"
+       x="37.499584"
+       y="61.253998" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:7.50001;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+       id="rect18"
+       width="30.000599"
+       height="7.4996219"
+       x="49.999447"
+       y="91.250107" />
+  </g>
+</svg>
