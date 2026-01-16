@@ -1,10 +1,15 @@
-import {Collapse, Header, HeaderContent, HeaderToggler, Icon, Nav, NavItem, NavLink} from "design-react-kit";
+import {Collapse, Header, HeaderContent, HeaderToggler, Icon, Nav, NavItem} from "design-react-kit";
 import {useUserDataContext} from "../../hooks/useUserDataContext.tsx";
-import {NavLink as RCNavLink} from "react-router";
 import {RouterDesignNavLink} from "./RouterDesignNavLink.tsx";
+import {useState} from "react";
 
 export const NavHeader = () => {
     const userData = useUserDataContext();
+    const [openNav, setOpenNav] = useState(false);
+    const toggleNav = () => {
+        setOpenNav(!openNav);
+    }
+    console.log(openNav)
     return (
         <Header theme="dark" type="navbar" >
             <HeaderContent expand="lg" megamenu>
@@ -13,11 +18,12 @@ export const NavHeader = () => {
                     aria-controls="nav1"
                     aria-expanded="false"
                     aria-label="Toggle navigation"
-                    onClick={() => {}}
+                    onClick={() => {toggleNav();}}
                 >
                     <Icon icon="it-burger" />
                 </HeaderToggler>
-                <Collapse header navbar onOverlayClick={() => {}}>
+                <Collapse header navbar
+                          isOpen={openNav} onOverlayClick={() => {toggleNav();}}>
                     <div className="menu-wrapper">
                         <Nav navbar>
                             <NavItem> <RouterDesignNavLink to={"/permits"} > Permessi </RouterDesignNavLink> </NavItem>

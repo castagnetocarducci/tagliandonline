@@ -16,12 +16,12 @@ export const RouteConfiguration = () => {
             <Route path="*" element={<NotFound/>}/>
             <Route path="/" element={<Home/>}/>
             <Route path="/home" element={<Home/>}/>
-            <Route path="/applications" element={<Applications/>}/>
-            <Route path="/inspections" element={<Inspections/>}/>
-            <Route path="/users" element={<Users/>}/>
-            <Route path="/vouchers" element={<Vouchers/>}/>
-            <Route path="/permits" element={<Permits/>}/>
-            <Route path="/login" element={<Profile/>}/>
+            <Route path="/applications*" element={<Applications/>}/>
+            <Route path="/inspections*" element={<Inspections/>}/>
+            <Route path="/users*" element={<Users/>}/>
+            <Route path="/vouchers*" element={<Vouchers/>}/>
+            <Route path="/permits*" element={<Permits/>}/>
+            <Route path="/login*" element={<Profile/>}/>
             {/*{userData.role >= 2 &&*/}
             {/*    <Route path="/positions" element={<MapPos/>}/>*/}
             {/*}*/}
