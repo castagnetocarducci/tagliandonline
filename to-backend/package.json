@@ -1,0 +1,28 @@
+{
+  "name": "tagliandonline-backend",
+  "private": true,
+  "version": "0.0.1",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "npx tsc",
+    "run-build": "node dist/index.js",
+    "dev-watch": "npx tsx --watch src/index.ts",
+    "dev-run": "npx tsc --noEmit && npx tsx src/index.ts"
+  },
+  "keywords": [],
+  "author": "Comune di Castagneto Carducci",
+  "license": "AGPLv3",
+  "description": "Backend TagliandOnline",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.4",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.10",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

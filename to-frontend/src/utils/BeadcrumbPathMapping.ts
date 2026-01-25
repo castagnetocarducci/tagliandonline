@@ -20,7 +20,7 @@ export const createBreadcrumb = (path: string | null): BreadcrumbType => {
     if (path == null || path.length === 0) {
         return [];
     }
-    const noParameters = path.split("&")[0];
+    const noParameters = path.split("?")[0];
     const splitted = noParameters.split("/");
     const res: BreadcrumbType = [];
 
