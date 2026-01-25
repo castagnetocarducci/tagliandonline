@@ -16,14 +16,14 @@ export const SlimHeader = () => {
     return (
         <Header type="slim">
             <HeaderContent>
-                <HeaderBrand href={"https://www.regione.toscana.it/"} responsive>
+                <HeaderBrand href={"https://www.regione.toscana.it/"} target={"_blank"} responsive>
                     Regione Toscana
                 </HeaderBrand>
 
                 <HeaderLinkZone>
                     <Collapse>
                         <LinkList>
-                            <LinkListItem href={"https://www.comune.castagneto-carducci.li.it/"}>
+                            <LinkListItem href={"https://www.comune.castagneto-carducci.li.it/"} target={"_blank"}>
                                 Comune di Castagneto Carducci
                             </LinkListItem>
                         </LinkList>

@@ -1,6 +1,5 @@
 import {Header, HeaderBrand, HeaderContent, HeaderRightZone, HeaderSocialsZone, Icon} from "design-react-kit";
 import {useUserDataContext} from "../../hooks/useUserDataContext.tsx";
-import {RouterDesignLink} from "../links/RouterDesignLink.tsx";
 
 export const CenterHeader = () => {
     const userData = useUserDataContext();
