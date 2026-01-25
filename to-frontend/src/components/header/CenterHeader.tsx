@@ -1,23 +1,27 @@
 import {Header, HeaderBrand, HeaderContent, HeaderRightZone, HeaderSocialsZone, Icon} from "design-react-kit";
 import {useUserDataContext} from "../../hooks/useUserDataContext.tsx";
+import {RouterDesignLink} from "../links/RouterDesignLink.tsx";
 
 export const CenterHeader = () => {
     const userData = useUserDataContext();
     return (
         <Header theme="dark" type="center">
             <HeaderContent>
+                {/*<RouterDesignLink to={"/"} className={""}>*/}
                 <HeaderBrand
+                    href={"/"}
                     iconAlt="icona logo"
                     iconName="/logo_tagliandonline_bianco.svg"
-                    href={"/"}
                 >
+
                     <h2>
                         TagliandOnline
                     </h2>
                     {/*<h3>*/}
-                    {/*    Gestione tagliandi parcheggi e traffico limitatoooo*/}
+                    {/*    Gestione tagliandi parcheggi e traffico limitato*/}
                     {/*</h3>*/}
                 </HeaderBrand>
+                {/*</RouterDesignLink>*/}
                 <HeaderRightZone>
                     <HeaderSocialsZone label="Codice sorgente">
                         <ul>

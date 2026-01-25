@@ -9,6 +9,7 @@ import {
     LinkList, LinkListItem
 } from "design-react-kit";
 import {useUserDataContext} from "../../hooks/useUserDataContext.tsx";
+import {RouterDesignLink} from "../links/RouterDesignLink.tsx";
 
 export const SlimHeader = () => {
     const userData = useUserDataContext();
@@ -30,10 +31,13 @@ export const SlimHeader = () => {
                 </HeaderLinkZone>
 
                 <HeaderRightZone>
-                    <Button className="btn-icon btn-full" color="primary" href="/login">
+                    {/*<Button className="btn-icon btn-full" color="primary" >*/}
+                    {/* ripreso dall'html del pulsante */}
+                    <RouterDesignLink to={"/login"} className={"btn-icon btn-full btn btn-primary"}>
                         <span className="rounded-icon"><Icon color="primary" icon="it-user"/></span>
                         <span className="d-none d-lg-block">Accedi all'area personale</span>
-                    </Button>
+                    </RouterDesignLink>
+                    {/*</Button>*/}
                 </HeaderRightZone>
             </HeaderContent>
         </Header>

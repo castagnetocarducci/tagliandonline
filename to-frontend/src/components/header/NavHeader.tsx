@@ -1,7 +1,8 @@
 import {Collapse, Header, HeaderContent, HeaderToggler, Icon, Nav, NavItem} from "design-react-kit";
 import {useUserDataContext} from "../../hooks/useUserDataContext.tsx";
-import {RouterDesignNavLink} from "./RouterDesignNavLink.tsx";
+import {RouterDesignNavLink} from "../links/RouterDesignNavLink.tsx";
 import {useState} from "react";
+import {Link} from "react-router";
 
 export const NavHeader = () => {
     const userData = useUserDataContext();
@@ -9,7 +10,7 @@ export const NavHeader = () => {
     const toggleNav = () => {
         setOpenNav(!openNav);
     }
-    console.log(openNav)
+
     return (
         <Header theme="dark" type="navbar" >
             <HeaderContent expand="lg" megamenu>
@@ -26,11 +27,11 @@ export const NavHeader = () => {
                           isOpen={openNav} onOverlayClick={() => {toggleNav();}}>
                     <div className="menu-wrapper">
                         <Nav navbar>
-                            <NavItem> <RouterDesignNavLink to={"/permits"} > Permessi </RouterDesignNavLink> </NavItem>
-                            <NavItem> <RouterDesignNavLink to={"/applications"} > Domande </RouterDesignNavLink> </NavItem>
-                            <NavItem> <RouterDesignNavLink to={"/vouchers"} > Tagliandi </RouterDesignNavLink> </NavItem>
-                            <NavItem> <RouterDesignNavLink to={"/inspections"} > Controlli </RouterDesignNavLink> </NavItem>
-                            <NavItem> <RouterDesignNavLink to={"/users"} > Utenti </RouterDesignNavLink> </NavItem>
+                            <NavItem> <RouterDesignNavLink openNav={openNav} setOpenNav={setOpenNav} to={"/permits"} > Permessi </RouterDesignNavLink> </NavItem>
+                            <NavItem> <RouterDesignNavLink openNav={openNav} setOpenNav={setOpenNav} to={"/applications"} > Domande </RouterDesignNavLink> </NavItem>
+                            <NavItem> <RouterDesignNavLink openNav={openNav} setOpenNav={setOpenNav} to={"/vouchers"} > Tagliandi </RouterDesignNavLink> </NavItem>
+                            <NavItem> <RouterDesignNavLink openNav={openNav} setOpenNav={setOpenNav} to={"/inspections"} > Controlli </RouterDesignNavLink> </NavItem>
+                            <NavItem> <RouterDesignNavLink openNav={openNav} setOpenNav={setOpenNav} to={"/users"} > Utenti </RouterDesignNavLink> </NavItem>
                         </Nav>
                     </div>
                 </Collapse>
