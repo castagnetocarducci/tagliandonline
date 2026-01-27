@@ -8,8 +8,6 @@ app.get("/", (req, res) => {
     console.log("Response sent");
 });
 
-console.log(configProvider.port);
-
 app.listen(configProvider.port, () => {
     console.log(`Example app listening on port ${configProvider.port}`);
 });

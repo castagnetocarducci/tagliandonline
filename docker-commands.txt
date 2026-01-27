@@ -1,0 +1,2 @@
+docker build --target development --tag docker-tagliandonline-dev .
+docker build --target production --tag docker-tagliandonline .

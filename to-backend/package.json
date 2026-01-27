@@ -8,7 +8,8 @@
     "build": "npx tsc",
     "run-build": "node dist/index.js",
     "dev-watch": "npx tsx --watch src/index.ts",
-    "dev-run": "npx tsc --noEmit && npx tsx src/index.ts"
+    "dev-run": "npx tsc --noEmit && npx tsx src/index.ts",
+    "dev-run-test-conversion": "npx tsc --noEmit && npx tsx src/testConversion.ts"
   },
   "keywords": [],
   "author": "Comune di Castagneto Carducci",
