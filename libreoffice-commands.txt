@@ -1,0 +1,5 @@
+# converte in pdf il file specificato
+# il pdf di output ha lo stesso nome del file originale però con l'estensione pdf
+# il pdf di output va a finire nella workdir corrente (modificabile con 
+# sovrascrive se trova già il file di output con lo stesso nome
+soffice --headless --convert-to pdf:writer_pdf_Export to_print.docx
