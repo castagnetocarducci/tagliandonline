@@ -20,9 +20,14 @@ RUN addgroup --gid 1001 nodejs && \
 # install libreoffice alpine
 # RUN apk add --no-cache libreoffice-common libreoffice-writer
 
-# install libreoffice writer (headless) debian trixie
+# update apt trixie
 RUN apt-get update
-RUN apt-get -y -qq --no-install-recommends install libreoffice-writer-nogui
+
+# install libreoffice writer (headless) debian trixie
+RUN apt-get -y -qq --no-install-recommends install libreoffice-writer-nogui libreoffice-java-common
+
+# install java jre trixie
+RUN apt-get -y -qq --no-install-recommends install default-jre-headless
 
 
 # basic fonts alpine https://wiki.alpinelinux.org/wiki/Fonts
@@ -63,9 +68,6 @@ COPY . .
 
 
 
-# TODO: add frontend
-
-
 WORKDIR /app/to-backend
 
 # "npm install" but with build optimizations
@@ -76,6 +78,9 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 
 # set owner
 RUN chown -R nodejs:nodejs /app
+
+
+# TODO: add frontend
 
 
 

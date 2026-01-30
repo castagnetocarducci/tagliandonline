@@ -8,5 +8,16 @@
 //     console.error(e);
 // }
 
-console.log("testtesttesttesttesttesttest")
+import {runCmd} from "./processManager.js";
+
+async function testPdfConversion() {
+    console.log("Executing pdf conversion test");
+    let res = await runCmd("soffice --headless --convert-to pdf:writer_pdf_Export docx_examples/to_print.docx --outdir docx_examples/");
+    console.log(res);
+    res = await runCmd("soffice --headless --convert-to pdf:writer_pdf_Export");
+    console.log(res);
+}
+
+testPdfConversion();
+
 
