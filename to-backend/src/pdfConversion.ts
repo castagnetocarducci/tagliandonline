@@ -8,7 +8,7 @@ export const convertPDF = async (srcFilepath: string, outFilepath?: string): Pro
         return null;
     }
     const srcDir = dirname(srcFilepath);
-    const conversionResult = await runCmd("soffice --headless --convert-to pdf:writer_pdf_Export " + srcFilepath + " --outdir " + srcDir);
+    const conversionResult = await runCmd("soffice --headless --convert-to pdf:writer_pdf_Export '" + srcFilepath + "' --outdir '" + srcDir + "'");
     if (!conversionResult.success) {
         console.error("PDF conversion failed:", conversionResult.err);
         return null;
@@ -19,7 +19,7 @@ export const convertPDF = async (srcFilepath: string, outFilepath?: string): Pro
 
     if (outFilepath) {
         const outDir = dirname(outFilepath);
-        const moveResult = await runCmd("mkdir -p " + outDir + " && mv -f " + generatedPdfPath + " " + outFilepath);
+        const moveResult = await runCmd("mkdir -p '" + outDir + "' && mv -f '" + generatedPdfPath + "' '" + outFilepath + "'");
         if (!moveResult.success) {
             console.error("Failed to move PDF:", moveResult.err);
             return null;
