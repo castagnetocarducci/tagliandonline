@@ -3,6 +3,7 @@ import {ConfigProvider} from "./configProvider.js";
 
 type RunCmdOptions = {
     cwd?: string,
+    shell?: boolean
 }
 
 type CmdOutput = {
@@ -11,19 +12,18 @@ type CmdOutput = {
     success: boolean
 }
 
-export const runCmd = async (cmd: string, optionsArgs?: RunCmdOptions): Promise<CmdOutput> => {
-    console.log("Executing command: " + cmd);
-    let options: RunCmdOptions = {
+export const runCmd = async (cmd: string, options: RunCmdOptions = {}): Promise<CmdOutput> => {
+    options = {
         cwd: process.cwd(),
+        shell: true,
+        ...options
     };
-    if (optionsArgs != null) {
-        options = {...options, ...optionsArgs};
-    }
 
+    console.log("Executing command: " + cmd);
     try {
         // utilizzo spawn perché crea un nuovo processo
         const result = spawnSync(cmd, {
-            shell: true,
+            shell: options.shell,
             cwd: options.cwd,
             encoding: "utf8",
             timeout: ConfigProvider.instance.configs.pdfPrintTimeoutMs,
