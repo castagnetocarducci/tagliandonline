@@ -25,4 +25,5 @@ dist-ssr
 
 # Custom
 dist/.env
+.env
 docx_examples/**/*.pdf

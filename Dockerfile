@@ -70,7 +70,7 @@ COPY . .
 
 WORKDIR /app/to-backend
 
-# "npm install" but with build optimizations
+# "npm install" but with build optimizations (maybe move under dev and prod, so we won't install devDependencies for production images)
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm ci --no-audit --no-fund && \
     npm cache clean --force
@@ -96,6 +96,8 @@ CMD ["npm", "run", "dev-run-test-conversion"]
 
 #### PRODUCTION ####
 FROM base AS production
+
+ENV NODE_ENV=production
 
 RUN npm run build
 
