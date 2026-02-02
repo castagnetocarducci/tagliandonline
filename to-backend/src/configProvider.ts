@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import {randomBytes} from "node:crypto";
+import {drizzle} from "drizzle-orm/node-postgres";
 
 type Configs = {
     port: number,
@@ -40,6 +41,10 @@ export class ConfigProvider {
             dbPort: ConfigProvider.loadNumber(process.env.DB_PORT, 5432),
             jwtSecret: ConfigProvider.loadString(process.env.JWT_SECRET, randomBytes(24).toString("hex"))
         }
+    }
+
+    public getDBUrl(): string {
+        return `postgres://${this.configs.dbUser}:${this.configs.dbPassword}@${this.configs.dbHost}:${this.configs.dbPort}/${this.configs.dbName}`;
     }
 
     private static loadNumber(value: string | undefined, defaultValue: number): number {

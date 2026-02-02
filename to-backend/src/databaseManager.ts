@@ -1,3 +1,4 @@
+import { drizzle } from "drizzle-orm/node-postgres";
 import {ConfigProvider} from "./configProvider.js";
 
 /**
@@ -5,7 +6,7 @@ import {ConfigProvider} from "./configProvider.js";
  */
 class DatabaseManager {
     static #instance: DatabaseManager;
-    #dbUrl: string;
+    db;
 
     public static get instance(): DatabaseManager {
         if (!DatabaseManager.#instance) {
@@ -15,29 +16,23 @@ class DatabaseManager {
     }
 
     private constructor() {
-        this.#dbUrl = "postgres://" +
-            ConfigProvider.instance.configs.dbUser + ":" + ConfigProvider.instance.configs.dbPassword +
-            "@" + ConfigProvider.instance.configs.dbHost + ":" + ConfigProvider.instance.configs.dbPort +
-            "/" + ConfigProvider.instance.configs.dbName;
-        // this.#sequelize = new Sequelize(this.#dbUrl, {
-        //     logging: console.log,
-        // });
+        this.db = drizzle(ConfigProvider.instance.getDBUrl());
     }
 
-    public async connect() {
-        try {
-            // await this.#sequelize.authenticate();
-        } catch (e) {
-            console.error("Database connection failed: ", e);
-        }
-    }
-
-    /**
-     * chiamato automaticamente alla chiusura dell'applicazione da Sequelize.
-     */
-    public async disconnect() {
-        // await this.#sequelize.close();
-    }
+    // public async connect() {
+    //     try {
+    //         // await this.#sequelize.authenticate();
+    //     } catch (e) {
+    //         console.error("Database connection failed: ", e);
+    //     }
+    // }
+    //
+    // /**
+    //  * chiamato automaticamente alla chiusura dell'applicazione da Sequelize.
+    //  */
+    // public async disconnect() {
+    //     // await this.#sequelize.close();
+    // }
 
 
 

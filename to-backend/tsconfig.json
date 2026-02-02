@@ -45,6 +45,7 @@
     // needed for docx2pdf-converter
     // "noImplicitAny": false,
     // "allowJs": true,
+    "allowImportingTsExtensions": true,
   },
-  "include": ["**/*.ts"]
+  "include": ["src/**/*.ts"]
 }
