@@ -1,4 +1,4 @@
-import {convertPDF} from "./pdfConversion.js";
+import {convertPDF} from "../pdfConversion.ts";
 
 async function testPdfConversion() {
     console.log("Executing pdf conversion test");
