@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import {ConfigProvider} from "./configProvider.js";
+import {relations} from "./db/relations.ts";
 
 /**
  * singleton
@@ -16,7 +17,7 @@ class DatabaseManager {
     }
 
     private constructor() {
-        this.db = drizzle(ConfigProvider.instance.getDBUrl());
+        this.db = drizzle(ConfigProvider.instance.getDBUrl(), {relations});
     }
 
     // public async connect() {
