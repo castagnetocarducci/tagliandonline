@@ -1,4 +1,7 @@
-import {boolean, date, index, integer, pgSchema, pgTable, primaryKey, text, timestamp, varchar} from "drizzle-orm/pg-core";
+import {
+    type AnyPgColumn,
+    boolean, date, foreignKey, index, integer, pgSchema, pgTable, primaryKey, text, timestamp, varchar
+} from "drizzle-orm/pg-core";
 import {commonColumns} from "./common.columns.ts";
 
 export const toSchema = pgSchema("tagliandonline");
@@ -15,27 +18,28 @@ export const permits = toSchema.table("permits", {
     voucherTemplateId: integer().notNull().references(() => docTemplates.id),
     authorizationTemplateId: integer().notNull().references(() => docTemplates.id),
     numerationRegisterId: integer().notNull().references(() => numerationRegisters.id),
+    lastPermitHistoryId: integer().notNull().references((): AnyPgColumn => permitsHistory.id), // self references need anypgcolumn due to typescript limitations
 })
 
-// export const permitsHistory = toSchema.table("permitsHistory", {
-//     id: commonColumns.idAutoIncr(),
-//     permitId: integer().notNull().references(() => permits.id),
-//     createdAt: commonColumns.createdAt(),
-//     updatedAt: commonColumns.updatedAt(),
-//     modifiedByAuthUserId: integer().notNull().references(() => authUsers.id),
-//
-//     description: varchar({length: 128}).notNull(),
-//     platesAmount: integer().notNull(),
-//     disabled: commonColumns.disabled(),
-// approveEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
-//     revokeEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
-    // refuseEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
-//     voucherTemplateId: integer().notNull().references(() => docTemplates.id),
-//     authorizationTemplateId: integer().notNull().references(() => docTemplates.id),
-//     numerationRegisterId: integer().notNull().references(() => numerationRegisters.id),
-// }, (t) => [
-//     index("permitsHistoryPermitIdIndex").on(t.permitId)
-// ])
+export const permitsHistory = toSchema.table("permitsHistory", {
+    id: commonColumns.idAutoIncr(),
+    permitId: integer().notNull().references(() => permits.id),
+    createdAt: commonColumns.createdAt(),
+    modifiedByAuthUserId: integer().notNull().references(() => authUsers.id),
+
+    description: varchar({length: 128}).notNull(),
+    platesAmount: integer().notNull(),
+    disabled: commonColumns.disabled(),
+    notes: commonColumns.notes(),
+    approveEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
+    revokeEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
+    refuseEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
+    voucherTemplateId: integer().notNull().references(() => docTemplates.id),
+    authorizationTemplateId: integer().notNull().references(() => docTemplates.id),
+    numerationRegisterId: integer().notNull().references(() => numerationRegisters.id),
+}, (t) => [
+    index("permitsHistoryPermitIdIndex").on(t.permitId)
+])
 
 export const emailTemplates = toSchema.table("emailTemplates", {
     id: commonColumns.idAutoIncr(),
@@ -119,7 +123,7 @@ export const applications = toSchema.table("applications", {
     id: commonColumns.idAutoIncr(),
     requestDate: commonColumns.createdAt(),
     outcomeDate: date(),
-    registerNumber: varchar({length: 16}).notNull(), //numero di protocollo
+    registerNumber: varchar({length: 32}).notNull(), //numero di protocollo
     registerDate: date(), //data di protocollazione
     cf: commonColumns.cfVarchar(),
     firstname: commonColumns.firstnameVarchar(),
@@ -139,6 +143,7 @@ export const applications = toSchema.table("applications", {
     typeId: integer().notNull().references(() => applicationTypes.id),
     outcomeAuthUserId: integer().references(() => authUsers.id),
     voucherId: integer().references(() => vouchers.id),
+    lastApplicationHistoryId: integer().notNull().references((): AnyPgColumn => applicationsHistory.id),
 }, (t) => [
     index("applicationsRegisterNumberIndex").on(t.registerNumber),
     index("applicationsRegisterDateIndex").on(t.registerDate),
@@ -146,7 +151,48 @@ export const applications = toSchema.table("applications", {
     index("applicationsFirstnameIndex").on(t.firstname),
     index("applicationsLastnameIndex").on(t.lastname),
     index("applicationsEmailIndex").on(t.email),
+    index("applicationsPermitIdIndex").on(t.permitId),
     index("applicationsVoucherIdIndex").on(t.voucherId),
+])
+
+export const applicationsHistory = toSchema.table("applicationsHistory", {
+    id: commonColumns.idAutoIncr(),
+    applicationId: integer().notNull().references(() => applications.id),
+    createdAt: commonColumns.createdAt(),
+    modifiedByAuthUserId: integer().notNull().references(() => authUsers.id),
+
+    requestDate: commonColumns.createdAt(),
+    outcomeDate: date(),
+    registerNumber: varchar({length: 32}).notNull(),
+    registerDate: date(),
+    cf: commonColumns.cfVarchar(),
+    firstname: commonColumns.firstnameVarchar(),
+    lastname: commonColumns.lastnameVarchar(),
+    email: varchar({length: 256}).notNull(),
+    birthDate: date(),
+    birthCity: varchar({length: 64}),
+    residencePlace: varchar({length: 128}),
+    targetHousePlace: varchar({length: 128}),
+    targetHouseLandRegistrySheet: varchar({length: 8}),
+    targetHouseLandRegistryMap: varchar({length: 8}),
+    targetHouseLandRegistrySubaltern: varchar({length: 8}),
+    targetHouseLandRegistryCategory: varchar({length: 8}),
+    notes: commonColumns.notes(),
+    permitHistoryId: integer().notNull().references(() => permitsHistory.id),
+    outcomeId: integer().notNull().references(() => applicationOutcome.id),
+    typeId: integer().notNull().references(() => applicationTypes.id),
+    outcomeAuthUserId: integer().references(() => authUsers.id),
+    // voucherHistoryId: integer().references(() => vouchersHistory.id),
+}, (t) => [
+    index("applicationHistoryApplicationId").on(t.applicationId),
+    index("applicationsHistoryRegisterNumberIndex").on(t.registerNumber),
+    index("applicationsHistoryRegisterDateIndex").on(t.registerDate),
+    index("applicationsHistoryCfIndex").on(t.cf),
+    index("applicationsHistoryFirstnameIndex").on(t.firstname),
+    index("applicationsHistoryLastnameIndex").on(t.lastname),
+    index("applicationsHistoryEmailIndex").on(t.email),
+    index("applicationsHistoryPermitHistoryIdIndex").on(t.permitHistoryId),
+    // index("applicationsHistoryVoucherHistoryIdIndex").on(t.voucherId),
 ])
 
 export const applicationsToVehicles = toSchema.table("applicationsToVehicles",
