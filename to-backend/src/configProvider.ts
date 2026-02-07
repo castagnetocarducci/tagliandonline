@@ -10,7 +10,8 @@ type Configs = {
     dbName: string,
     dbHost: string,
     dbPort: number,
-    jwtSecret: string
+    jwtSecret: string,
+    sofficePath: string,
 }
 
 /**
@@ -39,7 +40,8 @@ export class ConfigProvider {
             dbName: ConfigProvider.loadString(process.env.DB_NAME, "tagliandonline"),
             dbHost: ConfigProvider.loadString(process.env.DB_HOST, "localhost"),
             dbPort: ConfigProvider.loadNumber(process.env.DB_PORT, 5432),
-            jwtSecret: ConfigProvider.loadString(process.env.JWT_SECRET, randomBytes(24).toString("hex"))
+            jwtSecret: ConfigProvider.loadString(process.env.JWT_SECRET, randomBytes(24).toString("hex")),
+            sofficePath: ConfigProvider.loadString(process.env.SOFFICE_PATH, "/usr/bin/soffice"),
         }
     }
 
