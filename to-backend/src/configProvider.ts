@@ -12,6 +12,7 @@ type Configs = {
     dbPort: number,
     jwtSecret: string,
     sofficePath: string,
+    replacingAdminPassword: string | undefined,
 }
 
 /**
@@ -42,6 +43,7 @@ export class ConfigProvider {
             dbPort: ConfigProvider.loadNumber(process.env.DB_PORT, 5432),
             jwtSecret: ConfigProvider.loadString(process.env.JWT_SECRET, randomBytes(24).toString("hex")),
             sofficePath: ConfigProvider.loadString(process.env.SOFFICE_PATH, "/usr/bin/soffice"),
+            replacingAdminPassword: process.env.REPLACING_ADMIN_PASSWORD,
         }
     }
 

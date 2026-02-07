@@ -4,6 +4,7 @@ import {existsSync} from "node:fs";
 import {ConfigProvider} from "./configProvider.ts";
 
 export const convertPDF = async (srcFilepath: string, outFilepath?: string): Promise<string | null>  => {
+    console.log("Converting to PDF: " + srcFilepath + (outFilepath ? " to " + outFilepath : ""));
     if (!existsSync(srcFilepath)) {
         console.error("PDF conversion failed: file " + srcFilepath + " does not exist");
         return null;

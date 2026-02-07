@@ -32,7 +32,7 @@ type VoucherData = {
     verificationUrl: string,
 }
 
-const cmdDelimiters = ["{#", "#}"];
+const cmdDelimiters: [string, string] = ["{#", "#}"];
 
 type ErrOrSuccess = {
     err?: string,
@@ -41,7 +41,8 @@ type ErrOrSuccess = {
 
 export const generateDocumentFromTemplate = async (templateFilepath: string, outputFilepath: string, inputData: VoucherData): Promise<ErrOrSuccess> => {
     try {
-        const template = readFileSync('docx_examples/template_full.docx');
+        console.log("Generating report from template: " + templateFilepath + " to " + outputFilepath);
+        const template = readFileSync(templateFilepath);
         const buffer = await createReport.createReport({
             template,
             data: inputData,
@@ -52,10 +53,10 @@ export const generateDocumentFromTemplate = async (templateFilepath: string, out
                     return { width: 6, height: 6, data, extension: '.png' }; //width height in cm
                 },
             },
-            cmdDelimiter:["{#", "#}"]
+            cmdDelimiter: cmdDelimiters
         });
 
-        writeFileSync('docx_examples/template_full_report.docx', buffer)
+        writeFileSync(outputFilepath, buffer)
         return {
             success: true
         };
