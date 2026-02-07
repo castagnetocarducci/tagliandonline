@@ -131,6 +131,7 @@ export const relations = defineRelations(schema, (r) => ({
             from: r.inspections.id.through(r.inspectionsToAuthUsers.inspectionId),
             to: r.authUsers.id.through(r.inspectionsToAuthUsers.authUserId)
         }),
+        inspectionChecks: r.many.inspectionChecks(),
     },
 
     authUsers: {
@@ -148,6 +149,9 @@ export const relations = defineRelations(schema, (r) => ({
         applicationsHistoryModifications: r.many.applicationsHistory({
             alias: "applicationHistoryModifiedByAuthUserRel",
         }),
+        vehiclesHistoryModifications: r.many.vehiclesHistory(),
+        vouchersHistoryModifications: r.many.vouchersHistory(),
+        inspectionChecks: r.many.inspectionChecks(),
     },
 
     roles: {
@@ -225,23 +229,43 @@ export const relations = defineRelations(schema, (r) => ({
             to: r.authUsers.id,
             alias: "applicationHistoryOutcomeAuthUserRel",
         }),
-        //TODO: convert to history
-        // vehicles: r.many.vehicles({
-        //     from: r.applications.id.through(r.applicationsToVehicles.applicationId),
-        //     to: r.vehicles.id.through(r.applicationsToVehicles.vehicleId)
-        // }),
-        //TODO: convert to history
-        // voucher: r.one.vouchers({
-        //     from: r.applications.voucherId,
-        //     to: r.vouchers.id
-        // }),
-
+        vehiclesHistory: r.many.vehiclesHistory({
+            from: r.applicationsHistory.id.through(r.applicationsHistoryToVehiclesHistory.applicationHistoryId),
+            to: r.vehiclesHistory.id.through(r.applicationsHistoryToVehiclesHistory.vehicleHistoryId)
+        }),
+        voucherHistory: r.many.vouchersHistory({
+            from: r.applicationsHistory.voucherHistoryId,
+            to: r.vouchersHistory.id,
+        }),
         //emails: r.many.applicationsEmailsHistory() - not available in history
     },
 
     vehicles: {
         applications: r.many.applications(),
-        vouchers: r.many.vouchers()
+        vouchers: r.many.vouchers(),
+        vehicleHistory: r.many.vehiclesHistory({
+            alias: "vehicleHistoryRel",
+        }),
+        lastVehicleHistory: r.one.vehiclesHistory({ //non speculare
+            from: r.vehicles.lastVehiclesHistoryId,
+            to: r.vehiclesHistory.id,
+            alias: "lastVehicleHistoryRel",
+        })
+    },
+
+    vehiclesHistory: {
+        vehicle: r.one.vehicles({
+            from: r.vehiclesHistory.vehicleId,
+            to: r.vehicles.id,
+            alias: "vehicleHistoryRel",
+        }),
+        modifiedByAuthUser: r.one.authUsers({
+            from: r.vehiclesHistory.modifiedByAuthUserId,
+            to: r.authUsers.id
+        }),
+        applicationsHistory: r.many.applicationsHistory(),
+        vouchersHistory: r.many.vouchersHistory(),
+        inspectionChecks: r.many.inspectionChecks(),
     },
 
     applicationOutcome: {
@@ -265,7 +289,33 @@ export const relations = defineRelations(schema, (r) => ({
             from: r.vouchers.id.through(r.vouchersToVehicles.voucherId),
             to: r.vehicles.id.through(r.vouchersToVehicles.vehicleId)
         }),
-        emails: r.many.vouchersEmailsHistory()
+        emails: r.many.vouchersEmailsHistory(),
+        voucherHistory: r.many.vouchersHistory({
+            alias: "voucherHistoryRel",
+        }),
+        lastVoucherHistory: r.one.vouchersHistory({ //non speculare
+            from: r.vouchers.lastVoucherHistoryId,
+            to: r.vouchersHistory.id,
+            alias: "lastVoucherHistoryRel",
+        })
+    },
+
+    vouchersHistory: {
+        voucher: r.one.vouchers({
+            from: r.vouchersHistory.voucherId,
+            to: r.vouchers.id,
+            alias: "voucherHistoryRel",
+        }),
+        modifiedByAuthUser: r.one.authUsers({
+            from: r.vouchersHistory.modifiedByAuthUserId,
+            to: r.authUsers.id
+        }),
+        applicationsHistory: r.many.applicationsHistory(),
+        vehiclesHistory: r.many.vehiclesHistory({
+            from: r.vouchersHistory.id.through(r.vouchersHistoryToVehiclesHistory.voucherHistoryId),
+            to: r.vehiclesHistory.id.through(r.vouchersHistoryToVehiclesHistory.vehicleHistoryId)
+        }),
+        inspectionChecks: r.many.inspectionChecks(),
     },
 
     vouchersEmailsHistory: {
@@ -273,8 +323,26 @@ export const relations = defineRelations(schema, (r) => ({
             from: r.vouchersEmailsHistory.voucherId,
             to: r.vouchers.id
         })
-    }
+    },
 
+    inspectionChecks: {
+        inspection: r.one.inspections({
+            from: r.inspectionChecks.inspectionId,
+            to: r.inspections.id,
+        }),
+        vehicleHistory: r.one.vehiclesHistory({
+            from: r.inspectionChecks.vehicleHistoryId,
+            to: r.vehiclesHistory.id,
+        }),
+        voucherHistory: r.one.vouchersHistory({
+            from: r.inspectionChecks.voucherHistoryId,
+            to: r.vouchersHistory.id,
+        }),
+        checkedByAuthUser: r.one.authUsers({
+            from: r.inspectionChecks.checkedByAuthUserId,
+            to: r.authUsers.id,
+        }),
+    },
 
 }));
 

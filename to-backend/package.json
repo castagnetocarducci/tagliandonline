@@ -10,7 +10,8 @@
     "dev-watch": "npx tsx --watch src/index.ts",
     "dev-run": "npx tsc --noEmit && npx tsx src/index.ts",
     "dev-run-test-conversion": "npx tsc --noEmit && npx tsx src/testing/testConversion.ts",
-    "dev-run-test-report": "npx tsc --noEmit && npx tsx src/testing/testReportGeneration.ts"
+    "dev-run-test-report": "npx tsc --noEmit && npx tsx src/testing/testReportGeneration.ts",
+    "db:push": "npx drizzle-kit push"
   },
   "keywords": [],
   "author": "Comune di Castagneto Carducci",
