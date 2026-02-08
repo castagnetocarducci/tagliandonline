@@ -91,6 +91,7 @@ export const authUsers = toSchema.table("authUsers", {
     email: varchar({length: 128}).notNull(),
     username: varchar({length: 32}).notNull(),
     passwordHash: varchar({length: 60}).notNull(), //length of bcrypt hash
+    lastPasswordResetDate: commonColumns.createdAt(),
     roleId: integer().notNull().references(() => roles.id),
 })
 

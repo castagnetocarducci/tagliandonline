@@ -1,6 +1,8 @@
 import {readFileSync, writeFileSync} from "node:fs";
 import createReport from "docx-templates";
 import {toDataURL} from "qrcode";
+import type {ErrOrSuccess} from "./utils/commonTypes.ts";
+import {getErrorString} from "./utils/commonFunctions.ts";
 
 type VoucherData = {
     numeroTalignadoStr: string,
@@ -35,11 +37,6 @@ type VoucherData = {
 
 const cmdDelimiters: [string, string] = ["{#", "#}"];
 
-type ErrOrSuccess = {
-    err?: string,
-    success: boolean
-}
-
 export const generateDocumentFromTemplate = async (templateFilepath: string, outputFilepath: string, inputData: VoucherData): Promise<ErrOrSuccess> => {
     try {
         console.log("Generating report from template: " + templateFilepath + " to " + outputFilepath);
@@ -62,11 +59,10 @@ export const generateDocumentFromTemplate = async (templateFilepath: string, out
             success: true
         };
     } catch (e) {
-        console.error("Execution failed");
+        console.error("Report generation failed:");
         console.error(e);
-        const errMsg = e instanceof Error ? e.toString() : "Unknown error."
         return {
-            err: errMsg,
+            err: getErrorString(e),
             success: false,
         };
     }

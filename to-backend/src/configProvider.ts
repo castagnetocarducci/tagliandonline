@@ -17,6 +17,11 @@ type Configs = {
     dataPath: string,
     modelsPath: string,
     vouchersPath: string,
+    smtpHost: string,
+    smtpPort: number,
+    smtpUser: string,
+    smtpPassword: string,
+    smtpSecure: boolean,
 }
 
 /**
@@ -51,6 +56,11 @@ export class ConfigProvider {
             dataPath: ConfigProvider.loadString(process.env.DATA_PATH, "../data"),
             modelsPath: join(ConfigProvider.loadString(process.env.DATA_PATH, "../data"), "models"),
             vouchersPath: join(ConfigProvider.loadString(process.env.DATA_PATH, "../data"), "vouchers"),
+            smtpHost: ConfigProvider.loadString(process.env.SMTP_HOST, "smtp.example.com"),
+            smtpPort: ConfigProvider.loadNumber(process.env.SMTP_PORT, 587),
+            smtpUser: ConfigProvider.loadString(process.env.SMTP_USER, "email@example.com"),
+            smtpPassword: ConfigProvider.loadString(process.env.SMTP_PASSWORD, "examplepassword"),
+            smtpSecure: ConfigProvider.loadBoolean(process.env.SMTP_SECURE, true),
         }
         this.prepareDataPath();
     }
@@ -79,6 +89,17 @@ export class ConfigProvider {
     private static loadString(value: string | undefined, defaultValue: string): string {
         if (value != null) {
             return value;
+        }
+        return defaultValue;
+    }
+
+    private static loadBoolean(value: string | undefined, defaultValue: boolean): boolean {
+        if (value != null) {
+            if (value.toLowerCase() === "true") {
+                return true;
+            } else if (value.toLowerCase() === "false") {
+                return false;
+            }
         }
         return defaultValue;
     }
