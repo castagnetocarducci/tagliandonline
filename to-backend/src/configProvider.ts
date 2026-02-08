@@ -17,6 +17,7 @@ type Configs = {
     dataPath: string,
     modelsPath: string,
     vouchersPath: string,
+    baseUrl: string,
     smtpHost: string,
     smtpPort: number,
     smtpUser: string,
@@ -50,12 +51,13 @@ export class ConfigProvider {
             dbName: ConfigProvider.loadString(process.env.DB_NAME, "tagliandonline"),
             dbHost: ConfigProvider.loadString(process.env.DB_HOST, "localhost"),
             dbPort: ConfigProvider.loadNumber(process.env.DB_PORT, 5432),
-            jwtSecret: ConfigProvider.loadString(process.env.JWT_SECRET, randomBytes(24).toString("hex")),
+            jwtSecret: ConfigProvider.loadString(process.env.JWT_SECRET, randomBytes(32).toString("hex")),
             sofficePath: ConfigProvider.loadString(process.env.SOFFICE_PATH, "/usr/bin/soffice"),
             replacingAdminPassword: process.env.REPLACING_ADMIN_PASSWORD,
             dataPath: ConfigProvider.loadString(process.env.DATA_PATH, "../data"),
             modelsPath: join(ConfigProvider.loadString(process.env.DATA_PATH, "../data"), "models"),
             vouchersPath: join(ConfigProvider.loadString(process.env.DATA_PATH, "../data"), "vouchers"),
+            baseUrl: ConfigProvider.loadString(process.env.BASE_URL, "http://localhost:80"),
             smtpHost: ConfigProvider.loadString(process.env.SMTP_HOST, "smtp.example.com"),
             smtpPort: ConfigProvider.loadNumber(process.env.SMTP_PORT, 587),
             smtpUser: ConfigProvider.loadString(process.env.SMTP_USER, "email@example.com"),
@@ -63,11 +65,21 @@ export class ConfigProvider {
             smtpSecure: ConfigProvider.loadBoolean(process.env.SMTP_SECURE, true),
         }
         this.prepareDataPath();
+        this.checkBaseUrl();
     }
 
     private prepareDataPath() {
         mkdirSync(this.configs.modelsPath, {recursive: true});
         mkdirSync(this.configs.vouchersPath, {recursive: true});
+    }
+
+    private checkBaseUrl() {
+        if (this.configs.baseUrl.endsWith("/")) {
+            this.configs.baseUrl = this.configs.baseUrl.slice(0, -1);
+        }
+        if (!this.configs.baseUrl.startsWith("http://") && !this.configs.baseUrl.startsWith("https://")) {
+            this.configs.baseUrl = "http://" + this.configs.baseUrl;
+        }
     }
 
     public getDBUrl(): string {

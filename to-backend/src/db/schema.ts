@@ -1,8 +1,16 @@
 import {
     type AnyPgColumn,
-    boolean, date, foreignKey, index, integer, pgSchema, pgTable, primaryKey, text, timestamp, varchar
+    date,
+    index,
+    integer,
+    pgSchema,
+    primaryKey,
+    text,
+    timestamp,
+    varchar
 } from "drizzle-orm/pg-core";
 import {commonColumns} from "./common.columns.ts";
+import {generatePasswordResetToken, passwordResetTokenLength} from "../utils/pswHashing.ts";
 
 export const toSchema = pgSchema("tagliandonline");
 
@@ -89,11 +97,16 @@ export const authUsers = toSchema.table("authUsers", {
     firstname: commonColumns.firstnameVarchar(),
     lastname: commonColumns.lastnameVarchar(),
     email: varchar({length: 128}).notNull(),
-    username: varchar({length: 32}).notNull(),
+    username: varchar({length: 32}).notNull().unique(),
     passwordHash: varchar({length: 60}).notNull(), //length of bcrypt hash
     lastPasswordResetDate: commonColumns.createdAt(),
+    passwordResetToken: varchar({length: passwordResetTokenLength * 2}).default(generatePasswordResetToken()),
+    passwordResetTokenGenerationDate: commonColumns.createdAt(),
     roleId: integer().notNull().references(() => roles.id),
-})
+}, (t) => [
+    index("authUsersEmailIndex").on(t.email),
+    index("authUsersUsernameIndex").on(t.username),
+]);
 
 export const roles = toSchema.table("roles", {
     id: commonColumns.idAutoIncr(),
@@ -105,7 +118,10 @@ export const loginHistory = toSchema.table("loginHistory", {
     createdAt: commonColumns.createdAt(),
     clientIp: varchar({length: 32}).notNull(),
     userId: integer().notNull().references(() => authUsers.id),
-})
+}, (t) => [
+    index("loginHistoryUserIdIndex").on(t.userId),
+    index("loginHistoryClientIpIndex").on(t.clientIp)
+])
 
 
 export const vehicles = toSchema.table("vehicles", {

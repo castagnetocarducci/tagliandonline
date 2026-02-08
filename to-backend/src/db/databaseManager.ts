@@ -2,9 +2,9 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import {ConfigProvider} from "../configProvider.ts";
 import {relations} from "./relations.ts";
 import {populateDefaultData} from "./defaultData.ts";
-import {generatePasswordHash} from "../auth.ts";
 import {authUsers} from "./schema.ts";
 import {eq} from "drizzle-orm";
+import {generatePasswordHash} from "../utils/pswHashing.ts";
 
 /**
  * singleton
