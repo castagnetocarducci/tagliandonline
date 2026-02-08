@@ -12,7 +12,11 @@ type CmdOutput = {
     success: boolean
 }
 
-export const runCmd = async (cmd: string, options: RunCmdOptions = {}): Promise<CmdOutput> => {
+export const runCmdAsync = async (cmd: string, options: RunCmdOptions = {}): Promise<CmdOutput> => {
+    return runCmd(cmd, options);
+}
+
+export const runCmd = (cmd: string, options: RunCmdOptions = {}): CmdOutput => {
     options = {
         cwd: process.cwd(),
         shell: true,

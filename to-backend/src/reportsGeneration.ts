@@ -5,6 +5,7 @@ import {toDataURL} from "qrcode";
 type VoucherData = {
     numeroTalignadoStr: string,
     descrizionePermessoStr: string,
+    tipologiaDomanda: string,
     dataProtocolloStr: string,
     numeroProtocolloStr: string,
     dataCopmletamentoStr: string,

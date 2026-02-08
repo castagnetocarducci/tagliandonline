@@ -1,12 +1,21 @@
+import { join } from "node:path";
 import {DatabaseManager} from "./databaseManager.ts";
-import {applicationOutcome, applicationTypes, authUsers, roles} from "./schema.ts";
-import {generatePasswordHash} from "../auth.ts";
-import {varchar} from "drizzle-orm/pg-core";
+import {
+    applicationOutcome,
+    applicationTypes,
+    authUsers,
+    docTemplates,
+    emailTemplates,
+    numerationRegisters,
+    roles
+} from "./schema.ts";
+import {copyFileSync} from "node:fs";
+import {ConfigProvider} from "../configProvider.ts";
 
 export const populateDefaultData = async () => {
     const db = DatabaseManager.instance.db;
 
-    //TODO: check if data already exists
+    // check if data already exists
     const rolesCheck = await db.query.roles.findMany();
     if (rolesCheck.length > 0) {
         console.log("Roles already populated, skipping default data insertion");
@@ -30,5 +39,43 @@ export const populateDefaultData = async () => {
     });
     await db.insert(roles).values([{description: "operatore"}, {description: "vigile"}]);
 
+    await db.insert(emailTemplates).values([
+        {
+            description: "accettata",
+            object: "Invio tagliando {#numeroTalignadoStr#} - TagliandOnline",
+            body: "La sua richiesta, presentata con protocollo n. {#numeroProtocolloStr#}, è stata accettata in data {#dataCopmletamentoStr#}.<br/>" +
+                "Si trasmette in allegato il contrassegno <b>da stampare e tenere esposto nel veicolo</b> e l'autorizzazione <b>da stampare ed esibire in caso di controllo</b>."
+        },
+        {
+            description: "rifiutata",
+            object: "Domanda emissione tagliando rifiutata - TagliandOnline",
+            body: "La sua richiesta, presentata con protocollo n. {#numeroProtocolloStr#}, è stata rifiutata in data {#dataCopmletamentoStr#}."
+        },
+        {
+            description: "revocato",
+            object: "Revoca tagliando {#numeroTalignadoStr#} - TagliandOnline",
+            body: "Il suo tagliando n. {#numeroTalignadoStr#} è stato revocato, pertanto non è più valido."
+        },
+    ]);
 
+    await db.insert(numerationRegisters).values([{description: "numerazione predefinita"}]);
+
+    const modelsPath = ConfigProvider.instance.configs.modelsPath;
+    const defaultAuthorizationTemplatePath = join(modelsPath, "default_autorizzazione.docx");
+    const defaultVoucherTemplatePath = join(modelsPath, "default_contrassegno.docx");
+    await db.insert(docTemplates).values([
+        {description: "autorizzazione predefinita", path: defaultAuthorizationTemplatePath},
+        {description: "contrassegno predefinito", path: defaultVoucherTemplatePath}
+    ]);
+    //come ultima cosa copio i modelli di default nella cartella dei modelli
+    copyDefaultModels(defaultAuthorizationTemplatePath, defaultVoucherTemplatePath);
 }
+
+const copyDefaultModels = (destinationAuthorizationPath: string, destVoucherPath: string) => {
+    const defaultTemplatesPath = join("docx_examples", "default_templates");
+    const defaultAuthorizationPath = join(defaultTemplatesPath, "default_autorizzazione.docx");
+    const defaultVoucherPath = join(defaultTemplatesPath, "default_contrassegno.docx");
+    copyFileSync(defaultAuthorizationPath, destinationAuthorizationPath);
+    copyFileSync(defaultVoucherPath, destVoucherPath);
+}
+

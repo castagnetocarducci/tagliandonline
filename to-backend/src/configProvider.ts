@@ -1,6 +1,7 @@
 import dotenv from 'dotenv'
 import {randomBytes} from "node:crypto";
-import {drizzle} from "drizzle-orm/node-postgres";
+import {join} from "node:path";
+import {mkdirSync} from "node:fs";
 
 type Configs = {
     port: number,
@@ -13,6 +14,9 @@ type Configs = {
     jwtSecret: string,
     sofficePath: string,
     replacingAdminPassword: string | undefined,
+    dataPath: string,
+    modelsPath: string,
+    vouchersPath: string,
 }
 
 /**
@@ -44,7 +48,16 @@ export class ConfigProvider {
             jwtSecret: ConfigProvider.loadString(process.env.JWT_SECRET, randomBytes(24).toString("hex")),
             sofficePath: ConfigProvider.loadString(process.env.SOFFICE_PATH, "/usr/bin/soffice"),
             replacingAdminPassword: process.env.REPLACING_ADMIN_PASSWORD,
+            dataPath: ConfigProvider.loadString(process.env.DATA_PATH, "../data"),
+            modelsPath: join(ConfigProvider.loadString(process.env.DATA_PATH, "../data"), "models"),
+            vouchersPath: join(ConfigProvider.loadString(process.env.DATA_PATH, "../data"), "vouchers"),
         }
+        this.prepareDataPath();
+    }
+
+    private prepareDataPath() {
+        mkdirSync(this.configs.modelsPath, {recursive: true});
+        mkdirSync(this.configs.vouchersPath, {recursive: true});
     }
 
     public getDBUrl(): string {

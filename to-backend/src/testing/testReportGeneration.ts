@@ -5,6 +5,7 @@ async function testReportGeneration() {
     const res = await generateDocumentFromTemplate('docx_examples/template_full.docx', 'docx_examples/template_full_report.docx', {
         numeroTalignadoStr: "q",
         descrizionePermessoStr: "transito ZTL CAPOLUOGO e sosta per RESIDENTI",
+        tipologiaDomanda: "sostituzione",
         dataProtocolloStr: "e",
         numeroProtocolloStr: "r",
         dataCopmletamentoStr: "t",

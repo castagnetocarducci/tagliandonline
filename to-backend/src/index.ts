@@ -1,14 +1,20 @@
 import {ConfigProvider} from "./configProvider.js";
 import express from "express";
-import {toDataURL} from "qrcode";
+import {DatabaseManager} from "./db/databaseManager.ts";
 const app = express();
 
+const main = async () => {
+    await DatabaseManager.instance.init();
 
-app.get("/", (req, res) => {
-    res.send("Hello World!");
-    console.log("Response sent");
-});
+    app.get("/", (req, res) => {
+        res.send("Hello World!");
+        console.log("Response sent");
+    });
 
-app.listen(ConfigProvider.instance.configs.port, () => {
-    console.log(`Example app listening on port ${ConfigProvider.instance.configs.port}`);
-});
+    app.listen(ConfigProvider.instance.configs.port, () => {
+        console.log(`Example app listening on port ${ConfigProvider.instance.configs.port}`);
+    });
+}
+
+main();
+

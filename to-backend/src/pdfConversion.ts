@@ -1,6 +1,6 @@
 import {runCmd} from "./processInteraction.js";
 import {dirname, basename, extname} from "node:path";
-import {existsSync} from "node:fs";
+import {existsSync, mkdirSync, renameSync} from "node:fs";
 import {ConfigProvider} from "./configProvider.ts";
 
 export const convertPDF = async (srcFilepath: string, outFilepath?: string): Promise<string | null>  => {
@@ -11,7 +11,7 @@ export const convertPDF = async (srcFilepath: string, outFilepath?: string): Pro
     }
     const sofficePath = ConfigProvider.instance.configs.sofficePath;
     const srcDir = dirname(srcFilepath);
-    const conversionResult = await runCmd("\"" + sofficePath + "\" --headless --convert-to pdf:writer_pdf_Export \"" + srcFilepath + "\" --outdir \"" + srcDir + "\"");
+    const conversionResult = runCmd("\"" + sofficePath + "\" --headless --convert-to pdf:writer_pdf_Export \"" + srcFilepath + "\" --outdir \"" + srcDir + "\"");
     if (!conversionResult.success) {
         console.error("PDF conversion failed:", conversionResult.err);
         return null;
@@ -22,11 +22,17 @@ export const convertPDF = async (srcFilepath: string, outFilepath?: string): Pro
 
     if (outFilepath) {
         const outDir = dirname(outFilepath);
-        const moveResult = await runCmd("mkdir -p \"" + outDir + "\" && mv -f \"" + generatedPdfPath + "\" \"" + outFilepath + "\"");
-        if (!moveResult.success) {
-            console.error("Failed to move PDF:", moveResult.err);
-            return null;
+        try {
+            mkdirSync(outDir, {recursive: true});
+            renameSync(generatedPdfPath, outFilepath);
+        } catch (e) {
+            console.error("Failed to move PDF: ", e);
         }
+        // const moveResult = runCmd("mkdir -p \"" + outDir + "\" && mv -f \"" + generatedPdfPath + "\" \"" + outFilepath + "\"");
+        // if (!moveResult.success) {
+        //     console.error("Failed to move PDF:", moveResult.err);
+        //     return null;
+        // }
         return outFilepath;
     }
 

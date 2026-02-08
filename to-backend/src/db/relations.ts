@@ -13,7 +13,7 @@ export const relations = defineRelations(schema, (r) => ({
             to: r.docTemplates.id,
             alias: "authorizationTemplateRel",
         }),
-        numerationDocRegister: r.one.docTemplates({
+        numerationDocRegister: r.one.numerationRegisters({
             from: r.permits.numerationRegisterId,
             to: r.numerationRegisters.id
         }),
@@ -63,7 +63,7 @@ export const relations = defineRelations(schema, (r) => ({
             to: r.docTemplates.id,
             alias: "permitsHistoryAuthorizationTemplateRel",
         }),
-        numerationDocRegister: r.one.docTemplates({
+        numerationDocRegister: r.one.numerationRegisters({
             from: r.permitsHistory.numerationRegisterId,
             to: r.numerationRegisters.id
         }),
@@ -100,13 +100,13 @@ export const relations = defineRelations(schema, (r) => ({
         refusePermits: r.many.permits({
             alias: "refuseEmailTemplateRel",
         }),
-        approvePermitsHistory: r.many.permits({
+        approvePermitsHistory: r.many.permitsHistory({
             alias: "permitsHistoryApproveEmailTemplateRel",
         }),
-        revokePermitsHistory: r.many.permits({
+        revokePermitsHistory: r.many.permitsHistory({
             alias: "permitsHistoryRevokeEmailTemplateRel",
         }),
-        refusePermitsHistory: r.many.permits({
+        refusePermitsHistory: r.many.permitsHistory({
             alias: "permitsHistoryRefuseEmailTemplateRel",
         }),
     },
@@ -118,10 +118,10 @@ export const relations = defineRelations(schema, (r) => ({
         authorizationPermits: r.many.permits({
             alias: "authorizationTemplateRel",
         }),
-        voucherPermitsHistory: r.many.permits({
+        voucherPermitsHistory: r.many.permitsHistory({
             alias: "permitsHistoryVoucherTemplateRel",
         }),
-        authorizationPermitsHistory: r.many.permits({
+        authorizationPermitsHistory: r.many.permitsHistory({
             alias: "permitsHistoryAuthorizationTemplateRel",
         }),
     },
