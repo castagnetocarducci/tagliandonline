@@ -1,14 +1,24 @@
-import {type ReactNode, useState} from "react";
+import {type ReactNode, useEffect, useState} from "react";
 import {UserDataContext} from "./UserDataContext.tsx";
-import {Roles} from "../utils/Types.ts";
+import {type UserData, type UserInfoApiResponse} from "../utils/Types.ts";
+import {fetchApiAsync} from "../utils/fetching.ts";
 
 export const UserDataProvider = ({children}: { children: ReactNode })  => {
-    const [role, ] = useState<string>(Roles.GUEST);
+    const [userData, setUserData] = useState<UserData | null>(null);
+
+    useEffect(() => {
+        const abort = fetchApiAsync<UserInfoApiResponse>("/userInfo", (data) => {
+            if (data != null) {
+                setUserData(data.user);
+            }
+        });
+        return abort;
+    })
 
     return (
         <UserDataContext.Provider value={{
-            userID: null,
-            role: role
+            userData: userData,
+            setUserData: setUserData
         }}>
             {children}
         </UserDataContext.Provider>

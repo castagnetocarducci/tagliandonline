@@ -6,7 +6,9 @@ const breadcrumbPathMap = new Map<string, string>([
     ["users", "Utenti"],
     ["vouchers", "Tagliandi"],
     ["permits", "Permessi"],
-    ["login", "Profilo"]
+    ["login", "Profilo"],
+    ["profile", "Profilo"],
+    ["password-reset", "Reimposta password"],
 ]);
 
 type SingleBreadcrumb = {

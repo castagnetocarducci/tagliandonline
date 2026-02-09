@@ -6,8 +6,10 @@ import {Applications} from "../pages/Applications.tsx";
 import {Inspections} from "../pages/Inspections.tsx";
 import {Users} from "../pages/Users.tsx";
 import {Vouchers} from "../pages/Vouchers.tsx";
-import {Profile} from "../pages/Profile.tsx";
+import {Profile} from "../pages/profile/Profile.tsx";
 import {Permits} from "../pages/Permits.tsx";
+import {Login} from "../pages/profile/Login.tsx";
+import {PasswordReset} from "../pages/profile/PasswordReset.tsx";
 
 export const RouteConfiguration = () => {
     const userData = useUserDataContext()
@@ -21,7 +23,9 @@ export const RouteConfiguration = () => {
             <Route path="/users/*" element={<Users/>}/>
             <Route path="/vouchers/*" element={<Vouchers/>}/>
             <Route path="/permits/*" element={<Permits/>}/>
-            <Route path="/login/*" element={<Profile/>}/>
+            <Route path="/profile/*" element={<Profile/>}/>
+            <Route path="/login/*" element={<Login/>}/>
+            <Route path="/password-reset/*" element={<PasswordReset/>}/>
             {/*{userData.role >= 2 &&*/}
             {/*    <Route path="/positions" element={<MapPos/>}/>*/}
             {/*}*/}

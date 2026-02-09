@@ -8,18 +8,21 @@ import {RouteConfiguration} from "./components/RouteConfiguration.tsx";
 import {CompleteHeader} from "./components/header/CompleteHeader.tsx";
 import {RouterBreadcrumb} from "./components/RouterBreadcrumb.tsx";
 import {CustomFooter} from "./components/CustomFooter.tsx";
+import {UserDataProvider} from "./contexts/UserDataProvider.tsx";
 
 function App() {
 
     return (
-       <BrowserRouter>
-           <CompleteHeader/>
-           <div className={"min-vh-100 pt-2"}>
-           <RouterBreadcrumb/>
-           <RouteConfiguration/>
-           </div>
-           <CustomFooter/>
-       </BrowserRouter>
+        <UserDataProvider>
+            <BrowserRouter>
+                <CompleteHeader/>
+                <div className={"min-vh-100 pt-2"}>
+                    <RouterBreadcrumb/>
+                    <RouteConfiguration/>
+                </div>
+                <CustomFooter/>
+            </BrowserRouter>
+        </UserDataProvider>
     )
 }
 

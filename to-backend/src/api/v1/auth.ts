@@ -62,7 +62,7 @@ export const expressRouter = Router();
 expressRouter.post("/login", async (req, res) => {
     const {username, password} = req.body;
     const clientIp = req.ip != null ? req.ip : "unknown";
-    if (!username || !password) {
+    if (username == null || password == null || username.trim() === "" || password.trim() === "") {
         res.status(400).json({message: "Username and password are required"});
         return;
     }
@@ -103,7 +103,7 @@ expressRouter.post("/login", async (req, res) => {
     db.insert(loginHistory).values([{userId: foundUser.id, clientIp: clientIp}]).execute();
 
     res.cookie("authToken", token, {
-        httpOnly: true,
+        httpOnly: true, //protezione da xss
         secure: process.env.NODE_ENV === "production",
         maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days in milliseconds
         sameSite: "strict",
@@ -113,10 +113,11 @@ expressRouter.post("/login", async (req, res) => {
         user: {
             id: foundUser.id,
             username: foundUser.username,
-            role: foundUser.role.description,
             firstName: foundUser.firstname,
             lastName: foundUser.lastname,
             email: foundUser.email,
+            cf: foundUser.cf,
+            role: foundUser.role.description,
         }
     });
 });
@@ -146,7 +147,6 @@ expressRouter.get("/userInfo", middlewareAuthCheck("any"), async (req: AuthReque
             lastName: authUser.lastname,
             email: authUser.email,
             cf: authUser.cf,
-            updatedAt: authUser.updatedAt,
             role: authUser.role.description,
         }
     });
