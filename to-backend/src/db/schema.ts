@@ -10,7 +10,7 @@ import {
     varchar
 } from "drizzle-orm/pg-core";
 import {commonColumns} from "./common.columns.ts";
-import {generatePasswordResetToken, passwordResetTokenLength} from "../utils/pswHashing.ts";
+import {generatePasswordResetToken, passwordResetTokenByteLength} from "../utils/pswHashing.ts";
 
 export const toSchema = pgSchema("tagliandonline");
 
@@ -100,7 +100,7 @@ export const authUsers = toSchema.table("authUsers", {
     username: varchar({length: 32}).notNull().unique(),
     passwordHash: varchar({length: 60}).notNull(), //length of bcrypt hash
     lastPasswordResetDate: commonColumns.createdAt(),
-    passwordResetToken: varchar({length: passwordResetTokenLength * 2}).default(generatePasswordResetToken()),
+    passwordResetToken: varchar({length: passwordResetTokenByteLength * 2}).default(generatePasswordResetToken()),
     passwordResetTokenGenerationDate: commonColumns.createdAt(),
     roleId: integer().notNull().references(() => roles.id),
 }, (t) => [
