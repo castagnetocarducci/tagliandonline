@@ -11,6 +11,7 @@ import {
 } from "../../utils/pswHashing.ts";
 import {SmtpManager} from "../../smtpManager.ts";
 import {eq, or} from "drizzle-orm";
+import {sleep} from "../../utils/commonFunctions.ts";
 
 export type UserToken = {
     id: number;
@@ -31,7 +32,7 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole): RequestHandler 
     if (authHeader != null && authHeader.startsWith("Bearer ")) {
         token = authHeader.split(" ")[1];
     }
-    if (req.cookies.authToken != null) {
+    if (req.cookies != null && req.cookies.authToken != null) {
         token = req.cookies.authToken;
     }
     if (token == null) {
@@ -57,15 +58,15 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole): RequestHandler 
     }
 }
 
-export const expressRouter = Router();
+export const authRouter = Router();
 
-expressRouter.post("/login", async (req, res) => {
-    const {username, password} = req.body;
-    const clientIp = req.ip != null ? req.ip : "unknown";
-    if (username == null || password == null || username.trim() === "" || password.trim() === "") {
-        res.status(400).json({message: "Username and password are required"});
+authRouter.post("/login", async (req, res) => {
+    if (req.body == null || req.body.username == null || req.body.password == null || req.body.username.trim() === "" || req.body.password.trim() === "") {
+        res.status(400).json({message: "Utente e password sono richiesti"});
         return;
     }
+    const {username, password} = req.body;
+    const clientIp = req.ip != null ? req.ip : "unknown";
 
     const db = DatabaseManager.instance.db;
     const foundUser = await db.query.authUsers.findFirst({
@@ -74,17 +75,17 @@ expressRouter.post("/login", async (req, res) => {
     });
 
     if (foundUser == null || foundUser.role == null) {
-        res.status(401).json({message: "Invalid credentials"});
+        res.status(401).json({message: "Username o password errati"});
         return;
     }
     if (foundUser.disabled) {
-        res.status(403).json({message: "Account disabled"});
+        res.status(403).json({message: "Account disabilitato"});
         return;
     }
 
     const isValidPassword = await comparePasswords(password, foundUser.passwordHash);
     if (!isValidPassword) {
-        res.status(401).json({message: "Invalid credentials"});
+        res.status(401).json({message: "Username o password errati"});
         return;
     }
 
@@ -104,12 +105,12 @@ expressRouter.post("/login", async (req, res) => {
 
     res.cookie("authToken", token, {
         httpOnly: true, //protezione da xss
-        secure: process.env.NODE_ENV === "production",
+        secure: ConfigProvider.instance.configs.baseUrl.startsWith("https"),
         maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days in milliseconds
         sameSite: "strict",
     });
     res.json({
-        message: "Login successful",
+        message: "Login avvenuto con successo",
         user: {
             id: foundUser.id,
             username: foundUser.username,
@@ -122,7 +123,17 @@ expressRouter.post("/login", async (req, res) => {
     });
 });
 
-expressRouter.get("/userInfo", middlewareAuthCheck("any"), async (req: AuthRequest, res) => {
+authRouter.get("/logout", async (req, res) => {
+    res.clearCookie("authToken", {
+        httpOnly: true,
+        secure: ConfigProvider.instance.configs.baseUrl.startsWith("https"),
+        sameSite: "strict",
+    });
+
+    res.json({message: "Logout avvenuto con successo"});
+});
+
+authRouter.get("/userInfo", middlewareAuthCheck("any"), async (req: AuthRequest, res) => {
     if (req.user == null) {
         res.status(401).json({message: "Unauthorized"});
         return;
@@ -153,30 +164,30 @@ expressRouter.get("/userInfo", middlewareAuthCheck("any"), async (req: AuthReque
 });
 
 
-expressRouter.post("/register", async (req, res) => {
+authRouter.post("/register", async (req, res) => {
     res.send("Register not implemented yet.");
 });
 
 const passwordResetTokenExpirationTimeMs = 1 * 60 * 60 * 1000; // 1 hour in ms
 const passwordResetTokenResendMailMs = 60 * 1000; // 1 minute in ms
-expressRouter.post("/password-reset-request", async (req, res) => {
-    const {username} = req.body;
-
-    if (username != null) {
-        res.status(400).json({message: "Username or email is required"});
+authRouter.post("/password-reset-request", async (req, res) => {
+    if (req.body == null || req.body.username == null) {
+        res.status(400).json({message: "Username è richiesto"});
         return;
     }
+
+    const {username} = req.body;
 
     const db = DatabaseManager.instance.db;
     const foundUser = await db.query.authUsers.findFirst({
         where: {OR: [{username: username}, {email: username}]},
     });
     if (foundUser == null) {
-        res.status(404).json({message: "User not found"});
+        res.status(404).json({message: "Utente non trovato"});
         return;
     }
     if (foundUser.disabled) {
-        res.status(403).json({message: "Account disabled"});
+        res.status(403).json({message: "Account disabilitato"});
         return;
     }
 
@@ -214,13 +225,13 @@ expressRouter.post("/password-reset-request", async (req, res) => {
     res.json({message: "Password reset email sent successfully"});
 });
 
-expressRouter.post("/password-reset-execute", async (req, res) => {
-    const {token, password} = req.body;
-
-    if (!token || !password) {
+authRouter.post("/password-reset-execute", async (req, res) => {
+    if (req.body == null || req.body.token == null || req.body.password == null) {
         res.status(400).json({message: "Token and new password are required"});
         return;
     }
+
+    const {token, password} = req.body;
 
     if (!checkPasswordStrength(password)) {
         res.status(400).json({message: "Password must be at least 12 characters long"});

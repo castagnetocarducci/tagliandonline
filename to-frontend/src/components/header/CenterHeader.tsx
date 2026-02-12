@@ -1,8 +1,6 @@
 import {Header, HeaderBrand, HeaderContent, HeaderRightZone, HeaderSocialsZone, Icon} from "design-react-kit";
-import {useUserDataContext} from "../../hooks/useUserDataContext.tsx";
 
 export const CenterHeader = () => {
-    const userData = useUserDataContext();
     return (
         <Header theme="dark" type="center">
             <HeaderContent>

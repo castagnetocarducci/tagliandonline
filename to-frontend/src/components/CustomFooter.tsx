@@ -1,4 +1,4 @@
-import {Col, Container, Icon, LinkList, LinkListItem, Row} from "design-react-kit";
+import {Col, Container, Icon, LinkList, Row} from "design-react-kit";
 import {RouterDesignLink} from "./links/RouterDesignLink.tsx";
 
 export const CustomFooter = () => {

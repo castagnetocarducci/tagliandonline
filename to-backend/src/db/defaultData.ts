@@ -19,6 +19,7 @@ export const populateDefaultData = async () => {
     const rolesCheck = await db.query.roles.findMany();
     if (rolesCheck.length > 0) {
         console.log("Roles already populated, skipping default data insertion");
+        return;
     }
 
     await db.insert(applicationOutcome).values([{description: "presentata"}, {description: "accettata"}, {description: "rifiutata"}, {description: "annullata"}, {description: "in attesa"}, {description: "in corso"}, {description: "altro"}]);

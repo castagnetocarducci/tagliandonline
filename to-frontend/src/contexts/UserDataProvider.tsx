@@ -7,13 +7,13 @@ export const UserDataProvider = ({children}: { children: ReactNode })  => {
     const [userData, setUserData] = useState<UserData | null>(null);
 
     useEffect(() => {
-        const abort = fetchApiAsync<UserInfoApiResponse>("/userInfo", (data) => {
+        const abort = fetchApiAsync<UserInfoApiResponse>("/auth/userInfo", {credentials: "include"}, (data) => {
             if (data != null) {
                 setUserData(data.user);
             }
         });
         return abort;
-    })
+    }, [setUserData])
 
     return (
         <UserDataContext.Provider value={{

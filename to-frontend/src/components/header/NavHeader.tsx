@@ -1,10 +1,9 @@
 import {Collapse, Header, HeaderContent, HeaderToggler, Icon, Nav, NavItem} from "design-react-kit";
-import {useUserDataContext} from "../../hooks/useUserDataContext.tsx";
 import {RouterDesignNavLink} from "../links/RouterDesignNavLink.tsx";
 import {useState} from "react";
 
 export const NavHeader = () => {
-    const userData = useUserDataContext();
+    // const userData = useUserDataContext();
     const [openNav, setOpenNav] = useState(false);
     const toggleNav = () => {
         setOpenNav(!openNav);
