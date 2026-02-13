@@ -1,6 +1,6 @@
 import {Button, Col, Container, Form, Row} from "design-react-kit"
 import {Link, useNavigate} from "react-router";
-import {type FormEvent, type FormEventHandler, useEffect} from "react";
+import {type FormEvent, type FormEventHandler} from "react";
 import {SuccessErrorAlert} from "../../components/SuccessErrorAlert.tsx";
 import {ValidatedInput} from "../../components/form/ValidatedInput.tsx";
 import {useUserDataContext} from "../../hooks/useUserDataContext.ts";
@@ -15,11 +15,9 @@ export const PasswordReset = () => {
     const errSuccLoad = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(errSuccLoad.setErr);
 
-    useEffect(() => {
-        if (userDataCtx.userData != null) {
-            navigate("/profile");
-        }
-    }, [navigate, userDataCtx]);
+    if (userDataCtx.userData != null) {
+        navigate("/profile");
+    }
 
     const onFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
         e.preventDefault();
