@@ -25,6 +25,10 @@ export interface AuthRequest extends Request {
     user?: UserToken;
 }
 
+const randomSleep = async ()=> {
+    await sleep(Math.random() * 1500 + 500);
+}
+
 export const middlewareAuthCheck = (requiredRole: RequiredRole): RequestHandler => async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     let token: string | undefined = undefined;
     //authorization header for future automation
@@ -67,6 +71,7 @@ authRouter.post("/login", async (req, res) => {
     }
     const {username, password} = req.body;
     const clientIp = req.ip != null ? req.ip : "unknown";
+    await randomSleep(); //attacchi timing per capire se il nome utente esiste
 
     const db = DatabaseManager.instance.db;
     const foundUser = await db.query.authUsers.findFirst({
@@ -171,19 +176,23 @@ authRouter.post("/register", async (req, res) => {
 const passwordResetTokenExpirationTimeMs = 1 * 60 * 60 * 1000; // 1 hour in ms
 const passwordResetTokenResendMailMs = 60 * 1000; // 1 minute in ms
 authRouter.post("/password-reset-request", async (req, res) => {
-    if (req.body == null || req.body.username == null) {
-        res.status(400).json({message: "Username è richiesto"});
+    if (req.body == null || req.body.email == null || req.body.email.trim() === "") {
+        res.status(400).json({message: "Email è richiesta"});
         return;
     }
+    await randomSleep(); //attacchi timing per capire se il nome utente esiste
 
-    const {username} = req.body;
+    const {email} = req.body;
 
     const db = DatabaseManager.instance.db;
     const foundUser = await db.query.authUsers.findFirst({
-        where: {OR: [{username: username}, {email: username}]},
+        where: {email: email},
     });
     if (foundUser == null) {
-        res.status(404).json({message: "Utente non trovato"});
+        //così non si sa se la mail è registrata
+        res.json({message: "Se l'account esiste allora la mail di reimpostazione password è stata inviata. Controlla la tua casella di posta elettronica."});
+        // res.status(404).json({message: "Utente non trovato"});
+
         return;
     }
     if (foundUser.disabled) {
@@ -196,7 +205,9 @@ authRouter.post("/password-reset-request", async (req, res) => {
         const tokeAge = Date.now() - foundUser.passwordResetTokenGenerationDate.getTime();
         //ripeti l'invio solo dopo un po' di tempo
         if (tokeAge < passwordResetTokenResendMailMs) {
-            res.json({message: "Password reset email already sent. Please wait a few minutes before requesting a new one."});
+            //così non si sa se la mail è registrata
+            res.json({message: "Se l'account esiste allora la mail di reimpostazione password è stata inviata. Controlla la tua casella di posta elettronica."});
+            // res.json({message: "La mail per il ripristino della password è stata già inviata. Aspetta qualche minuto prima di richiederne una nuova."});
             return;
         }
         //se il token è ancora valido, invia lo stesso (così l'utente non si confonde con le mail)
@@ -219,22 +230,22 @@ authRouter.post("/password-reset-request", async (req, res) => {
         html: `<p>Per reimpostare la passowrd clicca il seguente link:</p><p><a href="${resetLink}">${resetLink}</a></p><p>Se non hai richiesto la reimpostazione contatta un amministratore.</p>`,
     });
     if (!mailResult.success) {
-        res.status(500).json({message: "Failed to send password reset email", error: mailResult.err});
+        res.status(500).json({message: "Impossibile inviare la mail di reimpostazione password: " + mailResult.err});
         return;
     }
-    res.json({message: "Password reset email sent successfully"});
+    res.json({message: "Se l'account esiste allora la mail di reimpostazione password è stata inviata. Controlla la tua casella di posta elettronica."});
 });
 
 authRouter.post("/password-reset-execute", async (req, res) => {
     if (req.body == null || req.body.token == null || req.body.password == null) {
-        res.status(400).json({message: "Token and new password are required"});
+        res.status(400).json({message: "Token e password sono richiesti"});
         return;
     }
 
     const {token, password} = req.body;
 
     if (!checkPasswordStrength(password)) {
-        res.status(400).json({message: "Password must be at least 12 characters long"});
+        res.status(400).json({message: "La password deve contenere almeno 12 caratteri e tra cui una lettera maiuscola, una minuscola, un numero e un carattere speciale."});
         return;
     }
 
@@ -243,16 +254,16 @@ authRouter.post("/password-reset-execute", async (req, res) => {
         where: {passwordResetToken: token},
     });
     if (foundUser == null || foundUser.passwordResetTokenGenerationDate == null) {
-        res.status(400).json({message: "Invalid or expired reset token"});
+        res.status(400).json({message: "Token di ripristino password scaduto"});
         return;
     }
     const tokenAge = Date.now() - foundUser.passwordResetTokenGenerationDate.getTime();
     if (tokenAge > passwordResetTokenExpirationTimeMs) {
-        res.status(400).json({message: "Invalid or expired reset token"});
+        res.status(400).json({message: "Token di ripristino password scaduto"});
         return;
     }
     if (foundUser.disabled) {
-        res.status(403).json({message: "Account disabled"});
+        res.status(403).json({message: "Account disabilitato"});
         return;
     }
 
@@ -265,7 +276,7 @@ authRouter.post("/password-reset-execute", async (req, res) => {
         })
         .where(eq(authUsers.id, foundUser.id));
 
-    res.json({message: "Password reset successfully"});
+    res.json({message: "Password reimpostata con successo"});
 });
 
 

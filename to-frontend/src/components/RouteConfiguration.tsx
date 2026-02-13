@@ -1,4 +1,4 @@
-import {useUserDataContext} from "../hooks/useUserDataContext.tsx";
+import {useUserDataContext} from "../hooks/useUserDataContext.ts";
 import {Route, Routes} from "react-router";
 import {Home} from "../pages/Home.tsx";
 import {NotFound} from "../pages/NotFound.tsx";

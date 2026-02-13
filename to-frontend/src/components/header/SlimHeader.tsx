@@ -13,10 +13,10 @@ import {
     LinkListItem,
     ListItem
 } from "design-react-kit";
-import {useUserDataContext} from "../../hooks/useUserDataContext.tsx";
+import {useUserDataContext} from "../../hooks/useUserDataContext.ts";
 import {RouterDesignLink} from "../links/RouterDesignLink.tsx";
 import type {MouseEventHandler} from "react";
-import {fetchApiAsync} from "../../utils/fetching.ts";
+import {defaultGETRequestInit, fetchApiAsync} from "../../utils/fetching.ts";
 import type {DataMessage, UserData} from "../../utils/Types.ts";
 import {useNavigate} from "react-router";
 
@@ -26,16 +26,17 @@ const SlimHeader = () => {
 
     const onLogoutClick: MouseEventHandler<HTMLAnchorElement> = (e) => {
         e.preventDefault();
-        fetchApiAsync<DataMessage & {user: UserData}>("/auth/logout", {
-            method: "GET",
-            credentials: "include"
-        }, (data, error) => {
-            if (data != null) {
-                userData.setUserData(null);
-                navigate("/login");
-            }
-            if (error != null) {
-                console.log(error);
+        fetchApiAsync<DataMessage & { user: UserData }>({
+            urlFromApiRoot: "/auth/logout",
+            requestInit: {...defaultGETRequestInit},
+            callback: (data, error) => {
+                if (data != null) {
+                    userData.setUserData(null);
+                    navigate("/login");
+                }
+                if (error != null) {
+                    console.log(error);
+                }
             }
         });
     }

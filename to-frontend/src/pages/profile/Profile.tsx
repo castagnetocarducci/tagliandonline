@@ -1,5 +1,5 @@
 import {Container} from "design-react-kit";
-import {useUserDataContext} from "../../hooks/useUserDataContext.tsx";
+import {useUserDataContext} from "../../hooks/useUserDataContext.ts";
 import {useNavigate} from "react-router";
 import {useEffect} from "react";
 

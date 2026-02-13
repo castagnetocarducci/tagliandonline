@@ -1,15 +1,19 @@
 import {type ReactNode, useEffect, useState} from "react";
 import {UserDataContext} from "./UserDataContext.tsx";
 import {type UserData, type UserInfoApiResponse} from "../utils/Types.ts";
-import {fetchApiAsync} from "../utils/fetching.ts";
+import {defaultGETRequestInit, fetchApiAsync} from "../utils/fetching.ts";
 
 export const UserDataProvider = ({children}: { children: ReactNode })  => {
     const [userData, setUserData] = useState<UserData | null>(null);
 
     useEffect(() => {
-        const abort = fetchApiAsync<UserInfoApiResponse>("/auth/userInfo", {credentials: "include"}, (data) => {
-            if (data != null) {
-                setUserData(data.user);
+        const abort = fetchApiAsync<UserInfoApiResponse>({
+            urlFromApiRoot: "/auth/userInfo",
+            requestInit: {...defaultGETRequestInit},
+            callback: (data) => {
+                if (data != null) {
+                    setUserData(data.user);
+                }
             }
         });
         return abort;
