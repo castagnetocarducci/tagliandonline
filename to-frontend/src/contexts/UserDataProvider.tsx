@@ -1,9 +1,9 @@
-import {type ReactNode, useEffect, useState} from "react";
+import {type PropsWithChildren, useEffect, useState} from "react";
 import {UserDataContext} from "./UserDataContext.tsx";
 import {type UserData, type UserInfoApiResponse} from "../utils/Types.ts";
 import {defaultGETRequestInit, fetchApiAsync} from "../utils/fetching.ts";
 
-export const UserDataProvider = ({children}: { children: ReactNode })  => {
+export const UserDataProvider = ({children}: PropsWithChildren)  => {
     const [userData, setUserData] = useState<UserData | null>(null);
 
     useEffect(() => {

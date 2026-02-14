@@ -3,7 +3,7 @@ import {RouterDesignLink} from "./links/RouterDesignLink.tsx";
 
 export const CustomFooter = () => {
     return (
-        <footer className="it-footer">
+        <footer className="it-footer mt-5">
             <div className="it-footer-main">
                 <Container>
                     <section>
@@ -13,9 +13,7 @@ export const CustomFooter = () => {
                                     <RouterDesignLink to={"/"}>
                                         <Icon icon="/logo_tagliandonline_bianco.svg"/>
                                         <div className="it-brand-text">
-                                            <h2>
-                                                TagliandOnline
-                                            </h2>
+                                            <h2> TagliandOnline </h2>
                                         </div>
                                     </RouterDesignLink>
                                 </div>
@@ -65,9 +63,9 @@ export const CustomFooter = () => {
                                         <a className="p-2 text-white"
                                            href="https://github.com/castagnetocarducci/tagliandonline/"
                                            title="Codice sorgente su GitHub"
-                                           target="_blank" >
+                                           target="_blank">
                                             <Icon className="align-top" color="white"
-                                                  icon="it-github" size="sm" />
+                                                  icon="it-github" size="sm"/>
                                             <span className="visually-hidden"> GitHub </span>
                                         </a>
                                     </li>

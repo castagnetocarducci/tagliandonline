@@ -7,7 +7,7 @@ export const SuccessErrorAlert = ({err, succ}: { err: string | null, succ: strin
                 <Row className='mt-2 mb-4'>
                     <Col>
                         <Alert color='danger'>
-                            <strong>Attenzione</strong> {err}
+                            <strong>Attenzione</strong> {err.toString()}
                         </Alert>
                     </Col>
                 </Row>
@@ -17,7 +17,7 @@ export const SuccessErrorAlert = ({err, succ}: { err: string | null, succ: strin
                 <Row className='mt-2 mb-4'>
                     <Col>
                         <Alert color='success'>
-                            {succ}
+                            {succ.toString()}
                         </Alert>
                     </Col>
                 </Row>

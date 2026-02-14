@@ -1,11 +1,18 @@
 import {getApiUrl} from "./ConfigProvider.ts";
-import type {useErrSuccLoad} from "../hooks/useErrSuccLoad.ts";
 
-export type ErrSuccLoading = ReturnType<typeof useErrSuccLoad>;
+export type ErrSuccLoading = {
+    setLoading: (newValue: boolean) => void,
+    setErr: (newValue: string | null) => void,
+    setSucc: (newValue: string | null) => void
+};
 
-type FetchParametersCommon<Type> = {errSuccLoading?: ErrSuccLoading, requestInit?: RequestInit, callback?: (data: Type | null, error: Error | null) => void};
-type FetchAsyncParameters<Type> = FetchParametersCommon<Type> & {url: string};
-type FetchApiAsyncParameters<Type> = FetchParametersCommon<Type> & {urlFromApiRoot: string};
+type FetchParametersCommon<Type> = {
+    errSuccLoading?: ErrSuccLoading,
+    requestInit?: RequestInit,
+    callback?: (data: Type | null, error: Error | null) => void
+};
+type FetchAsyncParameters<Type> = FetchParametersCommon<Type> & { url: string };
+type FetchApiAsyncParameters<Type> = FetchParametersCommon<Type> & { urlFromApiRoot: string };
 
 export function fetchAsync<Type>({url, errSuccLoading, requestInit, callback}: FetchAsyncParameters<Type>) {
     const abortController = new AbortController();
@@ -16,36 +23,39 @@ export function fetchAsync<Type>({url, errSuccLoading, requestInit, callback}: F
         })
         .then(parsed => {
             errSuccLoading?.setLoading(false);
-            if (callback != null) {
-                if (parsed.status == 200) {
-                    errSuccLoading?.setErr(null);
-                    if (parsed.data != null && parsed.data.message != null) {
-                        errSuccLoading?.setSucc(parsed.data.message);
-                    }
-                    callback(parsed.data, null);
-                } else {
-                    let errMsg = "";
-                    if (parsed.data != null && parsed.data.message != null) {
-                        errMsg = parsed.data.message;
-                    }
-                    errSuccLoading?.setSucc(null);
-                    errSuccLoading?.setErr(errMsg);
-                    callback(null, new Error(errMsg));
+            if (parsed.status == 200) {
+                errSuccLoading?.setErr(null);
+                if (parsed.data != null && parsed.data.message != null) {
+                    errSuccLoading?.setSucc(parsed.data.message);
                 }
+                if (callback != null) callback(parsed.data, null);
+            } else {
+                let errMsg = "";
+                if (parsed.data != null && parsed.data.message != null) {
+                    errMsg = parsed.data.message;
+                }
+                errSuccLoading?.setSucc(null);
+                errSuccLoading?.setErr(errMsg);
+                if (callback != null) callback(null, new Error(errMsg));
             }
         })
         .catch(err => {
             errSuccLoading?.setLoading(false);
             errSuccLoading?.setSucc(null);
             errSuccLoading?.setErr(err);
-            if(callback != null) {callback(null, err)};
+            if (callback != null) callback(null, err);
         });
     return () => {
         abortController.abort()
     };
 }
 
-export function fetchApiAsync<Type>({urlFromApiRoot, errSuccLoading, requestInit, callback}: FetchApiAsyncParameters<Type>) {
+export function fetchApiAsync<Type>({
+                                        urlFromApiRoot,
+                                        errSuccLoading,
+                                        requestInit,
+                                        callback
+                                    }: FetchApiAsyncParameters<Type>) {
     return fetchAsync<Type>({url: getApiUrl() + urlFromApiRoot, errSuccLoading, requestInit, callback});
 }
 

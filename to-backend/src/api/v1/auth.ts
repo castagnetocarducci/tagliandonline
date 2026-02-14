@@ -29,7 +29,7 @@ const randomSleep = async ()=> {
     await sleep(Math.random() * 1500 + 500);
 }
 
-export const middlewareAuthCheck = (requiredRole: RequiredRole): RequestHandler => async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+export const middlewareAuthCheck = (requiredRole: RequiredRole[]): RequestHandler => async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     let token: string | undefined = undefined;
     //authorization header for future automation
     const authHeader = req.headers.authorization;
@@ -40,14 +40,14 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole): RequestHandler 
         token = req.cookies.authToken;
     }
     if (token == null) {
-        res.status(401).json({message: "Token missing"});
+        res.status(401).json({message: "Token non presente"});
         return;
     }
 
     try {
         const decoded = jwt.verify(token, ConfigProvider.instance.configs.jwtSecret) as UserToken;
-        if (requiredRole !== "any" && decoded.role !== "admin" && decoded.role !== requiredRole) {
-            res.status(403).json({message: "Insufficient permissions"});
+        if (!requiredRole.includes("any") && decoded.role !== "admin" && requiredRole.includes(decoded.role as RequiredRole)) {
+            res.status(403).json({message: "Permessi insufficienti"});
             return;
         }
         req.user = {
@@ -57,7 +57,7 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole): RequestHandler 
         };
         next();
     } catch (error) {
-        res.status(401).json({message: "Invalid or expired token"});
+        res.status(401).json({message: "Token non valido o scaduto"});
         return;
     }
 }
@@ -138,9 +138,9 @@ authRouter.get("/logout", async (req, res) => {
     res.json({message: "Logout avvenuto con successo"});
 });
 
-authRouter.get("/userInfo", middlewareAuthCheck("any"), async (req: AuthRequest, res) => {
+authRouter.get("/userInfo", middlewareAuthCheck(["any"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
-        res.status(401).json({message: "Unauthorized"});
+        res.status(401).json({message: "Non autorizzato"});
         return;
     }
 
@@ -150,12 +150,12 @@ authRouter.get("/userInfo", middlewareAuthCheck("any"), async (req: AuthRequest,
         with: {role: true},
     });
     if (authUser == null || authUser.role == null) {
-        res.status(500).json({message: "User not found in database. Please contact the administrator."});
+        res.status(500).json({message: "Utente non trovato nel database"});
         return;
     }
 
     res.json({
-        message: "User info retrieved successfully",
+        message: "Informazioni utente acquisite con successo",
         user: {
             id: authUser.id,
             username: req.user.username,
@@ -170,14 +170,14 @@ authRouter.get("/userInfo", middlewareAuthCheck("any"), async (req: AuthRequest,
 
 
 authRouter.post("/register", async (req, res) => {
-    res.send("Register not implemented yet.");
+    res.send("Register non è ancora implementato.");
 });
 
 const passwordResetTokenExpirationTimeMs = 1 * 60 * 60 * 1000; // 1 hour in ms
 const passwordResetTokenResendMailMs = 60 * 1000; // 1 minute in ms
 authRouter.post("/password-reset-request", async (req, res) => {
     if (req.body == null || req.body.email == null || req.body.email.trim() === "") {
-        res.status(400).json({message: "Email è richiesta"});
+        res.status(400).json({message: "L'email è richiesta"});
         return;
     }
     await randomSleep(); //attacchi timing per capire se il nome utente esiste
@@ -222,7 +222,7 @@ authRouter.post("/password-reset-request", async (req, res) => {
     }).where(eq(authUsers.id, foundUser.id));
 
     // send email
-    const resetLink = `${ConfigProvider.instance.configs.baseUrl}/password-reset?token=${resetToken}`;
+    const resetLink = `${ConfigProvider.instance.configs.baseUrl}/password-reset/${resetToken}`;
     const mailResult = await SmtpManager.instance.sendMail({
         from: ConfigProvider.instance.configs.smtpUser,
         to: foundUser.email,
@@ -236,8 +236,8 @@ authRouter.post("/password-reset-request", async (req, res) => {
     res.json({message: "Se l'account esiste allora la mail di reimpostazione password è stata inviata. Controlla la tua casella di posta elettronica."});
 });
 
-authRouter.post("/password-reset-execute", async (req, res) => {
-    if (req.body == null || req.body.token == null || req.body.password == null) {
+authRouter.post("/password-reset-execute-token", async (req, res) => {
+    if (req.body == null || req.body.token == null || req.body.password == null || req.body.token.trim() === "" || req.body.password.trim() === "") {
         res.status(400).json({message: "Token e password sono richiesti"});
         return;
     }
@@ -279,5 +279,47 @@ authRouter.post("/password-reset-execute", async (req, res) => {
     res.json({message: "Password reimpostata con successo"});
 });
 
+authRouter.post("/password-reset-execute-authenticated", middlewareAuthCheck(["any"]), async (req: AuthRequest, res) => {
+    if (req.body == null || req.body.password == null || req.body.password.trim() === "") {
+        res.status(400).json({message: "La password è richiesta"});
+        return;
+    }
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+
+    const {password} = req.body;
+
+    if (!checkPasswordStrength(password)) {
+        res.status(400).json({message: "La password deve contenere almeno 12 caratteri e tra cui una lettera maiuscola, una minuscola, un numero e un carattere speciale."});
+        return;
+    }
+
+    const db = DatabaseManager.instance.db;
+    const authUser = await db.query.authUsers.findFirst({
+        where: {id: req.user.id}
+    });
+
+    if (authUser == null) {
+        res.status(400).json({message: "Utente non trovato"});
+        return;
+    }
+    if (authUser.disabled) {
+        res.status(403).json({message: "Account disabilitato"});
+        return;
+    }
+
+    const newPasswordHash = await generatePasswordHash(password);
+    await db.update(authUsers)
+        .set({
+            passwordHash: newPasswordHash,
+            lastPasswordResetDate: new Date(),
+            passwordResetToken: generatePasswordResetToken(), // rimpiazza il vecchio token per sicurezza
+        })
+        .where(eq(authUsers.id, authUser.id));
+
+    res.json({message: "Password reimpostata con successo"});
+});
 
 
