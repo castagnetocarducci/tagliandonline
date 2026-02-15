@@ -21,7 +21,7 @@ import type {DataMessage, UserData} from "../../utils/Types.ts";
 import {useNavigate} from "react-router";
 
 const SlimHeader = () => {
-    const userData = useUserDataContext();
+    const userDataCtx = useUserDataContext();
     const navigate = useNavigate();
 
     const onLogoutClick: MouseEventHandler<HTMLAnchorElement> = (e) => {
@@ -31,7 +31,7 @@ const SlimHeader = () => {
             requestInit: {...defaultGETRequestInit},
             callback: (data, error) => {
                 if (data != null) {
-                    userData.setUserData(null);
+                    userDataCtx.setUserData(null);
                     navigate("/login");
                 }
                 if (error != null) {
@@ -59,16 +59,16 @@ const SlimHeader = () => {
                 </HeaderLinkZone>
 
                 <HeaderRightZone>
-                    {userData.userData != null &&
+                    {userDataCtx.userData != null &&
                         <Dropdown>
                             <DropdownToggle caret className={"btn-icon btn-full btn btn-primary"}>
                                 <AvatarIcon size={"sm"}>
                                     <p aria-hidden={true}>{
-                                        (userData.userData.firstName.length > 0 ? userData.userData.firstName[0].toUpperCase() : "")
-                                        + (userData.userData.lastName.length > 0 ? userData.userData.lastName[0].toUpperCase() : "")}</p>
+                                        (userDataCtx.userData.firstName.length > 0 ? userDataCtx.userData.firstName[0].toUpperCase() : "")
+                                        + (userDataCtx.userData.lastName.length > 0 ? userDataCtx.userData.lastName[0].toUpperCase() : "")}</p>
                                 </AvatarIcon>
                                 <span className={"ms-2 me-1"}
-                                      aria-hidden={true}>{userData.userData.firstName + " " + userData.userData.lastName}</span>
+                                      aria-hidden={true}>{userDataCtx.userData.firstName + " " + userDataCtx.userData.lastName}</span>
                             </DropdownToggle>
                             <DropdownMenu>
                                 <LinkList>
@@ -86,7 +86,7 @@ const SlimHeader = () => {
 
                     }
 
-                    {userData.userData == null &&
+                    {userDataCtx.userData == null &&
                         <RouterDesignLink to={"/login"} className={"btn-icon btn-full btn btn-primary"}>
                             <span className="rounded-icon"><Icon color="primary" icon="it-user"/></span>
                             <span className="d-none d-lg-block">Accedi all'area personale</span>

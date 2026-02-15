@@ -17,6 +17,7 @@ export type UserToken = {
     id: number;
     username: string;
     role: string;
+    createdAt: string;
 }
 
 export type RequiredRole = "admin" | "operatore" | "vigile" | "any";
@@ -50,13 +51,33 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole[]): RequestHandle
             res.status(403).json({message: "Permessi insufficienti"});
             return;
         }
+        const db = DatabaseManager.instance.db;
+        try {
+            // TODO: meglio fare una cache in memoria per questa casistica per diminuire le query al db
+            const authUser = await db.query.authUsers.findFirst({where: {id: decoded.id}});
+            if (authUser == null || authUser.disabled) {
+                throw new Error("Utente disabilitato");
+            }
+            // i token creati prima della modifica della password sono tutti immediatamente invalidati
+            if (authUser.lastPasswordResetDate != null && new Date(decoded.createdAt) < authUser.lastPasswordResetDate) {
+                throw new Error("Token scaduto.");
+            }
+        } catch (error) {
+            throw new Error("Errore nel recupero dell'utente dal database");
+        }
         req.user = {
             id: decoded.id,
             username: decoded.username,
             role: decoded.role,
+            createdAt: decoded.createdAt,
         };
         next();
     } catch (error) {
+        res.clearCookie("authToken", {
+            httpOnly: true,
+            secure: ConfigProvider.instance.configs.baseUrl.startsWith("https"),
+            sameSite: "strict",
+        });
         res.status(401).json({message: "Token non valido o scaduto"});
         return;
     }
@@ -98,6 +119,7 @@ authRouter.post("/login", async (req, res) => {
         id: foundUser.id,
         username: foundUser.username,
         role: foundUser.role.description,
+        createdAt: new Date().toISOString()
     };
     const token = jwt.sign(
         userData,

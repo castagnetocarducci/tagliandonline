@@ -4,11 +4,12 @@ import {useErrSuccLoad} from "../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../hooks/useValidateFormInput.ts";
 import {type FormEvent, type FormEventHandler, useEffect, useState} from "react";
 import {defaultPOSTRequestInit, fetchApiAsync} from "../../utils/fetching.ts";
-import type {DataMessage, UserData} from "../../utils/Types.ts";
+import type {DataMessage} from "../../utils/Types.ts";
 import {Button, Col, Container, Form, Row} from "design-react-kit";
 import {ValidatedInput} from "../../components/form/ValidatedInput.tsx";
 import {SuccessErrorAlert} from "../../components/SuccessErrorAlert.tsx";
 import {checkPasswordStrength} from "../../utils/PasswordCheck.ts";
+import {sleep} from "../../utils/CommonFunctions.ts";
 
 
 export const PasswordResetExecute = () => {
@@ -35,7 +36,7 @@ export const PasswordResetExecute = () => {
         }
         const formValues = getValueObject();
         if (urlParams.token != null) {
-            fetchApiAsync<DataMessage & { user: UserData }>({
+            fetchApiAsync<DataMessage>({
                 urlFromApiRoot: "/auth/password-reset-execute-token",
                 errSuccLoading: {setErr, setSucc, setLoading},
                 requestInit: {
@@ -47,7 +48,7 @@ export const PasswordResetExecute = () => {
                 }
             });
         } else if (userDataCtx.userData != null) {
-            fetchApiAsync<DataMessage & { user: UserData }>({
+            fetchApiAsync<DataMessage>({
                 urlFromApiRoot: "/auth/password-reset-execute-authenticated",
                 errSuccLoading: {setErr, setSucc, setLoading},
                 requestInit: {
@@ -55,6 +56,13 @@ export const PasswordResetExecute = () => {
                     body: JSON.stringify({
                         ...formValues
                     })
+                },
+                callback: async (data) => {
+                    if (data != null) {
+                        await sleep(750);
+                        userDataCtx.setUserData(null);
+                        navigate("/login");
+                    }
                 }
             });
         } else {
