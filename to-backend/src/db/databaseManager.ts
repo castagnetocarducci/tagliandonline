@@ -1,9 +1,9 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import {drizzle} from "drizzle-orm/node-postgres";
 import {ConfigProvider} from "../configProvider.ts";
 import {relations} from "./relations.ts";
 import {populateDefaultData} from "./defaultData.ts";
-import {authUsers} from "./schema.ts";
-import {eq} from "drizzle-orm";
+import {authUsers, roles} from "./schema.ts";
+import {and, eq, or} from "drizzle-orm";
 import {generatePasswordHash} from "../utils/pswHashing.ts";
 
 /**
@@ -29,27 +29,14 @@ export class DatabaseManager {
         const replacingAdminPassword = ConfigProvider.instance.configs.replacingAdminPassword;
         if (replacingAdminPassword != null && replacingAdminPassword.length > 0) {
             const adminPasswordHash = await generatePasswordHash(replacingAdminPassword);
-            await this.db.update(authUsers).set({passwordHash: adminPasswordHash}).where(eq(authUsers.username, "admin"));
+            await this.db.update(authUsers).set({
+                passwordHash: adminPasswordHash,
+                disabled: false,
+                lastPasswordResetDate: new Date(),
+                roleId: roles.id,
+            }).from(roles).where(and(or(eq(authUsers.id, 1), eq(authUsers.username, "admin")), eq(roles.description, "admin")));
             console.log("Admin password updated");
         }
-        //TODO: maybe check admin role and reset it to admin
     }
-
-    // public async connect() {
-    //     try {
-    //         // await this.#sequelize.authenticate();
-    //     } catch (e) {
-    //         console.error("Database connection failed: ", e);
-    //     }
-    // }
-    //
-    // /**
-    //  * chiamato automaticamente alla chiusura dell'applicazione da Sequelize.
-    //  */
-    // public async disconnect() {
-    //     // await this.#sequelize.close();
-    // }
-
-
 
 }

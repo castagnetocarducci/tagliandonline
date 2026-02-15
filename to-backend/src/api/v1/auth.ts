@@ -47,14 +47,10 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole[]): RequestHandle
 
     try {
         const decoded = jwt.verify(token, ConfigProvider.instance.configs.jwtSecret) as UserToken;
-        if (!requiredRole.includes("any") && decoded.role !== "admin" && requiredRole.includes(decoded.role as RequiredRole)) {
-            res.status(403).json({message: "Permessi insufficienti"});
-            return;
-        }
         const db = DatabaseManager.instance.db;
         try {
             // TODO: meglio fare una cache in memoria per questa casistica per diminuire le query al db
-            const authUser = await db.query.authUsers.findFirst({where: {id: decoded.id}});
+            const authUser = await db.query.authUsers.findFirst({where: {id: decoded.id}, with: {role: true}});
             if (authUser == null || authUser.disabled) {
                 throw new Error("Utente disabilitato");
             }
@@ -62,16 +58,26 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole[]): RequestHandle
             if (authUser.lastPasswordResetDate != null && new Date(decoded.createdAt) < authUser.lastPasswordResetDate) {
                 throw new Error("Token scaduto.");
             }
+            if (authUser.role == null) {
+                throw new Error("Ruolo utente non trovato");
+            }
+
+            if (!requiredRole.includes("any") && authUser.role.description !== "admin" && !requiredRole.includes(authUser.role.description as RequiredRole)) {
+                res.status(403).json({message: "Permessi insufficienti"});
+                return;
+            }
+
+            req.user = {
+                id: decoded.id,
+                username: decoded.username,
+                role: decoded.role,
+                createdAt: decoded.createdAt,
+            };
+            next();
         } catch (error) {
             throw new Error("Errore nel recupero dell'utente dal database");
         }
-        req.user = {
-            id: decoded.id,
-            username: decoded.username,
-            role: decoded.role,
-            createdAt: decoded.createdAt,
-        };
-        next();
+
     } catch (error) {
         res.clearCookie("authToken", {
             httpOnly: true,
