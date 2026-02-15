@@ -34,7 +34,7 @@ export const PasswordResetExecute = () => {
             return;
         }
         const formValues = getValueObject();
-        if (userDataCtx.userData == null) {
+        if (urlParams.token != null) {
             fetchApiAsync<DataMessage & { user: UserData }>({
                 urlFromApiRoot: "/auth/password-reset-execute-token",
                 errSuccLoading: {setErr, setSucc, setLoading},
@@ -46,7 +46,7 @@ export const PasswordResetExecute = () => {
                     })
                 }
             });
-        } else {
+        } else if (userDataCtx.userData != null) {
             fetchApiAsync<DataMessage & { user: UserData }>({
                 urlFromApiRoot: "/auth/password-reset-execute-authenticated",
                 errSuccLoading: {setErr, setSucc, setLoading},
@@ -57,6 +57,8 @@ export const PasswordResetExecute = () => {
                     })
                 }
             });
+        } else {
+            setErr("Tentativo di recupero non riuscito. Ricarica la pagina.")
         }
 
     }

@@ -12,6 +12,7 @@ import {PasswordResetRequest} from "../pages/profile/PasswordResetRequest.tsx";
 import {PasswordResetExecute} from "../pages/profile/PasswordResetExecute.tsx";
 import {useUserDataContext} from "../hooks/useUserDataContext.ts";
 import {EditUser} from "../pages/users/EditUser.tsx";
+import {NewUser} from "../pages/users/NewUser.tsx";
 
 export const RouteConfiguration = () => {
     const userDataCtx = useUserDataContext()
@@ -31,7 +32,17 @@ export const RouteConfiguration = () => {
             {userDataCtx.userData && (userDataCtx.userData.role === "admin") && (
                 <>
                     <Route path="/users" element={<Users/>}/>
+                    <Route path="/users/new" element={<NewUser/>}/>
                     <Route path="/users/:userID" element={<EditUser/>}/>
+                </>
+            )}
+            {userDataCtx.userData == null && (
+                <>
+                    <Route path="/applications/*" element={<Login/>}/>
+                    <Route path="/inspections/*" element={<Login/>}/>
+                    <Route path="/vouchers/*" element={<Login/>}/>
+                    <Route path="/permits/*" element={<Login/>}/>
+                    <Route path="/users/*" element={<Login/>}/>
                 </>
             )}
             <Route path="/profile/*" element={<Profile/>}/>

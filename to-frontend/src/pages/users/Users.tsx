@@ -39,6 +39,15 @@ export const Users = () => {
         <Container>
             <h1>Gestione utenti</h1>
             <Col lg={12}>
+                <Col md={3}>
+                    <Button onClick={() => navigate(`/users/new`)}
+                            color={"primary"} icon={true} title={"Aggiungi nuovo utente"}>
+                        <span className={"rounded-icon me-2"}>
+                        <Icon icon={"it-plus"} />
+                            </span>
+                        Nuovo
+                    </Button>
+                </Col>
                 <Table>
                     <thead>
                     <tr>

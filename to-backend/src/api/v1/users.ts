@@ -3,6 +3,9 @@ import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {Router} from "express";
 import {authUsers, roles} from "../../db/schema.ts";
 import {and, eq} from "drizzle-orm";
+import {generatePasswordResetToken} from "../../utils/pswHashing.ts";
+import {ConfigProvider} from "../../configProvider.ts";
+import {SmtpManager} from "../../smtpManager.ts";
 
 
 type UserListEntry = {
@@ -183,3 +186,126 @@ usersRouter.post("/edit/:userID", middlewareAuthCheck(["admin"]), async (req: Au
     });
 });
 
+
+usersRouter.post("/new", middlewareAuthCheck(["admin"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+
+    if (req.body == null ||
+        req.body.username == null || req.body.username.trim() === "" ||
+        req.body.firstName == null || req.body.firstName.trim() === "" ||
+        req.body.lastName == null || req.body.lastName.trim() === "" ||
+        req.body.cf == null || req.body.cf.trim() === "" ||
+        req.body.role == null || req.body.role.trim() === "" ||
+        req.body.disabled == null || req.body.disabled.trim() === "" ||
+        req.body.email == null || req.body.email.trim() === ""
+    ) {
+        res.status(400).json({message: "Richiesta con campi mancanti"});
+        return;
+    }
+
+    const {username, firstName, lastName, cf, role, disabled, email} = req.body;
+
+    const db = DatabaseManager.instance.db;
+    const roleDB = await db.query.roles.findFirst({where: {description: role}});
+    if (roleDB == null) {
+        res.status(400).json({message: "Ruolo non trovato " + role + ": " + roleDB});
+        return;
+    }
+    try {
+        const insertResult = await db.insert(authUsers).values({
+            cf: cf,
+            firstname: firstName,
+            lastname: lastName,
+            email: email,
+            username: username,
+            passwordHash: "",
+            roleId: roleDB.id,
+        });
+
+        if (insertResult == null) {
+            res.status(500).json({message: "Inserimento non riuscito"});
+            return;
+        }
+        if (insertResult.rowCount !== 1) {
+            res.status(500).json({message: "Inserimento non riuscito (righe: " + insertResult.rowCount + "): " + insertResult.command});
+            return;
+        }
+    } catch (e) {
+        res.status(500).json({message: "Errore durante l'inserimento: " + e});
+        return;
+    }
+
+
+    const foundUser = await db.query.authUsers.findFirst({
+        where: {email: email},
+    });
+    if (foundUser == null) {
+        //così non si sa se la mail è registrata
+        res.status(404).json({message: "Utente inserito ma non trovato"});
+        return;
+    }
+    if (foundUser.disabled) {
+        res.status(403).json({message: "Account disabilitato"});
+        return;
+    }
+
+    let resetToken = generatePasswordResetToken();
+
+    await db.update(authUsers).set({
+        passwordResetToken: resetToken,
+        passwordResetTokenGenerationDate: new Date(),
+    }).where(eq(authUsers.id, foundUser.id));
+
+    // send email
+    const resetLink = `${ConfigProvider.instance.configs.baseUrl}/password-reset/${resetToken}`;
+    const mailResult = await SmtpManager.instance.sendMail({
+        from: ConfigProvider.instance.configs.smtpUser,
+        to: foundUser.email,
+        subject: "Reimpostazione password - TagliandOnline",
+        html: `<p>Per reimpostare la passowrd clicca il seguente link:</p><p><a href="${resetLink}">${resetLink}</a></p><p>Se non hai richiesto la reimpostazione contatta un amministratore.</p>`,
+    });
+    if (!mailResult.success) {
+        res.status(500).json({message: "Impossibile inviare la mail di reimpostazione password: " + mailResult.err});
+        return;
+    }
+    res.json({message: "Utente inserito con successo. La mail di recupero della password è stata inviata all'indirizzo."});
+});
+
+
+// NON CONSENTITO: invece si disabilitano gli utenti (sono inclusi in ispezioni e altro)
+// usersRouter.get("/delete/:userID", middlewareAuthCheck(["admin"]), async (req: AuthRequest, res) => {
+//     if (req.user == null) {
+//         res.status(401).json({message: "Non autorizzato"});
+//         return;
+//     }
+//     if (req.params.userID == null || req.params.userID == "") {
+//         res.status(400).json({message: "ID utente non valido"});
+//         return;
+//     }
+//     let userID = 0;
+//     try {
+//         userID = parseInt(req.params.userID as string);
+//     } catch (e) {
+//         res.status(400).json({message: "ID utente non valido"});
+//         return;
+//     }
+//
+//     const db = DatabaseManager.instance.db;
+//     const deleteResult = await db.delete(authUsers).where(eq(authUsers.id, userID));
+//     if (deleteResult == null) {
+//         res.status(500).json({message: "Eliminazione non riuscita"});
+//         return;
+//     }
+//     if (deleteResult.rowCount !== 1) {
+//         res.status(500).json({message: "Eliminazione non riuscita (righe: " + deleteResult.rowCount + "): " + deleteResult.command});
+//         return;
+//     }
+//
+//     res.json({
+//         message: "Utente eliminato con successo",
+//     });
+// });
+//

@@ -96,7 +96,7 @@ export const authUsers = toSchema.table("authUsers", {
     cf: commonColumns.cfVarchar(),
     firstname: commonColumns.firstnameVarchar(),
     lastname: commonColumns.lastnameVarchar(),
-    email: varchar({length: 128}).notNull(),
+    email: varchar({length: 128}).notNull().unique(),
     username: varchar({length: 32}).notNull().unique(),
     passwordHash: varchar({length: 60}).notNull(), //length of bcrypt hash
     lastPasswordResetDate: commonColumns.createdAt(),
@@ -110,7 +110,7 @@ export const authUsers = toSchema.table("authUsers", {
 
 export const roles = toSchema.table("roles", {
     id: commonColumns.idAutoIncr(),
-    description: varchar({length: 32}).notNull(),
+    description: varchar({length: 32}).notNull().unique(),
 })
 
 export const loginHistory = toSchema.table("loginHistory", {

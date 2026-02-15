@@ -22,9 +22,6 @@ export const populateDefaultData = async () => {
         return;
     }
 
-    await db.insert(applicationOutcome).values([{description: "presentata"}, {description: "accettata"}, {description: "rifiutata"}, {description: "annullata"}, {description: "in attesa"}, {description: "in corso"}, {description: "altro"}]);
-    await db.insert(applicationTypes).values([{description: "nuovo"}, {description: "modifica"}, {description: "smarrimento"}, {description: "rinnovo"}, {description: "altro"}]);
-
     const adminRole = await db.insert(roles).values({description: "admin"}).returning();
     if (adminRole.length != 1 || adminRole[0] == null) {
         throw new Error("Error inserting admin role: " + adminRole.length + " rows returned");
@@ -39,6 +36,9 @@ export const populateDefaultData = async () => {
         roleId: adminRole[0].id,
     });
     await db.insert(roles).values([{description: "operatore"}, {description: "vigile"}]);
+
+    await db.insert(applicationOutcome).values([{description: "presentata"}, {description: "accettata"}, {description: "rifiutata"}, {description: "annullata"}, {description: "in attesa"}, {description: "in corso"}, {description: "altro"}]);
+    await db.insert(applicationTypes).values([{description: "nuovo"}, {description: "modifica"}, {description: "smarrimento"}, {description: "rinnovo"}, {description: "altro"}]);
 
     await db.insert(emailTemplates).values([
         {

@@ -74,7 +74,7 @@ export const EditUser = () => {
             return;
         }
         const formValues = getValueObject();
-        fetchApiAsync<DataMessage & { user: UserData }>({
+        fetchApiAsync<DataMessage>({
             urlFromApiRoot: "/users/edit/" + urlParams.userID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
