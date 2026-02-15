@@ -1,6 +1,6 @@
 import {type NextFunction, type Request, type RequestHandler, type Response, Router} from "express";
 import jwt from "jsonwebtoken";
-import {DatabaseManager} from "../../db/databaseManager.ts";
+import {type AuthUserCache, DatabaseManager} from "../../db/databaseManager.ts";
 import {authUsers, loginHistory} from "../../db/schema.ts";
 import {ConfigProvider} from "../../configProvider.ts";
 import {
@@ -30,6 +30,8 @@ const randomSleep = async ()=> {
     await sleep(Math.random() * 1500 + 500);
 }
 
+
+
 export const middlewareAuthCheck = (requiredRole: RequiredRole[]): RequestHandler => async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     let token: string | undefined = undefined;
     //authorization header for future automation
@@ -47,11 +49,18 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole[]): RequestHandle
 
     try {
         const decoded = jwt.verify(token, ConfigProvider.instance.configs.jwtSecret) as UserToken;
-        const db = DatabaseManager.instance.db;
         try {
-            // TODO: meglio fare una cache in memoria per questa casistica per diminuire le query al db
-            const authUser = await db.query.authUsers.findFirst({where: {id: decoded.id}, with: {role: true}});
-            if (authUser == null || authUser.disabled) {
+            let authUser: AuthUserCache | null = null;
+            for (const u of DatabaseManager.instance.authUsersCache) {
+                if (u.id === decoded.id) {
+                    authUser = u;
+                    break;
+                }
+            }
+            if (authUser == null) {
+                throw new Error("Utente disabilitato");
+            }
+            if (authUser.disabled) {
                 throw new Error("Utente disabilitato");
             }
             // i token creati prima della modifica della password sono tutti immediatamente invalidati
@@ -61,8 +70,7 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole[]): RequestHandle
             if (authUser.role == null) {
                 throw new Error("Ruolo utente non trovato");
             }
-
-            if (!requiredRole.includes("any") && authUser.role.description !== "admin" && !requiredRole.includes(authUser.role.description as RequiredRole)) {
+            if (!requiredRole.includes("any") && authUser.role !== "admin" && !requiredRole.includes(authUser.role as RequiredRole)) {
                 res.status(403).json({message: "Permessi insufficienti"});
                 return;
             }
@@ -196,11 +204,6 @@ authRouter.get("/user-info", middlewareAuthCheck(["any"]), async (req: AuthReque
     });
 });
 
-
-authRouter.post("/register", async (req, res) => {
-    res.send("Register non è ancora implementato.");
-});
-
 const passwordResetTokenExpirationTimeMs = 1 * 60 * 60 * 1000; // 1 hour in ms
 const passwordResetTokenResendMailMs = 60 * 1000; // 1 minute in ms
 authRouter.post("/password-reset-request", async (req, res) => {
@@ -261,6 +264,7 @@ authRouter.post("/password-reset-request", async (req, res) => {
         res.status(500).json({message: "Impossibile inviare la mail di reimpostazione password: " + mailResult.err});
         return;
     }
+
     res.json({message: "Se l'account esiste allora la mail di reimpostazione password è stata inviata. Controlla la tua casella di posta elettronica."});
 });
 
@@ -304,6 +308,7 @@ authRouter.post("/password-reset-execute-token", async (req, res) => {
         })
         .where(eq(authUsers.id, foundUser.id));
 
+    await DatabaseManager.instance.loadAuthUsers();
     res.json({message: "Password reimpostata con successo"});
 });
 
@@ -347,6 +352,7 @@ authRouter.post("/password-reset-execute-authenticated", middlewareAuthCheck(["a
         })
         .where(eq(authUsers.id, authUser.id));
 
+    await DatabaseManager.instance.loadAuthUsers();
     res.json({message: "Password reimpostata con successo"});
 });
 

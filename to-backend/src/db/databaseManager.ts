@@ -5,6 +5,17 @@ import {populateDefaultData} from "./defaultData.ts";
 import {authUsers, roles} from "./schema.ts";
 import {and, eq, or} from "drizzle-orm";
 import {generatePasswordHash} from "../utils/pswHashing.ts";
+import type {NextFunction, RequestHandler, Response} from "express";
+import jwt from "jsonwebtoken";
+import type {AuthRequest, RequiredRole} from "../api/v1/auth.ts";
+
+export type AuthUserCache = {
+    id: number,
+    username: string,
+    role: string | null,
+    disabled: boolean,
+    lastPasswordResetDate: Date,
+}
 
 /**
  * singleton
@@ -12,6 +23,8 @@ import {generatePasswordHash} from "../utils/pswHashing.ts";
 export class DatabaseManager {
     static #instance: DatabaseManager;
     db;
+    authUsersCache: AuthUserCache[] = []
+
 
     public static get instance(): DatabaseManager {
         if (!DatabaseManager.#instance) {
@@ -36,6 +49,26 @@ export class DatabaseManager {
                 roleId: roles.id,
             }).from(roles).where(and(or(eq(authUsers.id, 1), eq(authUsers.username, "admin")), eq(roles.description, "admin")));
             console.log("Admin password updated");
+        }
+        await this.loadAuthUsers();
+    }
+
+    public loadAuthUsers = async () => {
+        const db = DatabaseManager.instance.db;
+        try {
+            const authUsers = await db.query.authUsers.findMany({with: {role: true}});
+            if (authUsers == null || authUsers.length === 0) {
+                throw new Error("Nessun utente trovato nel database");
+            }
+            this.authUsersCache = [];
+            for (const u of authUsers) {
+                const userCache = {id: u.id, username: u.username, role: u.role == null ? null : u.role.description, disabled: u.disabled, lastPasswordResetDate: u.lastPasswordResetDate}
+                this.authUsersCache.push(userCache);
+            }
+
+        } catch (error) {
+            console.error("Errore nel recupero degli utenti dal database", error);
+            return;
         }
     }
 

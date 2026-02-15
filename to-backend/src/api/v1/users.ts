@@ -181,6 +181,7 @@ usersRouter.post("/edit/:userID", middlewareAuthCheck(["admin"]), async (req: Au
         return;
     }
 
+    await DatabaseManager.instance.loadAuthUsers();
     res.json({
         message: "Utente aggiornato con successo",
     });
@@ -271,6 +272,8 @@ usersRouter.post("/new", middlewareAuthCheck(["admin"]), async (req: AuthRequest
         res.status(500).json({message: "Impossibile inviare la mail di reimpostazione password: " + mailResult.err});
         return;
     }
+
+    await DatabaseManager.instance.loadAuthUsers();
     res.json({message: "Utente inserito con successo. La mail di recupero della password è stata inviata all'indirizzo."});
 });
 
@@ -304,6 +307,7 @@ usersRouter.post("/new", middlewareAuthCheck(["admin"]), async (req: AuthRequest
 //         return;
 //     }
 //
+//     await DatabaseManager.instance.loadAuthUsers();
 //     res.json({
 //         message: "Utente eliminato con successo",
 //     });
