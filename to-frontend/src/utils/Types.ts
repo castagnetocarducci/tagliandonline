@@ -21,17 +21,38 @@ export type UserListEntry = {
     firstName: string;
     lastName: string;
     email: string;
-    cf: string | null;
     role: string;
-    disabled: boolean,
-    lastPasswordResetDate: string,
-    createdAt: string,
-    updatedAt: string,
+    disabled: boolean
 }
 
 export type UserListEntryApiResponse = {
     message: string,
     usersList: UserListEntry[]
+}
+
+export type UserLoginHistoryEntry = {
+    clientIp: string,
+    createdAt: string
+}
+
+export type UserDetails = {
+    id: number,
+    username: string,
+    firstName: string,
+    lastName: string,
+    email: string,
+    cf: string,
+    role: string,
+    disabled: boolean
+    lastPasswordResetDate: string,
+    createdAt: string,
+    updatedAt: string,
+    latestLoginHistory: UserLoginHistoryEntry[],
+}
+
+export type UserDetailsApiResponse = {
+    message: string,
+    user: UserDetails
 }
 
 export type UserDataContextType = {

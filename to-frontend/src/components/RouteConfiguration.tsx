@@ -3,7 +3,7 @@ import {Home} from "../pages/Home.tsx";
 import {NotFound} from "../pages/NotFound.tsx";
 import {Applications} from "../pages/Applications.tsx";
 import {Inspections} from "../pages/Inspections.tsx";
-import {Users} from "../pages/Users.tsx";
+import {Users} from "../pages/users/Users.tsx";
 import {Vouchers} from "../pages/Vouchers.tsx";
 import {Profile} from "../pages/profile/Profile.tsx";
 import {Permits} from "../pages/Permits.tsx";
@@ -11,6 +11,7 @@ import {Login} from "../pages/profile/Login.tsx";
 import {PasswordResetRequest} from "../pages/profile/PasswordResetRequest.tsx";
 import {PasswordResetExecute} from "../pages/profile/PasswordResetExecute.tsx";
 import {useUserDataContext} from "../hooks/useUserDataContext.ts";
+import {EditUser} from "../pages/users/EditUser.tsx";
 
 export const RouteConfiguration = () => {
     const userDataCtx = useUserDataContext()
@@ -29,7 +30,8 @@ export const RouteConfiguration = () => {
             )}
             {userDataCtx.userData && (userDataCtx.userData.role === "admin") && (
                 <>
-                    <Route path="/users/*" element={<Users/>}/>
+                    <Route path="/users" element={<Users/>}/>
+                    <Route path="/users/:userID" element={<EditUser/>}/>
                 </>
             )}
             <Route path="/profile/*" element={<Profile/>}/>

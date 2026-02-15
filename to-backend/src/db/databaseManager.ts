@@ -32,6 +32,7 @@ export class DatabaseManager {
             await this.db.update(authUsers).set({passwordHash: adminPasswordHash}).where(eq(authUsers.username, "admin"));
             console.log("Admin password updated");
         }
+        //TODO: maybe check admin role and reset it to admin
     }
 
     // public async connect() {

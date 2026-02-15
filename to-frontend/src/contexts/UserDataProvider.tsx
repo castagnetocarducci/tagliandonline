@@ -8,7 +8,7 @@ export const UserDataProvider = ({children}: PropsWithChildren)  => {
 
     useEffect(() => {
         const abort = fetchApiAsync<UserInfoApiResponse>({
-            urlFromApiRoot: "/auth/userInfo",
+            urlFromApiRoot: "/auth/user-info",
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
                 if (data != null) {

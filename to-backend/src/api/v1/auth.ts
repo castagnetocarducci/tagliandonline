@@ -138,7 +138,7 @@ authRouter.get("/logout", async (req, res) => {
     res.json({message: "Logout avvenuto con successo"});
 });
 
-authRouter.get("/userInfo", middlewareAuthCheck(["any"]), async (req: AuthRequest, res) => {
+authRouter.get("/user-info", middlewareAuthCheck(["any"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
         return;

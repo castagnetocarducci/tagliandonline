@@ -1,4 +1,4 @@
-import {Input, type InputProps} from "design-react-kit"
+import {Input, type InputProps, Label} from "design-react-kit"
 import type {SetValidationFunc, ValidationFunc, ValidationSupportedTypes} from "../../hooks/useValidateFormInput.ts";
 import {titleCase} from "../../utils/StringUtils.ts";
 import {useCallback, useEffect, useState} from "react";
@@ -13,6 +13,7 @@ type ValidatedInputProps = {
     isMandatory: boolean,
     errorMessage: string,
     setNewValidation: SetValidationFunc,
+    labelText?: string,
     inputProps?: InputProps,
     valueChangedCallback?: (newValue: ValidationSupportedTypes) => void,
 }
@@ -28,6 +29,7 @@ export function ValidatedInput(
         isMandatory,
         errorMessage,
         setNewValidation,
+        labelText,
         inputProps,
         valueChangedCallback,
     }: ValidatedInputProps) {
@@ -35,7 +37,7 @@ export function ValidatedInput(
     const [value, setValue] = useState("" + defaultValue);
 
     const inputPropsNN = inputProps || {};
-    const isPassword = inputPropsNN.type != null && inputPropsNN.type === "password";
+    const inputType = inputPropsNN.type || "text";
 
     const incrementedValidationFunc = useCallback((value: ValidationSupportedTypes): boolean => {
         const isEmpty = value == null || value === "";
@@ -46,11 +48,12 @@ export function ValidatedInput(
     }, [isMandatory, validationFunc]);
     const isEmpty = value == null || value === "";
     const isValid = incrementedValidationFunc(value);
+    const labelContent = labelText || titleCase(name);
 
     const onParameterChange = (newValue: string) => {
         setValue(newValue);
     }
-    
+
     useEffect(() => {
         setNewValidation(name, {
             value: value,
@@ -60,15 +63,33 @@ export function ValidatedInput(
         if (valueChangedCallback != null) valueChangedCallback(value);
     }, [errorMessage, incrementedValidationFunc, isMandatory, name, setNewValidation, validationFunc, value, valueChangedCallback]);
 
+
     return (
-        <Input id={name} name={name} label={titleCase(name)}
-               validationText={persistingValidationText ? validationText : (!isEmpty && isValid ? "" : validationText)}
-               valid={validationMark ? isValid : (!isEmpty && isValid ? undefined : isValid)}
-               value={"" + value} onChange={(e) => onParameterChange(e.target.value)}
-            //rimuove il punto esclamativo alla fine per estetica
-               style={isPassword ? {backgroundImage: "none"} : {}}
-               {...inputPropsNN}
-        />
+        <>
+            {inputType === "checkbox" &&
+                <div className={"form-check"}>
+                    <Input id={name} name={name}
+                           label={undefined}
+                           validationText={persistingValidationText ? validationText : (!isEmpty && isValid ? "" : validationText)}
+                           valid={validationMark ? isValid : (!isEmpty && isValid ? undefined : isValid)}
+                           value={"" + value} onChange={(e) => onParameterChange(e.target.value)}
+                           {...inputPropsNN}
+                    />
+                    <Label for={name}>{labelContent}</Label>
+                </div>
+            }
+            {inputType !== "checkbox" &&
+                <Input id={name} name={name}
+                       label={labelContent}
+                       validationText={persistingValidationText ? validationText : (!isEmpty && isValid ? "" : validationText)}
+                       valid={validationMark ? isValid : (!isEmpty && isValid ? undefined : isValid)}
+                       value={"" + value} onChange={(e) => onParameterChange(e.target.value)}
+                    //rimuove il punto esclamativo alla fine per estetica
+                       style={inputType === "password" ? {backgroundImage: "none"} : {}}
+                       {...inputPropsNN}
+                />
+            }
+        </>
     )
 
 
