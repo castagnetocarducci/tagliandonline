@@ -11,7 +11,7 @@ const main = async () => {
     await SmtpManager.instance.verifyConnection();
 
     const app = express();
-    // app.use(express.urlencoded({extended: true, limit:"2mb"}));
+    app.use(express.urlencoded({limit:"2mb"}));
     app.use(express.json({limit:"2mb"}));
     app.use(cors({
         origin: ConfigProvider.instance.configs.baseUrl,

@@ -6,7 +6,7 @@ import {Inspections} from "../pages/Inspections.tsx";
 import {Users} from "../pages/users/Users.tsx";
 import {Vouchers} from "../pages/Vouchers.tsx";
 import {Profile} from "../pages/profile/Profile.tsx";
-import {Permits} from "../pages/Permits.tsx";
+import {PermitsManagement} from "../pages/permits/PermitsManagement.tsx";
 import {Login} from "../pages/profile/Login.tsx";
 import {PasswordResetRequest} from "../pages/profile/PasswordResetRequest.tsx";
 import {PasswordResetExecute} from "../pages/profile/PasswordResetExecute.tsx";
@@ -26,7 +26,7 @@ export const RouteConfiguration = () => {
                     <Route path="/applications/*" element={<Applications/>}/>
                     <Route path="/inspections/*" element={<Inspections/>}/>
                     <Route path="/vouchers/*" element={<Vouchers/>}/>
-                    <Route path="/permits/*" element={<Permits/>}/>
+                    <Route path="/permits/*" element={<PermitsManagement/>}/>
                 </>
             )}
             {userDataCtx.userData && (userDataCtx.userData.role === "admin") && (
