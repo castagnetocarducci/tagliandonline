@@ -1,7 +1,8 @@
 import {Router} from "express";
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
-import {usersRouter} from "./users.ts";
+import {ConfigProvider} from "../../configProvider.ts";
+import {adjustPathForDownload} from "./downloadFile.ts";
 
 export const docTemplatesRouter = Router();
 
@@ -14,7 +15,7 @@ type DocTemplateListEntry = {
     path: string
 }
 
-usersRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+docTemplatesRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
         return;
@@ -42,12 +43,53 @@ usersRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), async (req
             updatedAt: docTemplate.updatedAt,
             disabled: docTemplate.disabled,
             description: docTemplate.description,
-            path: docTemplate.path,
+            path: adjustPathForDownload(docTemplate.path || ""),
         });
     }
     res.json({
         message: "Modelli di documento acquisiti con successo",
         docTemplatesList: docTemplatesResList
+    });
+});
+
+docTemplatesRouter.get("/detail/:docTemplateID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+    if (req.params.docTemplateID == null || req.params.docTemplateID == "") {
+        res.status(400).json({message: "ID modello documento non valido"});
+        return;
+    }
+    let docTemplateID = 0;
+    try {
+        docTemplateID = parseInt(req.params.docTemplateID as string);
+    } catch (e) {
+        res.status(400).json({message: "ID modello documento non valido"});
+        return;
+    }
+
+    const db = DatabaseManager.instance.db;
+    const docTemplate = await db.query.docTemplates.findFirst(
+        {
+            where: {id: docTemplateID}
+        });
+    if (docTemplate == null) {
+        res.status(500).json({message: "Modello di documento non trovato"});
+        return;
+    }
+    const docDetails: DocTemplateListEntry = {
+        id: docTemplate.id,
+        createdAt: docTemplate.createdAt,
+        updatedAt: docTemplate.updatedAt,
+        disabled: docTemplate.disabled,
+        description: docTemplate.description,
+        path: adjustPathForDownload(docTemplate.path || ""),
+    };
+
+    res.json({
+        message: "Modello di documento acquisito con successo",
+        docTemplate: docDetails
     });
 });
 

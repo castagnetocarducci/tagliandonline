@@ -1,18 +1,29 @@
-import {
-    Container,
-    Nav,
-    NavItem,
-    TabContainer,
-    TabContent,
-    TabNav,
-    TabNavItem,
-    TabNavLink,
-    TabPane
-} from "design-react-kit";
-import {RouterDesignNavLink} from "../../components/links/RouterDesignNavLink.tsx";
+import {Container, TabContainer, TabContent, TabNav, TabNavItem} from "design-react-kit";
 import {RouterDesignTabLink} from "../../components/links/RouterDesignTabLink.tsx";
+import {Route, Routes, useLocation, useNavigate} from "react-router";
+import {DocTemplatesList} from "./docTemplates/DocTemplatesList.tsx";
+import {useEffect} from "react";
+import {useUserDataContext} from "../../hooks/useUserDataContext.ts";
+import {EditDocTemplate} from "./docTemplates/EditDocTemplate.tsx";
 
 export const PermitsManagement = () => {
+    const userDataCtx = useUserDataContext();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (userDataCtx.userData == null || (userDataCtx.userData.role !== "operatore" && userDataCtx.userData.role !== "admin")) {
+            navigate("/");
+        }
+    }, [userDataCtx, navigate]);
+
+    useEffect(() => {
+        if (location.pathname === "/permits" || location.pathname === "/permits/") {
+            navigate("/permits/list");
+        }
+    }, [location, navigate]);
+
+        
     return (
         <Container>
             <h1 className={"mb-4"}>Gestione permessi</h1>
@@ -20,45 +31,28 @@ export const PermitsManagement = () => {
             <TabContainer defaultActiveKey="permits">
                 <TabNav>
                     <TabNavItem>
+                        <RouterDesignTabLink to={"/permits/list"}> Permessi </RouterDesignTabLink>
                         {/*<TabNavLink eventKey="permits"> Permessi </TabNavLink>*/}
-                        <RouterDesignNavLink openNav={false} setOpenNav={()=>{}} to={"/permits/permits"}>Permessi</RouterDesignNavLink>
                     </TabNavItem>
                     <TabNavItem>
-                        <RouterDesignNavLink openNav={false} setOpenNav={()=>{}} to={"/permits/templates/doc"}>Modelli di documento</RouterDesignNavLink>
-                        {/*<TabNavLink eventKey="docTemplates"> Modelli di documento </TabNavLink>*/}
+                        <RouterDesignTabLink to={"/permits/docTemplates"}> Modelli documento </RouterDesignTabLink>
                     </TabNavItem>
                     <TabNavItem>
-                        <TabNavLink eventKey="emailTempaltese"> Modelli di email </TabNavLink>
+                        <RouterDesignTabLink to={"/permits/emailTemplates"}> Modelli email </RouterDesignTabLink>
                     </TabNavItem>
                     <TabNavItem>
-                        <TabNavLink eventKey="numerations"> Numerazioni </TabNavLink>
+                        <RouterDesignTabLink to={"/permits/numerations"}> Numerazioni </RouterDesignTabLink>
                     </TabNavItem>
-                    <NavItem>
-                        <RouterDesignTabLink to={"/permits/permits"}> Permessi </RouterDesignTabLink>
-                    </NavItem>
-                    <NavItem>
-                        <RouterDesignTabLink to={"/permits/templates/doc"}> Domande </RouterDesignTabLink>
-                    </NavItem>
                 </TabNav>
                 <TabContent>
-                    <TabPane className="p-4" eventKey="permits">
-                        Contenuto 1
-                    </TabPane>
-                    <TabPane className="p-4" eventKey="docTemplates">
-                        Contenuto 2
-                    </TabPane>
-                    <TabPane className="p-4" eventKey="emailTempaltese">
-                        Contenuto 3
-                    </TabPane>
-                    <TabPane className="p-4" eventKey="numerations">
-                        Contenuto 4
-                    </TabPane>
+                    <Container className={"mt-2"}>
+                        <Routes>
+                            <Route path="/docTemplates/:docTemplateID" element={<EditDocTemplate/>}/>
+                            <Route path="/docTemplates" element={<DocTemplatesList/>}/>
+                        </Routes>
+                    </Container>
                 </TabContent>
             </TabContainer>
-            <Nav navbar>
-
-
-            </Nav>
         </Container>
     );
 }

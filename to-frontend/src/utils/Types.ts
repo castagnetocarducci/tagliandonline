@@ -65,3 +65,24 @@ export type DataMessage = {
 }
 
 
+export type DocTemplateListEntry = {
+    id: number,
+    createdAt: string,
+    updatedAt: string,
+    disabled: boolean,
+    description: string,
+    path: string
+}
+
+export type DocTemplateListApiResponse = {
+    message: string,
+    docTemplatesList: DocTemplateListEntry[]
+}
+
+export type DocTemplateDetailApiResponse = {
+    message: string,
+    docTemplate: DocTemplateListEntry
+}
+
+
+

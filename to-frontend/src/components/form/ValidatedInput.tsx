@@ -72,7 +72,7 @@ export function ValidatedInput(
                            label={undefined}
                            validationText={persistingValidationText ? validationText : (!isEmpty && isValid ? "" : validationText)}
                            valid={validationMark ? isValid : (!isEmpty && isValid ? undefined : isValid)}
-                           value={"" + value} onChange={(e) => onParameterChange(e.target.value)}
+                           checked={value === "true"} onChange={(e) => onParameterChange(e.target.checked.toString())}
                            {...inputPropsNN}
                     />
                     <Label for={name}>{labelContent}</Label>

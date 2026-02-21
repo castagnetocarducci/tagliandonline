@@ -10,6 +10,10 @@ const breadcrumbPathMap = new Map<string, string>([
     ["profile", "Profilo"],
     ["password-reset", "Reimposta password"],
     ["new", "Nuovo"],
+    ["numerations", "Numerazioni"],
+    ["list", "Lista"],
+    ["docTemplates", "Modelli documento"],
+    ["emailTemplates", "Modelli email"]
 ]);
 
 type SingleBreadcrumb = {
@@ -27,7 +31,7 @@ export const createBreadcrumb = (path: string | null): BreadcrumbType => {
     const splitted = noParameters.split("/");
     const res: BreadcrumbType = [];
 
-    let currentPath = "/";
+    let currentPath = "";
     splitted.forEach((item, index) => {
         if (item === "home") {
             return;
@@ -35,7 +39,12 @@ export const createBreadcrumb = (path: string | null): BreadcrumbType => {
         if (index === splitted.length - 1 && item === "") {
             return;
         }
-        currentPath = currentPath + item;
+        if (currentPath.endsWith("/")) {
+            currentPath = currentPath + item;
+        } else {
+            currentPath = currentPath + "/" + item;
+        }
+
         const mappedValue = breadcrumbPathMap.get(item);
         if (mappedValue != null) {
             res.push({

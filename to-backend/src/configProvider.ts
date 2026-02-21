@@ -69,6 +69,9 @@ export class ConfigProvider {
     }
 
     private prepareDataPath() {
+        if (this.configs.dataPath.endsWith("/") || this.configs.dataPath.endsWith("\\")) {
+            this.configs.dataPath = this.configs.dataPath.slice(0, -1);
+        }
         mkdirSync(this.configs.modelsPath, {recursive: true});
         mkdirSync(this.configs.vouchersPath, {recursive: true});
     }
