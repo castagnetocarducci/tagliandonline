@@ -31,7 +31,6 @@ export function NewUser() {
     ];
 
     const onFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
-        console.log("SUBMIT")
         e.preventDefault();
         if (!valid) {
             executeValidation(true);

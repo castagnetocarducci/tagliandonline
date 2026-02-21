@@ -29,42 +29,58 @@ export const ValidatedUploadDragNdropSingle = (
         labelText,
         valueChangedCallback,
     }: ValidatedUploadDragNdropSingleProps) => {
-    const [file, setFile] = useState<File | null>(null);
+    const [fileArr, setFileArr] = useState<File[]>([]);
     const [dragOverClass, setDragOverClass] = useState(false);
     const dragOverClasses = classNames('upload-dragdrop', {
         dragover: dragOverClass,
-        success: file != null
+        success: fileArr.length > 0
     });
 
+    const checkExtension = useCallback((newFile: File): boolean => {
+        if (acceptedFileExtensions == null || acceptedFileExtensions.length === 0) {
+            return true;
+        }
+        for (const ext of acceptedFileExtensions) {
+            if (newFile.name.endsWith(ext)) {
+                return true;
+            }
+        }
+        return false;
+    }, [acceptedFileExtensions])
+
     const incrementedValidationFunc = useCallback((value: ValidationSupportedTypes): boolean => {
-        const isEmpty = value == null || value === "";
-        console.log(isEmpty);
+        const isEmpty = value == null || value === "" ||
+            (value instanceof Array ? value.length === 0 : false); //testo per Array perché non posso testare direttamente File[], in questo caso Array vuoto significa campo non impostato
         if (isMandatory && isEmpty) {
             return false;
         }
+        if (!isEmpty && (value instanceof Array)) { //testo per Array perché non posso testare direttamente File[]
+            if (!checkExtension(value[0])) {
+                return false;
+            }
+        }
         return validationFunc(value);
-    }, [isMandatory, validationFunc]);
-    const isValid = incrementedValidationFunc(file);
+    }, [checkExtension, isMandatory, validationFunc]);
+    const isValid = incrementedValidationFunc(fileArr);
 
     useEffect(() => {
         setNewValidation(name, {
-            value: file,
+            value: fileArr,
             errorMessage: errorMessage,
             validateFunc: incrementedValidationFunc,
         });
-        if (valueChangedCallback != null) valueChangedCallback(file);
-    }, [errorMessage, incrementedValidationFunc, isMandatory, name, setNewValidation, validationFunc, file, valueChangedCallback]);
+        if (valueChangedCallback != null) valueChangedCallback(fileArr.length > 0 ? fileArr[0] : null);
+    }, [errorMessage, incrementedValidationFunc, isMandatory, name, setNewValidation, validationFunc, fileArr, valueChangedCallback]);
+
 
     const handleDrop: DragEventHandler<HTMLDivElement> = (event) => {
             handleDrag(event);
             const droppedFiles = event.dataTransfer.files;
             if (droppedFiles.length > 0) {
                 for (const dFile of droppedFiles) {
-                    for (const ext of acceptedFileExtensions) {
-                        if (dFile.name.endsWith(ext)) {
-                            setFile(dFile);
-                            return;
-                        }
+                    if (checkExtension(dFile)) {
+                        setFileArr([dFile]);
+                        return;
                     }
                 }
             }
@@ -116,7 +132,7 @@ export const ValidatedUploadDragNdropSingle = (
                 maxWidth: "4rem",
             }}>
                 <img src={DragandDropIcon} alt='descrizione immagine' aria-hidden='true'/>
-                {file != null && (
+                {fileArr.length > 0 && (
                     <div className='upload-dragdrop-success' style={{
                         maxWidth: "24px",
                         maxHeight: "24px",
@@ -127,21 +143,21 @@ export const ValidatedUploadDragNdropSingle = (
                 )}
             </div>
             <div className='upload-dragdrop-text'>
-                {file != null && (
+                {fileArr.length > 0 && (
                     <p className='upload-dragdrop-weight'>
                         <Icon icon='it-file' size='xs'/>
-                        {file.type + ' ' + byteConverter(file.size)}
+                        {fileArr[0].type + ' ' + byteConverter(fileArr[0].size)}
                     </p>
                 )}
                 <span style={{lineHeight: "1.75rem"}}>
-                    {file != null ? (
-                        <strong>{file.name}</strong>
+                    {fileArr.length > 0 ? (
+                        <strong>{fileArr[0].name}</strong>
                     ) : (
                         <strong>{labelText || "Trascina il file per caricarlo"}</strong>
                     )}
                 </span>
                 <p>
-                    {file != null ? (
+                    {fileArr.length > 0 ? (
                         <>per cambiarlo trascinalo oppure </>
                     ) : (
                         <>oppure </>
@@ -150,14 +166,14 @@ export const ValidatedUploadDragNdropSingle = (
                            accept={acceptedFileExtensions?.join(",")}
                            className='upload-dragdrop-input' onChange={(e) => {
                         if (e.target.files == null) {
-                            setFile(null);
                             return;
                         }
-                        const filesArr: File[] = [];
                         for (const file of e.target.files) {
-                            filesArr.push(file);
+                            if (checkExtension(file)) {
+                                setFileArr([file]);
+                                return;
+                            }
                         }
-                        setFile(filesArr[0]);
                     }}/>
                     <label htmlFor={name}>selezionalo dal dispositivo</label>
 

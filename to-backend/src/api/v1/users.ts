@@ -7,7 +7,6 @@ import {generatePasswordResetToken} from "../../utils/pswHashing.ts";
 import {ConfigProvider} from "../../configProvider.ts";
 import {SmtpManager} from "../../smtpManager.ts";
 
-
 type UserListEntry = {
     id: number,
     username: string,
@@ -80,7 +79,7 @@ usersRouter.get("/detail/:userID", middlewareAuthCheck(["admin"]), async (req: A
         res.status(400).json({message: "ID utente non valido"});
         return;
     }
-    const  userID = parseInt(req.params.userID as string);
+    const userID = parseInt(req.params.userID as string);
     if (isNaN(userID)) {
         res.status(400).json({message: "ID utente non valido"});
         return;
