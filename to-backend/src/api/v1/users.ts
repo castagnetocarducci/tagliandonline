@@ -80,10 +80,8 @@ usersRouter.get("/detail/:userID", middlewareAuthCheck(["admin"]), async (req: A
         res.status(400).json({message: "ID utente non valido"});
         return;
     }
-    let userID = 0;
-    try {
-        userID = parseInt(req.params.userID as string);
-    } catch (e) {
+    const  userID = parseInt(req.params.userID as string);
+    if (isNaN(userID)) {
         res.status(400).json({message: "ID utente non valido"});
         return;
     }
@@ -136,10 +134,8 @@ usersRouter.post("/edit/:userID", middlewareAuthCheck(["admin"]), async (req: Au
         res.status(400).json({message: "ID utente non valido"});
         return;
     }
-    let userID = 0;
-    try {
-        userID = parseInt(req.params.userID as string);
-    } catch (e) {
+    const userID = parseInt(req.params.userID as string);
+    if (isNaN(userID)) {
         res.status(400).json({message: "ID utente non valido"});
         return;
     }

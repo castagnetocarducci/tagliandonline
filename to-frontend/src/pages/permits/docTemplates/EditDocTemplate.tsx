@@ -4,11 +4,12 @@ import type {DataMessage, DocTemplateDetailApiResponse, DocTemplateListEntry} fr
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
 import {defaultGETRequestInit, defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
-import {Button, Col, Container, Form, Icon, Row, Section, UploadDragNdrop} from "design-react-kit";
+import {Button, Col, Container, Form, Icon, Row} from "design-react-kit";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
-import {configProvider, getApiUrl} from "../../../utils/ConfigProvider.ts";
+import {getApiUrl} from "../../../utils/ConfigProvider.ts";
+import {ValidatedUploadDragNdropSingle} from "../../../components/form/ValidatedUploadDragNdropSingle.tsx";
 
 export function EditDocTemplate() {
     const navigate = useNavigate();
@@ -16,7 +17,6 @@ export function EditDocTemplate() {
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
     const urlParams = useParams();
-    const [files, setFiles] = useState<File[]>([]);
 
     useEffect(() => {
         if (urlParams.docTemplateID == null || urlParams.docTemplateID == "") {
@@ -56,8 +56,6 @@ export function EditDocTemplate() {
         });
     }
 
-    console.log(files)
-
     return (
         <Container>
             <h2>Modifica modello di documento</h2>
@@ -69,7 +67,8 @@ export function EditDocTemplate() {
                                 <p><strong>ID</strong><br/>{docTemplateDetails.id}</p>
                             </Col>
                             <Col lg={3}>
-                                <p><strong>Creato il</strong><br/>{new Date(docTemplateDetails.createdAt).toLocaleString()}</p>
+                                <p><strong>Creato
+                                    il</strong><br/>{new Date(docTemplateDetails.createdAt).toLocaleString()}</p>
                             </Col>
                             <Col lg={3}>
                                 <p><strong>Ultima
@@ -82,7 +81,8 @@ export function EditDocTemplate() {
                         </Row>
                         <Row className={"mt-4"}>
                             <Col md={6}>
-                                <ValidatedInput name={"description"} labelText={"Descrizione"} validationFunc={() => true}
+                                <ValidatedInput name={"description"} labelText={"Descrizione"}
+                                                validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false} defaultValue={docTemplateDetails.description}
                                                 isMandatory={true}
@@ -103,15 +103,22 @@ export function EditDocTemplate() {
                         </Row>
                         <Row>
                             <Col md={2}>
-                                <Button href={getApiUrl() + docTemplateDetails.path}  color={"primary"} icon={true} title={"Scarica modello"}>
-                                    <Icon icon={"it-download"} color={"white"} />
+                                <Button href={getApiUrl() + docTemplateDetails.path} color={"primary"} icon={true}
+                                        title={"Scarica modello"}>
+                                    <Icon icon={"it-download"} color={"white"}/>
                                     <span className={"ps-1"}>Scarica</span>
                                 </Button>
                             </Col>
                             <Col md={8}>
-                                <Section>
-                                <UploadDragNdrop files={files} setFiles={setFiles}/>
-                                </Section>
+                                <ValidatedUploadDragNdropSingle
+                                    name={"docTemplateFile"}
+                                    acceptedFileExtensions={[".docx"]}
+                                    validationFunc={() => true}
+                                    validationText={""}
+                                    isMandatory={false}
+                                    errorMessage={"File non valido"}
+                                    setNewValidation={setValidation}
+                                />
                             </Col>
                         </Row>
                         <Row className={"mt-4"}>

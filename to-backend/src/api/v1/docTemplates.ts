@@ -61,10 +61,8 @@ docTemplatesRouter.get("/detail/:docTemplateID", middlewareAuthCheck(["admin", "
         res.status(400).json({message: "ID modello documento non valido"});
         return;
     }
-    let docTemplateID = 0;
-    try {
-        docTemplateID = parseInt(req.params.docTemplateID as string);
-    } catch (e) {
+    const docTemplateID = parseInt(req.params.docTemplateID as string);
+    if (isNaN(docTemplateID)) {
         res.status(400).json({message: "ID modello documento non valido"});
         return;
     }
