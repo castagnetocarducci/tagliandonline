@@ -180,7 +180,6 @@ emailTemplatesRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), a
             res.status(500).json({message: "Errore durante l'inserimento: " + e});
             return;
         }
-        res.status(200).json({message: "Modello inserito con successo"});
     }
 );
 
