@@ -19,7 +19,13 @@ export function fetchAsync<Type>({url, errSuccLoading, requestInit, callback}: F
     errSuccLoading?.setLoading(true);
     fetch(url, {signal: abortController.signal, ...requestInit})
         .then(async (res) => {
-            return {data: await res.json(), status: res.status}
+            if (res.headers.get("Content-Type")?.includes("application/json")) {
+                const jsonParsed = await res.json()
+                return {data: jsonParsed, status: res.status}
+            } else {
+                const message = ("" + res.status) + ": " + await res.text();
+                return {data: {message: message}, status: res.status}
+            }
         })
         .then(parsed => {
             errSuccLoading?.setLoading(false);

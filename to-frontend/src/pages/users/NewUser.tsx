@@ -8,7 +8,7 @@ import {useNavigate} from "react-router";
 import {useErrSuccLoad} from "../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../hooks/useValidateFormInput.ts";
 import {defaultPOSTRequestInit, fetchApiAsync} from "../../utils/fetching.ts";
-import type {DataMessage} from "../../utils/Types.ts";
+import type {AddedElementMessage} from "../../utils/Types.ts";
 import {type FormEvent, type FormEventHandler, useEffect} from "react";
 
 export function NewUser() {
@@ -37,12 +37,17 @@ export function NewUser() {
             return;
         }
         const formValues = getValueObject();
-        fetchApiAsync<DataMessage>({
+        fetchApiAsync<AddedElementMessage>({
             urlFromApiRoot: "/users/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,
                 body: JSON.stringify(formValues)
+            },
+            callback: (data) => {
+                if (data != null && data.id != null) {
+                    navigate("/users/" + data.id);
+                }
             }
         });
     }

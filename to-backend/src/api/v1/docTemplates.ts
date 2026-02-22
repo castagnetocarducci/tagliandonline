@@ -3,7 +3,7 @@ import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
 import {adjustPathForDownload} from "./downloadFile.ts";
 import {deleteFile, deleteFileByPath, uploadModelsMulter} from "../../files/filesStorages.ts";
-import {authUsers, docTemplates} from "../../db/schema.ts";
+import {docTemplates} from "../../db/schema.ts";
 import {eq} from "drizzle-orm";
 
 export const docTemplatesRouter = Router();
@@ -174,26 +174,23 @@ docTemplatesRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]),
 
         const db = DatabaseManager.instance.db;
         try {
-            const insertResult = await db.insert(docTemplates).values({
+            const inserted = await db.insert(docTemplates).values({
                 description: description,
                 path: req.file.path
-            });
-            if (insertResult == null) {
+            }).returning();
+            if (inserted == null || inserted.length !== 1 || inserted[0] == null) {
                 deleteFile(req.file);
                 res.status(500).json({message: "Inserimento non riuscito"});
                 return;
             }
-            if (insertResult.rowCount !== 1) {
-                deleteFile(req.file);
-                res.status(500).json({message: "Inserimento non riuscito (righe: " + insertResult.rowCount + "): " + insertResult.command});
-                return;
-            }
+            const insertedDocTemplate = inserted[0];
+            res.status(200).json({message: "Modello inserito con successo", id: insertedDocTemplate.id});
         } catch (e) {
             deleteFile(req.file);
             res.status(500).json({message: "Errore durante l'inserimento: " + e});
             return;
         }
-        res.status(200).json({message: "Modello inserito con successo"});
+
     }
 );
 

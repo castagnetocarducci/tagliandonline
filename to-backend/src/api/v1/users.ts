@@ -269,7 +269,7 @@ usersRouter.post("/new", middlewareAuthCheck(["admin"]), async (req: AuthRequest
     }
 
     await DatabaseManager.instance.loadAuthUsers();
-    res.json({message: "Utente inserito con successo. La mail di recupero della password è stata inviata all'indirizzo."});
+    res.json({message: "Utente inserito con successo. La mail di recupero della password è stata inviata all'indirizzo.", id: foundUser.id});
 });
 
 

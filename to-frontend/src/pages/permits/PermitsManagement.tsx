@@ -6,6 +6,9 @@ import {useEffect} from "react";
 import {useUserDataContext} from "../../hooks/useUserDataContext.ts";
 import {EditDocTemplate} from "./docTemplates/EditDocTemplate.tsx";
 import {NewDocTemplate} from "./docTemplates/NewDocTemplate.tsx";
+import {EmailTemplatesList} from "./emailTemplates/EmailTemplatesList.tsx";
+import {EditEmailTemplate} from "./emailTemplates/EditEmailTemplate.tsx";
+import {NewEmailTemplate} from "./emailTemplates/NewEmailTemplate.tsx";
 
 export const PermitsManagement = () => {
     const userDataCtx = useUserDataContext();
@@ -51,6 +54,9 @@ export const PermitsManagement = () => {
                             <Route path="/docTemplates/new" element={<NewDocTemplate/>}/>
                             <Route path="/docTemplates/:docTemplateID" element={<EditDocTemplate/>}/>
                             <Route path="/docTemplates" element={<DocTemplatesList/>}/>
+                            <Route path="/emailTemplates/new" element={<NewEmailTemplate/>}/>
+                            <Route path="/emailTemplates/:emailTemplateID" element={<EditEmailTemplate/>}/>
+                            <Route path="/emailTemplates" element={<EmailTemplatesList/>}/>
                         </Routes>
                     </Container>
                 </TabContent>

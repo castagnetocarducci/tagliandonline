@@ -51,9 +51,11 @@ export const permitsHistory = toSchema.table("permitsHistory", {
 
 export const emailTemplates = toSchema.table("emailTemplates", {
     id: commonColumns.idAutoIncr(),
+    createdAt: commonColumns.createdAt(),
+    updatedAt: commonColumns.updatedAt(),
     description: varchar({length: 64}).notNull(),
     disabled: commonColumns.disabled(),
-    object: varchar({length: 512}).notNull(),
+    subject: varchar({length: 512}).notNull(),
     body: text().notNull(),
 })
 
@@ -69,8 +71,10 @@ export const docTemplates = toSchema.table("docTemplates", {
 
 export const numerationRegisters = toSchema.table("numerationRegisters", {
     id: commonColumns.idAutoIncr(),
-    nextNumber: integer().default(0).notNull(),
+    createdAt: commonColumns.createdAt(),
+    updatedAt: commonColumns.updatedAt(),
     description: varchar({length: 32}).notNull(),
+    nextNumber: integer().default(0).notNull(),
 })
 
 export const inspections = toSchema.table("inspections", {

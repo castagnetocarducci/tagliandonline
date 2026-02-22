@@ -64,6 +64,10 @@ export type DataMessage = {
     message: string
 }
 
+export type AddedElementMessage = {
+    message: string,
+    id: number
+}
 
 export type DocTemplateListEntry = {
     id: number,
@@ -83,6 +87,37 @@ export type DocTemplateDetailApiResponse = {
     message: string,
     docTemplate: DocTemplateListEntry
 }
+
+
+
+export type EmailTemplateListEntry = {
+    id: number,
+    createdAt: string,
+    updatedAt: string,
+    disabled: boolean,
+    description: string
+}
+
+export type EmailTemplateDetail = {
+    id: number,
+    createdAt: string,
+    updatedAt: string,
+    disabled: boolean,
+    description: string,
+    subject: string,
+    body: string
+}
+
+export type EmailTemplateListApiResponse = {
+    message: string,
+    emailTemplatesList: EmailTemplateListEntry[]
+}
+
+export type EmailTemplateDetailApiResponse = {
+    message: string,
+    emailTemplate: EmailTemplateDetail
+}
+
 
 
 

@@ -2,14 +2,16 @@ import {type FormEvent, type FormEventHandler} from "react";
 import type {AddedElementMessage} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
-import {fetchApiAsync, multipartPOSTRequestInit} from "../../../utils/fetching.ts";
+import {defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
 import {Button, Col, Container, Form, GoBack, Row} from "design-react-kit";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
-import {ValidatedUploadDragNdropSingle} from "../../../components/form/ValidatedUploadDragNdropSingle.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
+import {ValidatedTextArea} from "../../../components/form/ValidatedTextArea.tsx";
+import {useNavigate} from "react-router";
 
-export function NewDocTemplate() {
+export function NewEmailTemplate() {
+    const navigate = useNavigate();
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
 
@@ -20,29 +22,16 @@ export function NewDocTemplate() {
             return;
         }
         const formValues = getValueObject();
-        //https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_forms_through_JavaScript
-        const formData = new FormData();
-        for (const [key, value] of Object.entries(formValues)) {
-            // FormData accetta solo Blob o string
-            if (value instanceof Array) {
-                if (value.length > 0) {
-                    formData.set(key, value[0]);
-                }
-            } else {
-                formData.set(key, "" + value);
-            }
-        }
-
         fetchApiAsync<AddedElementMessage>({
-            urlFromApiRoot: "/templates/doc/new",
+            urlFromApiRoot: "/templates/email/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
-                ...multipartPOSTRequestInit,
-                body: formData
+                ...defaultPOSTRequestInit,
+                body: JSON.stringify(formValues)
             },
             callback: (data) => {
                 if (data != null && data.id != null) {
-                    window.location.href = "/permits/docTemplates/" + data.id;
+                    navigate("/permits/emailTemplates/" + data.id);
                 }
             }
         });
@@ -53,7 +42,7 @@ export function NewDocTemplate() {
             <GoBack link>
                 Torna indietro
             </GoBack>
-            <h2>Modifica modello di documento</h2>
+            <h2>Modifica modello di email</h2>
             <Form onSubmit={onFormSubmit} className={"mt-4"}>
 
                 <Row className={"mt-4"}>
@@ -68,17 +57,28 @@ export function NewDocTemplate() {
                                         inputProps={{type: "text"}}/>
                     </Col>
                 </Row>
-                <Row className={"align-items-center"}>
-                    <Col md={8}>
-                        <ValidatedUploadDragNdropSingle
-                            name={"docTemplateFile"}
-                            acceptedFileExtensions={[".docx"]}
-                            validationFunc={() => true}
-                            validationText={"Campo obbligatorio"}
-                            isMandatory={true}
-                            errorMessage={"File non valido"}
-                            setNewValidation={setValidation}
-                        />
+                <Row className={"mt-4"}>
+                    <Col md={12}>
+                        <ValidatedInput name={"subject"} labelText={"Oggetto"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false} defaultValue={""}
+                                        isMandatory={true}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col md={12}>
+                        <ValidatedTextArea name={"body"} labelText={"Corpo"}
+                                           validationFunc={() => true}
+                                           validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                           validationMark={false} defaultValue={""}
+                                           isMandatory={true}
+                                           errorMessage={"Compilare i campi obbligatori"}
+                                           setNewValidation={setValidation}
+                                           textAreaProps={{rows: 5}}/>
                     </Col>
                 </Row>
                 <Row className={"mt-4"}>
