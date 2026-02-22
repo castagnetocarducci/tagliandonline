@@ -32,10 +32,18 @@ export function DocTemplatesList() {
     return (
         <Container>
             <h2>Modelli di documento</h2>
+            <Button className={"mb-4"} onClick={() => navigate(`/permits/docTemplates/new`)}
+                    color={"primary"} icon={true} title={"Aggiungi nuovo modello"}>
+                        <span className={"rounded-icon me-2"}>
+                            <Icon icon={"it-plus"}/>
+                        </span>
+                Nuovo
+            </Button>
             <ValidatedInput name={"disabledFilter"} validationFunc={() => true}
                             validationText={""} persistingValidationText={false} validationMark={false}
                             defaultValue={false} isMandatory={false}
-                            errorMessage={""} setNewValidation={() => {}}
+                            errorMessage={""} setNewValidation={() => {
+            }}
                             labelText={"Mostra disabilitati"}
                             inputProps={{type: "checkbox", className: "form-check-input"}}
                             valueChangedCallback={(newValue) => setShowDisabled(newValue as boolean)}/>
@@ -66,30 +74,31 @@ export function DocTemplatesList() {
                 return docTemplateListEntry.disabled ? showDisabled : true;
             }).map((docTemplateListEntry, index) => (
                 <div key={index}>
-                <Row className={"mt-2 d-flex align-items-center"}>
-                    <Col md={1} className={""}>
-                        {docTemplateListEntry.id}
-                    </Col>
-                    <Col md={1}>
-                        {docTemplateListEntry.disabled ? "Disabilitato" : "Attivo"}
-                    </Col>
-                    <Col md={4} className={"text-wrap"}>
-                        {docTemplateListEntry.description}
-                    </Col>
-                    <Col md={3} className={"text-wrap text-break"}>
-                        <i>{docTemplateListEntry.path}</i>
-                    </Col>
-                    <Col md={2}>
-                        {new Date(docTemplateListEntry.updatedAt).toLocaleString()}
-                    </Col>
-                    <Col md={1}>
-                        <Button onClick={() => navigate(`/permits/docTemplates/${docTemplateListEntry.id}`)}
-                                color={"secondary"} icon={true} outline title={"Modifica"}>
-                            <Icon icon={"it-pencil"}/>
-                        </Button>
-                    </Col>
-                </Row>
-                <hr/></div>
+                    <Row className={"mt-2 d-flex align-items-center"}>
+                        <Col md={1} className={""}>
+                            {docTemplateListEntry.id}
+                        </Col>
+                        <Col md={1}>
+                            {docTemplateListEntry.disabled ? "Disabilitato" : "Attivo"}
+                        </Col>
+                        <Col md={4} className={"text-wrap"}>
+                            {docTemplateListEntry.description}
+                        </Col>
+                        <Col md={3} className={"text-wrap text-break"}>
+                            <i>{docTemplateListEntry.path}</i>
+                        </Col>
+                        <Col md={2}>
+                            {new Date(docTemplateListEntry.updatedAt).toLocaleString()}
+                        </Col>
+                        <Col md={1}>
+                            <Button onClick={() => navigate(`/permits/docTemplates/${docTemplateListEntry.id}`)}
+                                    color={"secondary"} icon={true} outline title={"Modifica"}>
+                                <Icon icon={"it-pencil"}/>
+                            </Button>
+                        </Col>
+                    </Row>
+                    <hr/>
+                </div>
             ))}
 
             <LoadingSpinner loading={loading}/>

@@ -5,6 +5,7 @@ import {DocTemplatesList} from "./docTemplates/DocTemplatesList.tsx";
 import {useEffect} from "react";
 import {useUserDataContext} from "../../hooks/useUserDataContext.ts";
 import {EditDocTemplate} from "./docTemplates/EditDocTemplate.tsx";
+import {NewDocTemplate} from "./docTemplates/NewDocTemplate.tsx";
 
 export const PermitsManagement = () => {
     const userDataCtx = useUserDataContext();
@@ -47,6 +48,7 @@ export const PermitsManagement = () => {
                 <TabContent>
                     <Container className={"mt-2"}>
                         <Routes>
+                            <Route path="/docTemplates/new" element={<NewDocTemplate/>}/>
                             <Route path="/docTemplates/:docTemplateID" element={<EditDocTemplate/>}/>
                             <Route path="/docTemplates" element={<DocTemplatesList/>}/>
                         </Routes>

@@ -142,14 +142,14 @@ export const ValidatedUploadDragNdropSingle = (
                     </div>
                 )}
             </div>
-            <div className='upload-dragdrop-text'>
+            <div className='upload-dragdrop-text' style={{lineHeight: "1.25rem"}}>
                 {fileArr.length > 0 && (
                     <p className='upload-dragdrop-weight'>
                         <Icon icon='it-file' size='xs'/>
                         {fileArr[0].type + ' ' + byteConverter(fileArr[0].size)}
                     </p>
                 )}
-                <span style={{lineHeight: "1.75rem"}}>
+                <span>
                     {fileArr.length > 0 ? (
                         <strong>{fileArr[0].name}</strong>
                     ) : (

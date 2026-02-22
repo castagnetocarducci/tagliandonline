@@ -1,7 +1,7 @@
 import {useRef, useState} from "react";
 
 export type ValidationSupportedTypes = string | number | boolean | Date | File[];
-export type ValidationValueObjectTypes = string | number | boolean | Date | File;
+// export type ValidationValueObjectTypes = string | number | boolean | Date | File;
 
 export type ValidationFunc = (value: ValidationSupportedTypes) => boolean;
 
@@ -47,20 +47,19 @@ export const useValidateFormInput = (setErr: (newVal: string | null) => void, se
         executeValidation(false, valueUpdated);
     }
 
-    const getValueObject = (): { [k: string]: ValidationValueObjectTypes } => {
-        const valuesObj: { [k: string]: ValidationValueObjectTypes } = {};
+    const getValueObject = (): { [k: string]: ValidationSupportedTypes } => {
+        const valuesObj: { [k: string]: ValidationSupportedTypes } = {};
         for (const [name, validationKit] of mapRef.current.entries()) {
-            if (validationKit.value instanceof Array) { //se è un array è sicuramente File[]
-                //se l'array è vuoto non lo associo proprio
-                if (validationKit.value.length === 0) {
-                    continue;
-                } else {
-                    //quando creo l'oggetto che verrà trasmesso in rete inserisco il file direttamente solo se esiste
-                    valuesObj[name] = validationKit.value[0];
-                    continue;
-                }
-
-            }
+            // if (validationKit.value instanceof Array) { //se è un array è sicuramente File[]
+            //     //se l'array è vuoto non lo associo proprio
+            //     if (validationKit.value.length === 0) {
+            //         continue;
+            //     } else {
+            //         //quando creo l'oggetto che verrà trasmesso in rete inserisco il file direttamente solo se esiste
+            //         valuesObj[name] = validationKit.value[0];
+            //         continue;
+            //     }
+            // }
             valuesObj[name] = validationKit.value;
         }
         return valuesObj;

@@ -68,6 +68,12 @@ export const defaultPOSTRequestInit: RequestInit = {
     credentials: "include"
 };
 
+export const multipartPOSTRequestInit: RequestInit = {
+    //multipart/form-data non vuole il Content-Type
+    method: "POST",
+    credentials: "include"
+};
+
 export const defaultGETRequestInit: RequestInit = {
     method: "GET",
     credentials: "include"

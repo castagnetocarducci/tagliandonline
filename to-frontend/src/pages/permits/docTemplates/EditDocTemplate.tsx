@@ -3,8 +3,8 @@ import {type FormEvent, type FormEventHandler, useEffect, useState} from "react"
 import type {DataMessage, DocTemplateDetailApiResponse, DocTemplateListEntry} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
-import {defaultGETRequestInit, defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
-import {Button, Col, Container, Form, Icon, Row} from "design-react-kit";
+import {defaultGETRequestInit, fetchApiAsync, multipartPOSTRequestInit} from "../../../utils/fetching.ts";
+import {Button, Col, Container, Form, GoBack, Icon, Row} from "design-react-kit";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
@@ -46,18 +46,34 @@ export function EditDocTemplate() {
             return;
         }
         const formValues = getValueObject();
+        //https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_forms_through_JavaScript
+        const formData = new FormData();
+        for (const [key, value] of Object.entries(formValues)) {
+            // FormData accetta solo Blob o string
+            if (value instanceof Array) {
+                if (value.length > 0) {
+                    formData.set(key, value[0]);
+                }
+            } else {
+                formData.set(key, "" + value);
+            }
+        }
+
         fetchApiAsync<DataMessage>({
             urlFromApiRoot: "/templates/doc/edit/" + urlParams.docTemplateID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
-                ...defaultPOSTRequestInit,
-                body: JSON.stringify(formValues)
+                ...multipartPOSTRequestInit,
+                body: formData
             }
         });
     }
 
     return (
         <Container>
+            <GoBack link>
+                Torna indietro
+            </GoBack>
             <h2>Modifica modello di documento</h2>
             <Form onSubmit={onFormSubmit} className={"mt-4"}>
                 {docTemplateDetails != null && (
@@ -101,7 +117,7 @@ export function EditDocTemplate() {
                                                 inputProps={{type: "checkbox", className: "form-check-input"}}/>
                             </Col>
                         </Row>
-                        <Row>
+                        <Row className={"align-items-center"}>
                             <Col md={2}>
                                 <Button href={getApiUrl() + docTemplateDetails.path} color={"primary"} icon={true}
                                         title={"Scarica modello"}>

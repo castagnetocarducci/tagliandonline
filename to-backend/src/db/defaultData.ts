@@ -11,6 +11,7 @@ import {
 } from "./schema.ts";
 import {copyFileSync} from "node:fs";
 import {ConfigProvider} from "../configProvider.ts";
+import {createFilenameSuffix} from "../files/filesStorages.ts";
 
 export const populateDefaultData = async () => {
     const db = DatabaseManager.instance.db;
@@ -62,21 +63,21 @@ export const populateDefaultData = async () => {
     await db.insert(numerationRegisters).values([{description: "numerazione predefinita"}]);
 
     const modelsPath = ConfigProvider.instance.configs.modelsPath;
-    const defaultAuthorizationTemplatePath = join(modelsPath, "default_autorizzazione.docx");
-    const defaultVoucherTemplatePath = join(modelsPath, "default_contrassegno.docx");
+    const destAuthorizationTemplatePath = join(modelsPath, "default_autorizzazione" + createFilenameSuffix() + ".docx");
+    const destVoucherTemplatePath = join(modelsPath, "default_contrassegno" + createFilenameSuffix() + ".docx");
     await db.insert(docTemplates).values([
-        {description: "autorizzazione predefinita", path: defaultAuthorizationTemplatePath},
-        {description: "contrassegno predefinito", path: defaultVoucherTemplatePath}
+        {description: "autorizzazione predefinita", path: destAuthorizationTemplatePath},
+        {description: "contrassegno predefinito", path: destVoucherTemplatePath}
     ]);
     //come ultima cosa copio i modelli di default nella cartella dei modelli
-    copyDefaultModels(defaultAuthorizationTemplatePath, defaultVoucherTemplatePath);
+    copyDefaultModels(destAuthorizationTemplatePath, destVoucherTemplatePath);
 }
 
-const copyDefaultModels = (destinationAuthorizationPath: string, destVoucherPath: string) => {
+const copyDefaultModels = (destAuthorizationPath: string, destVoucherPath: string) => {
     const defaultTemplatesPath = join("docx_examples", "default_templates");
     const defaultAuthorizationPath = join(defaultTemplatesPath, "default_autorizzazione.docx");
     const defaultVoucherPath = join(defaultTemplatesPath, "default_contrassegno.docx");
-    copyFileSync(defaultAuthorizationPath, destinationAuthorizationPath);
+    copyFileSync(defaultAuthorizationPath, destAuthorizationPath);
     copyFileSync(defaultVoucherPath, destVoucherPath);
 }
 
