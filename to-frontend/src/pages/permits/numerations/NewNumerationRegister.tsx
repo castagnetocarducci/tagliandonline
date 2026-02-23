@@ -7,10 +7,9 @@ import {Button, Col, Container, Form, GoBack, Row} from "design-react-kit";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
-import {ValidatedTextArea} from "../../../components/form/ValidatedTextArea.tsx";
 import {useNavigate} from "react-router";
 
-export function NewEmailTemplate() {
+export function NewNumerationRegister() {
     const navigate = useNavigate();
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
@@ -23,7 +22,7 @@ export function NewEmailTemplate() {
         }
         const formValues = getValueObject();
         fetchApiAsync<AddedElementMessage>({
-            urlFromApiRoot: "/templates/email/new",
+            urlFromApiRoot: "/numerations/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,
@@ -31,7 +30,7 @@ export function NewEmailTemplate() {
             },
             callback: (data) => {
                 if (data != null && data.id != null) {
-                    navigate("/permits/emailTemplates/" + data.id);
+                    navigate("/permits/numerations/" + data.id);
                 }
             }
         });
@@ -42,7 +41,7 @@ export function NewEmailTemplate() {
             <GoBack link>
                 Torna indietro
             </GoBack>
-            <h2>Nuovo modello di email</h2>
+            <h2>Nuovo registro numerazione</h2>
             <Form onSubmit={onFormSubmit} className={"mt-4"}>
 
                 <Row className={"mt-4"}>
@@ -50,35 +49,23 @@ export function NewEmailTemplate() {
                         <ValidatedInput name={"description"} labelText={"Descrizione"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                        validationMark={false} defaultValue={""}
+                                        validationMark={false}
+                                        defaultValue={""}
                                         isMandatory={true}
                                         errorMessage={"Compilare i campi obbligatori"}
                                         setNewValidation={setValidation}
                                         inputProps={{type: "text"}}/>
                     </Col>
-                </Row>
-                <Row className={"mt-4"}>
-                    <Col md={12}>
-                        <ValidatedInput name={"subject"} labelText={"Oggetto"}
+                    <Col md={2}>
+                        <ValidatedInput name={"nextNumber"} labelText={"Prossimo numero"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                        validationMark={false} defaultValue={""}
+                                        validationMark={false}
+                                        defaultValue={1}
                                         isMandatory={true}
                                         errorMessage={"Compilare i campi obbligatori"}
                                         setNewValidation={setValidation}
-                                        inputProps={{type: "text"}}/>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col md={12}>
-                        <ValidatedTextArea name={"body"} labelText={"Corpo"}
-                                           validationFunc={() => true}
-                                           validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                           validationMark={false} defaultValue={""}
-                                           isMandatory={true}
-                                           errorMessage={"Compilare i campi obbligatori"}
-                                           setNewValidation={setValidation}
-                                           textAreaProps={{rows: 5}}/>
+                                        inputProps={{type: "number"}}/>
                     </Col>
                 </Row>
                 <Row className={"mt-4"}>

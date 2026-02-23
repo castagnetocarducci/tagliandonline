@@ -74,7 +74,7 @@ export const numerationRegisters = toSchema.table("numerationRegisters", {
     createdAt: commonColumns.createdAt(),
     updatedAt: commonColumns.updatedAt(),
     description: varchar({length: 32}).notNull(),
-    nextNumber: integer().default(0).notNull(),
+    nextNumber: integer().default(1).notNull(),
 })
 
 export const inspections = toSchema.table("inspections", {

@@ -32,6 +32,7 @@ docTemplatesRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), asy
         // where: {
         //     disabled: includeDisabled ? undefined : false
         // }
+        orderBy: { updatedAt: "desc"},
     });
     if (docTemplatesList == null) {
         return res.status(500).json({message: "Errore nel reperire i modelli di documenti"});

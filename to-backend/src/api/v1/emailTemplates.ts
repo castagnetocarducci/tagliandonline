@@ -3,7 +3,6 @@ import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
 import {emailTemplates} from "../../db/schema.ts";
 import {eq} from "drizzle-orm";
-import {deleteFile} from "../../files/filesStorages.ts";
 
 
 export const emailTemplatesRouter = Router();
@@ -42,6 +41,7 @@ emailTemplatesRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), a
         // where: {
         //     disabled: includeDisabled ? undefined : false
         // }
+        orderBy: { updatedAt: "desc"},
     });
     if (emailTemplatesList == null) {
         return res.status(500).json({message: "Errore nel reperire i modelli di email"});
@@ -121,15 +121,15 @@ emailTemplatesRouter.post("/edit/:emailTemplateID", middlewareAuthCheck(["admin"
             res.status(400).json({message: "Richiesta con campi mancanti"});
             return;
         }
-        const {description, disabled} = req.body;
+        const {description, disabled, subject, body} = req.body;
         const db = DatabaseManager.instance.db;
         try {
             const updateResult = await db.update(emailTemplates)
                 .set({
                     description: description,
                     disabled: disabled === "true",
-                    subject: req.body.subject,
-                    body: req.body.body
+                    subject: subject,
+                    body: body
                 })
                 .where(eq(emailTemplates.id, emailTemplateID));
             if (updateResult == null) {
@@ -170,7 +170,6 @@ emailTemplatesRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), a
                 body: body
             }).returning();
             if (inserted == null || inserted.length !== 1 || inserted[0] == null) {
-                deleteFile(req.file);
                 res.status(500).json({message: "Inserimento non riuscito"});
                 return;
             }

@@ -1,6 +1,6 @@
 import {useNavigate, useParams} from "react-router";
 import {type FormEvent, type FormEventHandler, useEffect, useState} from "react";
-import type {DataMessage, EmailTemplateDetail, EmailTemplateDetailApiResponse} from "../../../utils/Types.ts";
+import type {DataMessage, NumerationRegisterApiResponse, NumerationRegisterListEntry} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
 import {defaultGETRequestInit, defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
@@ -8,29 +8,28 @@ import {Button, Col, Container, Form, GoBack, Row} from "design-react-kit";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
-import {ValidatedTextArea} from "../../../components/form/ValidatedTextArea.tsx";
 
-export function EditEmailTemplate() {
+export function EditNumerationRegister() {
     const navigate = useNavigate();
-    const [emailTemplateDetails, setEmailTemplateDetails] = useState<EmailTemplateDetail | null>(null);
+    const [numerationRegisterDetails, setNumerationRegisterDetails] = useState<NumerationRegisterListEntry | null>(null);
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
     const urlParams = useParams();
 
     useEffect(() => {
-        if (urlParams.emailTemplateID == null || urlParams.emailTemplateID == "") {
-            navigate("/emailTemplates");
+        if (urlParams.numerationRegisterID == null || urlParams.numerationRegisterID == "") {
+            navigate("/numerations");
         }
     }, [navigate, urlParams]);
 
     useEffect(() => {
-        const abort = fetchApiAsync<EmailTemplateDetailApiResponse>({
-            urlFromApiRoot: "/templates/email/detail/" + urlParams.emailTemplateID,
+        const abort = fetchApiAsync<NumerationRegisterApiResponse>({
+            urlFromApiRoot: "/numerations/detail/" + urlParams.numerationRegisterID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
                 if (data != null) {
-                    setEmailTemplateDetails(data.emailTemplate);
+                    setNumerationRegisterDetails(data.numerationRegister);
                 }
             }
         });
@@ -46,7 +45,7 @@ export function EditEmailTemplate() {
         }
         const formValues = getValueObject();
         fetchApiAsync<DataMessage>({
-            urlFromApiRoot: "/templates/email/edit/" + urlParams.emailTemplateID,
+            urlFromApiRoot: "/numerations/edit/" + urlParams.numerationRegisterID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,
@@ -60,21 +59,21 @@ export function EditEmailTemplate() {
             <GoBack link>
                 Torna indietro
             </GoBack>
-            <h2>Modifica modello di email</h2>
+            <h2>Modifica registro numerazione</h2>
             <Form onSubmit={onFormSubmit} className={"mt-4"}>
-                {emailTemplateDetails != null && (
+                {numerationRegisterDetails != null && (
                     <>
                         <Row>
                             <Col lg={1}>
-                                <p><strong>ID</strong><br/>{emailTemplateDetails.id}</p>
+                                <p><strong>ID</strong><br/>{numerationRegisterDetails.id}</p>
                             </Col>
                             <Col lg={3}>
                                 <p><strong>Creato
-                                    il</strong><br/>{new Date(emailTemplateDetails.createdAt).toLocaleString()}</p>
+                                    il</strong><br/>{new Date(numerationRegisterDetails.createdAt).toLocaleString()}</p>
                             </Col>
                             <Col lg={3}>
                                 <p><strong>Ultima
-                                    modifica</strong><br/>{new Date(emailTemplateDetails.updatedAt).toLocaleString()}
+                                    modifica</strong><br/>{new Date(numerationRegisterDetails.updatedAt).toLocaleString()}
                                 </p>
                             </Col>
                         </Row>
@@ -83,45 +82,23 @@ export function EditEmailTemplate() {
                                 <ValidatedInput name={"description"} labelText={"Descrizione"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false} defaultValue={emailTemplateDetails.description}
+                                                validationMark={false}
+                                                defaultValue={numerationRegisterDetails.description}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "text"}}/>
                             </Col>
                             <Col md={2}>
-                                <ValidatedInput name={"disabled"} validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false} defaultValue={emailTemplateDetails.disabled}
-                                                isMandatory={true}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                labelText={"Disabilitato"}
-                                                inputProps={{type: "checkbox", className: "form-check-input"}}/>
-                            </Col>
-                        </Row>
-                        <Row className={"mt-4"}>
-                            <Col md={12}>
-                                <ValidatedInput name={"subject"} labelText={"Oggetto"}
+                                <ValidatedInput name={"nextNumber"} labelText={"Prossimo numero"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false} defaultValue={emailTemplateDetails.subject}
+                                                validationMark={false}
+                                                defaultValue={numerationRegisterDetails.nextNumber}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                        </Row>
-                        <Row>
-                            <Col md={12}>
-                                <ValidatedTextArea name={"body"} labelText={"Corpo"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false} defaultValue={emailTemplateDetails.body}
-                                                isMandatory={true}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                textAreaProps={{rows: 5}}/>
+                                                inputProps={{type: "number"}}/>
                             </Col>
                         </Row>
                         <Row className={"mt-4"}>

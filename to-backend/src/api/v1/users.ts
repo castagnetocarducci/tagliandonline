@@ -46,7 +46,10 @@ usersRouter.get("/list", middlewareAuthCheck(["admin"]), async (req: AuthRequest
     }
 
     const db = DatabaseManager.instance.db;
-    const authUsersList = await db.query.authUsers.findMany({with: {role: true}});
+    const authUsersList = await db.query.authUsers.findMany({
+        with: {role: true},
+        orderBy: { updatedAt: "desc"},
+    });
     if (authUsersList == null) {
         res.status(500).json({message: "Errore nel reperire la lista di utenti"});
         return;

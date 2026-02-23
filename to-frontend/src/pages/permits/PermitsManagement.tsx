@@ -9,6 +9,9 @@ import {NewDocTemplate} from "./docTemplates/NewDocTemplate.tsx";
 import {EmailTemplatesList} from "./emailTemplates/EmailTemplatesList.tsx";
 import {EditEmailTemplate} from "./emailTemplates/EditEmailTemplate.tsx";
 import {NewEmailTemplate} from "./emailTemplates/NewEmailTemplate.tsx";
+import {NewNumerationRegister} from "./numerations/NewNumerationRegister.tsx";
+import {EditNumerationRegister} from "./numerations/EditNumerationRegister.tsx";
+import {NumerationRegistersList} from "./numerations/NumerationRegistersList.tsx";
 
 export const PermitsManagement = () => {
     const userDataCtx = useUserDataContext();
@@ -57,6 +60,9 @@ export const PermitsManagement = () => {
                             <Route path="/emailTemplates/new" element={<NewEmailTemplate/>}/>
                             <Route path="/emailTemplates/:emailTemplateID" element={<EditEmailTemplate/>}/>
                             <Route path="/emailTemplates" element={<EmailTemplatesList/>}/>
+                            <Route path="/numerations/new" element={<NewNumerationRegister/>}/>
+                            <Route path="/numerations/:numerationRegisterID" element={<EditNumerationRegister/>}/>
+                            <Route path="/numerations" element={<NumerationRegistersList/>}/>
                         </Routes>
                     </Container>
                 </TabContent>

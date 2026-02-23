@@ -120,4 +120,30 @@ export type EmailTemplateDetailApiResponse = {
 
 
 
+export type NumerationRegisterListEntry = {
+    id: number,
+    createdAt: string,
+    updatedAt: string,
+    nextNumber: number,
+    description: string
+}
+
+
+export type NumerationRegisterListApiResponse = {
+    message: string,
+    numerationRegisterList: NumerationRegisterListEntry[]
+}
+
+export type NumerationRegisterApiResponse = {
+    message: string,
+    numerationRegister: NumerationRegisterListEntry
+}
+
+
+
+
+
+
+
+
 
