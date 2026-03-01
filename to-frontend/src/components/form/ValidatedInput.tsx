@@ -46,7 +46,7 @@ export function ValidatedInput(
         }
         return validationFunc(value);
     }, [isMandatory, validationFunc]);
-    const isEmpty = value == null || value === "";
+    // const isEmpty = value == null || value === "";
     const isValid = incrementedValidationFunc(value);
     const labelContent = labelText || titleCase(name);
 
@@ -70,8 +70,8 @@ export function ValidatedInput(
                 <div className={"form-check"}>
                     <Input id={name} name={name}
                            label={undefined}
-                           validationText={persistingValidationText ? validationText : (!isEmpty && isValid ? "" : validationText)}
-                           valid={validationMark ? isValid : (!isEmpty && isValid ? undefined : isValid)}
+                           validationText={persistingValidationText ? validationText : ( isValid ? "" : validationText)}
+                           valid={validationMark ? isValid : (isValid ? undefined : isValid)}
                            checked={value === "true"} onChange={(e) => onParameterChange(e.target.checked.toString())}
                            {...inputPropsNN}
                     />
@@ -81,8 +81,8 @@ export function ValidatedInput(
             {inputType !== "checkbox" &&
                 <Input id={name} name={name}
                        label={labelContent}
-                       validationText={persistingValidationText ? validationText : (!isEmpty && isValid ? "" : validationText)}
-                       valid={validationMark ? isValid : (!isEmpty && isValid ? undefined : isValid)}
+                       validationText={persistingValidationText ? validationText : (isValid ? "" : validationText)}
+                       valid={validationMark ? isValid : (isValid ? undefined : isValid)}
                        value={"" + value} onChange={(e) => onParameterChange(e.target.value)}
                     //rimuove il punto esclamativo alla fine per estetica
                        style={inputType === "password" ? {backgroundImage: "none"} : {}}

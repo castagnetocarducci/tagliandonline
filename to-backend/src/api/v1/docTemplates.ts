@@ -8,7 +8,7 @@ import {eq} from "drizzle-orm";
 
 export const docTemplatesRouter = Router();
 
-type DocTemplateListEntry = {
+export type DocTemplateListEntry = {
     id: number,
     createdAt: Date,
     updatedAt: Date,

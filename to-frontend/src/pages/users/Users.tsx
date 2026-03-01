@@ -26,7 +26,7 @@ export const Users = () => {
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
-                if (data != null) {
+                if (data != null && data.usersList != null) {
                     setUsersList(data.usersList);
                 }
             }

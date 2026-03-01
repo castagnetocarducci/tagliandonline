@@ -20,7 +20,7 @@ export function EmailTemplatesList() {
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
-                if (data != null) {
+                if (data != null && data.emailTemplatesList != null) {
                     setEmailTemplatesList(data.emailTemplatesList);
                 }
             }
@@ -95,6 +95,14 @@ export function EmailTemplatesList() {
                     <hr/>
                 </div>
             ))}
+            {emailTemplatesList.length === 0 && (
+                <>
+                    <Row>
+                        <strong>Nessun risultato</strong>
+                    </Row>
+                    <hr/>
+                </>
+            )}
 
             <LoadingSpinner loading={loading}/>
 

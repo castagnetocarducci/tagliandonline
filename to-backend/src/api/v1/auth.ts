@@ -83,9 +83,10 @@ export const middlewareAuthCheck = (requiredRole: RequiredRole[]): RequestHandle
             };
             next();
         } catch (error) {
-            throw new Error("Errore nel recupero dell'utente dal database");
+            const errMsg = error instanceof Error ? error.message : "Errore sconosciuto";
+            console.log(errMsg);
+            throw new Error(errMsg);
         }
-
     } catch (error) {
         res.clearCookie("authToken", {
             httpOnly: true,

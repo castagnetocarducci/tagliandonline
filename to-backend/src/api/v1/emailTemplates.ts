@@ -8,7 +8,7 @@ import {eq} from "drizzle-orm";
 export const emailTemplatesRouter = Router();
 
 
-type EmailTemplateListEntry = {
+export type EmailTemplateListEntry = {
     id: number,
     createdAt: Date,
     updatedAt: Date,

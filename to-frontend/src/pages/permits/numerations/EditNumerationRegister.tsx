@@ -100,6 +100,16 @@ export function EditNumerationRegister() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "number"}}/>
                             </Col>
+                            <Col md={2}>
+                                <ValidatedInput name={"disabled"} validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false} defaultValue={numerationRegisterDetails.disabled}
+                                                isMandatory={true}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                labelText={"Disabilitato"}
+                                                inputProps={{type: "checkbox", className: "form-check-input"}}/>
+                            </Col>
                         </Row>
                         <Row className={"mt-4"}>
                             <Col md={4}>

@@ -16,8 +16,12 @@ export const toSchema = pgSchema("tagliandonline");
 
 export const permits = toSchema.table("permits", {
     id: commonColumns.idAutoIncr(),
+    createdAt: commonColumns.createdAt(),
+    updatedAt: commonColumns.updatedAt(),
     description: varchar({length: 128}).notNull(),
-    platesAmount: integer().notNull(),
+    printedName: varchar({length: 128}).notNull(),
+    simultaneousPlatesAmount: integer().notNull(),
+    applicationPlatesAmount: integer().notNull(),
     disabled: commonColumns.disabled(),
     notes: commonColumns.notes(),
     approveEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
@@ -26,7 +30,7 @@ export const permits = toSchema.table("permits", {
     voucherTemplateId: integer().notNull().references(() => docTemplates.id),
     authorizationTemplateId: integer().notNull().references(() => docTemplates.id),
     numerationRegisterId: integer().notNull().references(() => numerationRegisters.id),
-    lastPermitHistoryId: integer().notNull().references((): AnyPgColumn => permitsHistory.id), // self references need anypgcolumn due to typescript limitations
+    lastPermitHistoryId: integer().references((): AnyPgColumn => permitsHistory.id), // self references need anypgcolumn due to typescript limitations
 })
 
 export const permitsHistory = toSchema.table("permitsHistory", {
@@ -36,7 +40,9 @@ export const permitsHistory = toSchema.table("permitsHistory", {
     modifiedByAuthUserId: integer().notNull().references(() => authUsers.id),
 
     description: varchar({length: 128}).notNull(),
-    platesAmount: integer().notNull(),
+    printedName: varchar({length: 128}).notNull(),
+    simultaneousPlatesAmount: integer().notNull(),
+    applicationPlatesAmount: integer().notNull(),
     disabled: commonColumns.disabled(),
     notes: commonColumns.notes(),
     approveEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
@@ -75,6 +81,7 @@ export const numerationRegisters = toSchema.table("numerationRegisters", {
     updatedAt: commonColumns.updatedAt(),
     description: varchar({length: 32}).notNull(),
     nextNumber: integer().default(1).notNull(),
+    disabled: commonColumns.disabled(),
 })
 
 export const inspections = toSchema.table("inspections", {
@@ -130,10 +137,12 @@ export const loginHistory = toSchema.table("loginHistory", {
 
 export const vehicles = toSchema.table("vehicles", {
     id: commonColumns.idAutoIncr(),
+    createdAt: commonColumns.createdAt(),
+    updatedAt: commonColumns.updatedAt(),
     plate: varchar({length: 10}).notNull(),
     model: varchar({length: 10}).notNull(),
     brand: varchar({length: 10}).notNull(),
-    lastVehiclesHistoryId: integer().notNull().references((): AnyPgColumn => vehiclesHistory.id),
+    lastVehiclesHistoryId: integer().references((): AnyPgColumn => vehiclesHistory.id),
 }, (t) => [
     index("vehiclesPlateIndex").on(t.plate),
     index("vehiclesModelIndex").on(t.model),
@@ -158,6 +167,8 @@ export const vehiclesHistory = toSchema.table("vehiclesHistory", {
 
 export const applications = toSchema.table("applications", {
     id: commonColumns.idAutoIncr(),
+    createdAt: commonColumns.createdAt(),
+    updatedAt: commonColumns.updatedAt(),
     requestDate: commonColumns.createdAt(),
     outcomeDate: date(),
     registerNumber: varchar({length: 32}).notNull(), //numero di protocollo
@@ -180,7 +191,7 @@ export const applications = toSchema.table("applications", {
     typeId: integer().notNull().references(() => applicationTypes.id),
     outcomeAuthUserId: integer().references(() => authUsers.id),
     voucherId: integer().references(() => vouchers.id),
-    lastApplicationHistoryId: integer().notNull().references((): AnyPgColumn => applicationsHistory.id),
+    lastApplicationHistoryId: integer().references((): AnyPgColumn => applicationsHistory.id),
 }, (t) => [
     index("applicationsRegisterNumberIndex").on(t.registerNumber),
     index("applicationsRegisterDateIndex").on(t.registerDate),
@@ -276,6 +287,8 @@ export const applicationsEmailsHistory = toSchema.table("applicationsEmailsHisto
 
 export const vouchers = toSchema.table("vouchers", {
     id: commonColumns.idAutoIncr(),
+    createdAt: commonColumns.createdAt(),
+    updatedAt: commonColumns.updatedAt(),
     number: integer().notNull(),
     revoked: commonColumns.disabled(),
     validFromDate: date().notNull(),
@@ -286,7 +299,7 @@ export const vouchers = toSchema.table("vouchers", {
     generatedVoucherPdfPath: commonColumns.path512(),
     generatedAuthorizationPdfPath: commonColumns.path512(),
     signedAuthorizationPath: commonColumns.path512(),
-    lastVoucherHistoryId: integer().notNull().references((): AnyPgColumn => vouchersHistory.id),
+    lastVoucherHistoryId: integer().references((): AnyPgColumn => vouchersHistory.id),
 }, (t) => [
     index("vouchersNumberIndex").on(t.number),
 ])

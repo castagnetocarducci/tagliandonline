@@ -7,11 +7,12 @@ import {eq} from "drizzle-orm";
 export const numerationsRouter = Router();
 
 
-type NumerationListEntry = {
+export type NumerationListEntry = {
     id: number,
     createdAt: Date,
     updatedAt: Date,
     nextNumber: number,
+    disabled: boolean,
     description: string
 }
 
@@ -21,19 +22,20 @@ numerationsRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), asyn
     }
 
     const db = DatabaseManager.instance.db;
-    const numerationsRegistersist = await db.query.numerationRegisters.findMany({
+    const numerationsRegistersArr = await db.query.numerationRegisters.findMany({
         orderBy: { updatedAt: "desc"},
     });
-    if (numerationsRegistersist == null) {
+    if (numerationsRegistersArr == null) {
         return res.status(500).json({message: "Errore nel reperire le numerazioni"});
     }
     const numerationsRegistersList: NumerationListEntry[] = [];
-    for (const numerationRegister of numerationsRegistersist) {
+    for (const numerationRegister of numerationsRegistersArr) {
         numerationsRegistersList.push({
             id: numerationRegister.id,
             createdAt: numerationRegister.createdAt,
             updatedAt: numerationRegister.updatedAt,
             nextNumber: numerationRegister.nextNumber,
+            disabled: numerationRegister.disabled,
             description: numerationRegister.description
         });
     }
@@ -72,6 +74,7 @@ numerationsRouter.get("/detail/:numerationID", middlewareAuthCheck(["admin", "op
         createdAt: numerationRegister.createdAt,
         updatedAt: numerationRegister.updatedAt,
         nextNumber: numerationRegister.nextNumber,
+        disabled: numerationRegister.disabled,
         description: numerationRegister.description
     };
 
@@ -94,17 +97,19 @@ numerationsRouter.post("/edit/:numerationID", middlewareAuthCheck(["admin", "ope
         const numerationID = parseInt(req.params.numerationID as string);
 
         if (req.body.description == null || req.body.description.trim() === "" ||
-            req.body.nextNumber == null || req.body.nextNumber instanceof Number) {
+            req.body.nextNumber == null || isNaN(parseInt(req.body.nextNumber)) ||
+            req.body.disabled == null || req.body.disabled.trim() === "") {
             res.status(400).json({message: "Richiesta con campi mancanti"});
             return;
         }
-        const {description, nextNumber} = req.body;
+        const {description, nextNumber, disabled} = req.body;
         const db = DatabaseManager.instance.db;
         try {
             const updateResult = await db.update(numerationRegisters)
                 .set({
                     description: description,
                     nextNumber: nextNumber,
+                    disabled: disabled === "true"
                 })
                 .where(eq(numerationRegisters.id, numerationID));
             if (updateResult == null) {
@@ -129,7 +134,7 @@ numerationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asyn
             return;
         }
         if (req.body.description == null || req.body.description.trim() === "" ||
-            req.body.nextNumber == null || req.body.nextNumber instanceof Number) {
+            req.body.nextNumber == null || !isNaN(parseInt(req.body.nextNumber))) {
             res.status(400).json({message: "Richiesta con campi mancanti"});
             return;
         }

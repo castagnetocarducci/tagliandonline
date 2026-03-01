@@ -67,14 +67,14 @@ export function ValidatedSelect(
 
     return (
         <>
-            <Select id={name} name={name} label={labelContent} className={isValid ? "" : "is-invalid"}
+            <Select id={name} name={name} label={labelContent} className={" " + (isValid ? "" : "is-invalid")}
                     value={"" + value} onChange={(e) => onParameterChange(e)}>
                 {options.map(({value, label}, index) => (
                     <option key={index} label={label}>{value}</option>
                 ))}
             </Select>
             {/* Preso dall'html dell'input (validated). Gli sviluppatori di designers Italia hanno deciso di non mettere il valid feedback sul select, semplicemente l'ho reintrodotto. */}
-            <div className={"form-text form-feedback " + (isValid ? "" : "just-validate-error-label")}>
+            <div className={"form-text form-feedback mb-4" + " " + (isValid ? "" : "just-validate-error-label")}>
                 {persistingValidationText || !isValid ? validationText : ""}
             </div>
 

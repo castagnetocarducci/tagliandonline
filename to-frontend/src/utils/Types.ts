@@ -119,15 +119,14 @@ export type EmailTemplateDetailApiResponse = {
 }
 
 
-
 export type NumerationRegisterListEntry = {
     id: number,
     createdAt: string,
     updatedAt: string,
     nextNumber: number,
+    disabled: boolean,
     description: string
 }
-
 
 export type NumerationRegisterListApiResponse = {
     message: string,
@@ -139,6 +138,53 @@ export type NumerationRegisterApiResponse = {
     numerationRegister: NumerationRegisterListEntry
 }
 
+
+export type PermitListEntry = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    description: string,
+    printedName: string,
+    disabled: boolean,
+    simultaneousPlatesAmount: number,
+    applicationPlatesAmount: number
+}
+
+export type PermitDetails = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    description: string,
+    printedName: string,
+    simultaneousPlatesAmount: number,
+    applicationPlatesAmount: number,
+    disabled: boolean,
+    notes: string,
+    approveEmailTemplateId: number,
+    revokeEmailTemplateId: number,
+    refuseEmailTemplateId: number,
+    voucherTemplateId: number,
+    authorizationTemplateId: number,
+    numerationRegisterId: number,
+    lastPermitHistoryId: number,
+}
+
+export type PermitListApiResponse = {
+    message: string,
+    permitsList: PermitListEntry[]
+}
+
+export type PermitDetailsApiResponse = {
+    message: string,
+    permit: PermitDetails
+}
+
+export type PermitAvailableTemplatesApiResponse = {
+    message: string,
+    docTemplatesList: DocTemplateListEntry[],
+    emailTemplatesList: EmailTemplateListEntry[],
+    numerationRegisterList: NumerationRegisterListEntry[]
+}
 
 
 

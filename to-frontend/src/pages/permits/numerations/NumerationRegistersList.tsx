@@ -6,11 +6,13 @@ import {defaultGETRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
 import {Button, Col, Container, Icon, Row} from "design-react-kit";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
+import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 
 export function NumerationRegistersList() {
     const navigate = useNavigate();
     const [numerationRegisterList, setNumerationRegisterList] = useState<NumerationRegisterListEntry[]>([]);
     const {err, setErr, setSucc, loading, setLoading} = useErrSuccLoad();
+    const [showDisabled, setShowDisabled] = useState<boolean>(false);
 
     useEffect(() => {
         const abort = fetchApiAsync<NumerationRegisterListApiResponse>({
@@ -18,7 +20,7 @@ export function NumerationRegistersList() {
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
-                if (data != null) {
+                if (data != null && data.numerationRegisterList != null) {
                     setNumerationRegisterList(data.numerationRegisterList);
                 }
             }
@@ -37,11 +39,21 @@ export function NumerationRegistersList() {
                         </span>
                 Nuovo
             </Button>
-
+            <ValidatedInput name={"disabledFilter"} validationFunc={() => true}
+                            validationText={""} persistingValidationText={false} validationMark={false}
+                            defaultValue={false} isMandatory={false}
+                            errorMessage={""} setNewValidation={() => {
+            }}
+                            labelText={"Mostra disabilitati"}
+                            inputProps={{type: "checkbox", className: "form-check-input"}}
+                            valueChangedCallback={(newValue) => setShowDisabled(newValue as boolean)}/>
             {numerationRegisterList.length > 0 && (
                 <Row>
                     <Col md={1}>
                         <strong>#</strong>
+                    </Col>
+                    <Col md={1}>
+                        <strong>Stato</strong>
                     </Col>
                     <Col md={2}>
                         <strong>Prossimo numero</strong>
@@ -49,7 +61,7 @@ export function NumerationRegistersList() {
                     <Col md={5}>
                         <strong>Descrizione</strong>
                     </Col>
-                    <Col md={3}>
+                    <Col md={2}>
                         <strong>Ultimo aggiornamento</strong>
                     </Col>
                     <Col md={1}>
@@ -58,11 +70,16 @@ export function NumerationRegistersList() {
                 </Row>
             )}
             <hr/>
-            {numerationRegisterList.map((numerationRegisterListEntry, index) => (
+            {numerationRegisterList.filter((numerationRegisterListEntry) => {
+                return numerationRegisterListEntry.disabled ? "" + showDisabled === "true" : true;
+            }).map((numerationRegisterListEntry, index) => (
                 <div key={index}>
                     <Row className={"mt-2 d-flex align-items-center"}>
                         <Col md={1} className={""}>
                             {numerationRegisterListEntry.id}
+                        </Col>
+                        <Col md={1}>
+                            {numerationRegisterListEntry.disabled ? "Disabilitato" : "Attivo"}
                         </Col>
                         <Col md={2}>
                             <strong>{numerationRegisterListEntry.nextNumber}</strong>
@@ -70,7 +87,7 @@ export function NumerationRegistersList() {
                         <Col md={5} className={"text-wrap"}>
                             {numerationRegisterListEntry.description}
                         </Col>
-                        <Col md={3}>
+                        <Col md={2}>
                             {new Date(numerationRegisterListEntry.updatedAt).toLocaleString()}
                         </Col>
                         <Col md={1}>
@@ -83,6 +100,14 @@ export function NumerationRegistersList() {
                     <hr/>
                 </div>
             ))}
+            {numerationRegisterList.length === 0 && (
+                <>
+                    <Row>
+                        <strong>Nessun risultato</strong>
+                    </Row>
+                    <hr/>
+                </>
+            )}
 
             <LoadingSpinner loading={loading}/>
 
