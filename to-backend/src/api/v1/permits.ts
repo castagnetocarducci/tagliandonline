@@ -1,11 +1,13 @@
 import {Router} from "express";
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
-import {numerationRegisters, permits, permitsHistory} from "../../db/schema.ts";
+import {permits, permitsHistory} from "../../db/schema.ts";
 import {eq} from "drizzle-orm";
 import {type NumerationListEntry} from "./numerations.ts";
 import type {DocTemplateListEntry} from "./docTemplates.ts";
 import {type EmailTemplateListEntry} from "./emailTemplates.ts";
+import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
+import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 
 export const permitsRouter = Router();
 
@@ -116,6 +118,81 @@ permitsRouter.get("/detail/:permitID", middlewareAuthCheck(["admin", "operatore"
         message: "Permesso acquisito con successo",
         permit: permitDetails
     });
+});
+
+
+
+
+permitsRouter.get("/history/:permitID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+    if (req.params.permitID == null || ("" + req.params.permitID).trim() == "") {
+        res.status(400).json({message: "ID permesso non valido"});
+        return;
+    }
+    const permitID = parseInt(req.params.permitID as string);
+    if (isNaN(permitID)) {
+        res.status(400).json({message: "ID permesso non valido"});
+        return;
+    }
+
+    try {
+        const db = DatabaseManager.instance.db;
+        const permitHistory = await db.query.permitsHistory.findMany(
+            {
+                where: {permitId: permitID},
+                with: {
+                    modifiedByAuthUser: true,
+                    approveEmailTemplate: true,
+                    revokeEmailTemplate: true,
+                    refuseEmailTemplate: true,
+                    voucherDocTemplate: true,
+                    authorizationDocTemplate: true,
+                    numerationRegister: true
+                },
+                orderBy: {createdAt: "asc"},
+            });
+        if (permitHistory == null || permitHistory.length === 0) {
+            res.status(500).json({message: "Storico permesso non trovato"});
+            return;
+        }
+
+        const permitHistoryRes: HistoryEvent[] = [];
+        const currModificationEntries: HistoryModificationMap = {};
+        permitHistory.forEach((historyElem, index) => {
+            const diffModificationEntries: HistoryModificationMap = {};
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "description", historyElem.description);
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "printedName", historyElem.printedName);
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "simultaneousPlatesAmount", "" + historyElem.simultaneousPlatesAmount);
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "applicationPlatesAmount", "" + historyElem.applicationPlatesAmount);
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "notes", historyElem.notes);
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "approveEmailTemplate", historyElem.approveEmailTemplate ? historyElem.approveEmailTemplate.id + ": " + historyElem.approveEmailTemplate.description : "sconosciuto");
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "revokeEmailTemplate", historyElem.revokeEmailTemplate ? historyElem.revokeEmailTemplate.id + ": " + historyElem.revokeEmailTemplate.description : "sconosciuto");
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "refuseEmailTemplate", historyElem.refuseEmailTemplate ? historyElem.refuseEmailTemplate.id + ": " + historyElem.refuseEmailTemplate.description : "sconosciuto");
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherDocTemplate", historyElem.voucherDocTemplate ? historyElem.voucherDocTemplate.id + ": " + historyElem.voucherDocTemplate.description : "sconosciuto");
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "authorizationDocTemplate", historyElem.authorizationDocTemplate ? historyElem.authorizationDocTemplate.id + ": " + historyElem.authorizationDocTemplate.description : "sconosciuto");
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "numerationRegister", historyElem.numerationRegister  ? historyElem.numerationRegister.id + ": " + historyElem.numerationRegister.description : "sconosciuto");
+            permitHistoryRes.push( {
+                userId: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.id : 0,
+                username: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.username : "unknown",
+                timestamp: historyElem.createdAt,
+                modificationsMap: diffModificationEntries
+            });
+        });
+
+        res.json({
+            message: "Storico del permesso acquisito con successo",
+            permitHistory: permitHistoryRes
+        });
+    } catch (e) {
+        res.status(500).json({message: "Errore nel reperire lo storico del permesso: " + e});
+        return;
+    }
+
+
+
 });
 
 permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {

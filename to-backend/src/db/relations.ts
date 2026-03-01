@@ -63,7 +63,7 @@ export const relations = defineRelations(schema, (r) => ({
             to: r.docTemplates.id,
             alias: "permitsHistoryAuthorizationTemplateRel",
         }),
-        numerationDocRegister: r.one.numerationRegisters({
+        numerationRegister: r.one.numerationRegisters({
             from: r.permitsHistory.numerationRegisterId,
             to: r.numerationRegisters.id
         }),
