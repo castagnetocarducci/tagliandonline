@@ -19,8 +19,8 @@ export function NewPermit() {
     const navigate = useNavigate();
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
-    const [docTemplateList, setdocTemplateList] = useState<DocTemplateListEntry[]>([]);
-    const [emailTemplateList, setemailTemplateList] = useState<EmailTemplateListEntry[]>([]);
+    const [docTemplateList, setDocTemplateList] = useState<DocTemplateListEntry[]>([]);
+    const [emailTemplateList, setEmailTemplateList] = useState<EmailTemplateListEntry[]>([]);
     const [numerationRegistersList, setNumerationRegistersList] = useState<NumerationRegisterListEntry[]>([]);
 
     useEffect(() => {
@@ -30,14 +30,14 @@ export function NewPermit() {
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
                 if (data != null) {
-                    setdocTemplateList(data.docTemplatesList);
-                    setemailTemplateList(data.emailTemplatesList);
+                    setDocTemplateList(data.docTemplatesList);
+                    setEmailTemplateList(data.emailTemplatesList);
                     setNumerationRegistersList(data.numerationRegisterList);
                 }
             }
         });
         return abort;
-    }, [setErr, setLoading, setSucc, setdocTemplateList, setemailTemplateList]);
+    }, [setErr, setLoading, setSucc, setDocTemplateList, setEmailTemplateList]);
 
     const onFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
         e.preventDefault();

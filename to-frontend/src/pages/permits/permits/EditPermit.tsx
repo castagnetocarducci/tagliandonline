@@ -12,7 +12,7 @@ import type {
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
 import {defaultGETRequestInit, defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
-import {Button, Col, Container, Form, GoBack, Row} from "design-react-kit";
+import {Button, Col, Container, Form, GoBack, Icon, Row} from "design-react-kit";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
@@ -29,7 +29,7 @@ export function EditPermit() {
     const [numerationRegistersList, setNumerationRegistersList] = useState<NumerationRegisterListEntry[]>([]);
 
     useEffect(() => {
-        if (urlParams.numerationRegisterID == null || urlParams.numerationRegisterID == "") {
+        if (urlParams.permitID == null || urlParams.permitID == "") {
             navigate("/permits/list");
         }
     }, [navigate, urlParams]);
@@ -52,7 +52,7 @@ export function EditPermit() {
 
     useEffect(() => {
         const abort = fetchApiAsync<PermitDetailsApiResponse>({
-            urlFromApiRoot: "/permits/detail/" + urlParams.numerationRegisterID,
+            urlFromApiRoot: "/permits/detail/" + urlParams.permitID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
@@ -72,7 +72,7 @@ export function EditPermit() {
         }
         const formValues = getValueObject();
         fetchApiAsync<DataMessage>({
-            urlFromApiRoot: "/permits/edit/" + urlParams.numerationRegisterID,
+            urlFromApiRoot: "/permits/edit/" + urlParams.permitID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,
@@ -150,6 +150,16 @@ export function EditPermit() {
                                 <p><strong>Ultima
                                     modifica</strong><br/>{new Date(permitDetails.updatedAt).toLocaleString()}
                                 </p>
+                            </Col>
+                            <Col lg={2}>
+                                <Button className={"mb-4"}
+                                        onClick={() => navigate(`/permits/list/${permitDetails.id}/history`)}
+                                        color={"primary"} icon={true} outline title={"Visualizza storico permesso"}>
+                                        <span className={"rounded-icon me-2"}>
+                                            <Icon icon={"it-calendar"}/>
+                                        </span>
+                                    Storico
+                                </Button>
                             </Col>
                         </Row>
                         <Row className={"mt-4"}>

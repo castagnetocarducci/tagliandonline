@@ -64,6 +64,17 @@ export type DataMessage = {
     message: string
 }
 
+export type HistoryModificationMap = {
+    [key: string]: string
+}
+
+export type HistoryEvent = {
+    userId: number,
+    username: string,
+    timestamp: string,
+    modificationsMap: HistoryModificationMap
+}
+
 export type AddedElementMessage = {
     message: string,
     id: number
@@ -186,7 +197,10 @@ export type PermitAvailableTemplatesApiResponse = {
     numerationRegisterList: NumerationRegisterListEntry[]
 }
 
-
+export type PermitHistoryApiResponse = {
+    message: string,
+    permitHistory: HistoryEvent[]
+}
 
 
 

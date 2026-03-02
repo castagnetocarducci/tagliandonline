@@ -15,6 +15,7 @@ import {NumerationRegistersList} from "./numerations/NumerationRegistersList.tsx
 import {PermitsList} from "./permits/PermitsList.tsx";
 import {NewPermit} from "./permits/NewPermit.tsx";
 import {EditPermit} from "./permits/EditPermit.tsx";
+import {PermitHistory} from "./permits/PermitHisotry.tsx";
 
 export const PermitsManagement = () => {
     const userDataCtx = useUserDataContext();
@@ -67,6 +68,7 @@ export const PermitsManagement = () => {
                             <Route path="/numerations/:numerationRegisterID" element={<EditNumerationRegister/>}/>
                             <Route path="/numerations" element={<NumerationRegistersList/>}/>
                             <Route path="/list/new" element={<NewPermit/>}/>
+                            <Route path="/list/:permitID/history" element={<PermitHistory/>}/>
                             <Route path="/list/:permitID" element={<EditPermit/>}/>
                             <Route path="/list" element={<PermitsList/>}/>
                         </Routes>

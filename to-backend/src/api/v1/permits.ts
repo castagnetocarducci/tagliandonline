@@ -182,7 +182,7 @@ permitsRouter.get("/history/:permitID", middlewareAuthCheck(["admin", "operatore
             });
         });
 
-        res.json({
+        res.status(200).json({
             message: "Storico del permesso acquisito con successo",
             permitHistory: permitHistoryRes
         });
@@ -203,7 +203,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
     const modifiedByAuthUserId = req.user.id;
 
     if (req.params.permitID == null || ("" + req.params.permitID).trim() == "") {
-        res.status(400).json({message: "Numerazione non trovata"});
+        res.status(400).json({message: "Permesso non trovato"});
         return;
     }
     const permitID = parseInt(req.params.permitID as string);
@@ -315,7 +315,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
             res.status(500).json({message: "Errore durante l'inserimento del permesso"});
             return;
         }
-        res.status(200).json({message: "Numerazione aggiornata con successo"});
+        res.status(200).json({message: "Permesso aggiornato con successo"});
         return;
     } catch (e) {
         res.status(500).json({message: "Errore durante l'aggiornamento: " + e});
