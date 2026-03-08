@@ -64,8 +64,13 @@ export type DataMessage = {
     message: string
 }
 
+export type ModificationEntry = {
+    description: string,
+    value: string
+}
+
 export type HistoryModificationMap = {
-    [key: string]: string
+    [key: string]: ModificationEntry
 }
 
 export type HistoryEvent = {
@@ -123,6 +128,7 @@ export type EmailTemplateListApiResponse = {
     message: string,
     emailTemplatesList: EmailTemplateListEntry[]
 }
+
 
 export type EmailTemplateDetailApiResponse = {
     message: string,
@@ -201,6 +207,46 @@ export type PermitHistoryApiResponse = {
     message: string,
     permitHistory: HistoryEvent[]
 }
+
+
+
+export type VehicleListEntry = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    plate: string,
+    model: string,
+    brand: string,
+}
+
+export type VehicleDetails = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    plate: string,
+    model: string,
+    brand: string,
+    applications: number[],
+    vouchers: number[]
+}
+
+export type VehicleListApiResponse = {
+    message: string,
+    vehiclesList: VehicleListEntry[]
+}
+
+export type VehicleDetailsApiResponse = {
+    message: string,
+    vehicle: VehicleDetails
+}
+
+export type VehicleHistoryApiResponse = {
+    message: string,
+    vehicleHistory: HistoryEvent[]
+}
+
+
+
 
 
 

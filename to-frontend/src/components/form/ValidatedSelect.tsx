@@ -74,8 +74,8 @@ export function ValidatedSelect(
                 ))}
             </Select>
             {/* Preso dall'html dell'input (validated). Gli sviluppatori di designers Italia hanno deciso di non mettere il valid feedback sul select, semplicemente l'ho reintrodotto. */}
-            <div className={"form-text form-feedback mb-4" + " " + (isValid ? "" : "just-validate-error-label")}>
-                {persistingValidationText || !isValid ? validationText : ""}
+            <div className={"form-text form-feedback mb-4" + " " + (isValid ? "pb-3" : "just-validate-error-label")}>
+                {persistingValidationText || !isValid ? validationText : "   "}
             </div>
 
         </>

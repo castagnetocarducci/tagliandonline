@@ -1,6 +1,6 @@
 import {useNavigate, useParams} from "react-router";
 import {useEffect, useState} from "react";
-import type {HistoryEvent, PermitHistoryApiResponse} from "../../../utils/Types.ts";
+import type {HistoryEvent, VehicleHistoryApiResponse} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {defaultGETRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
 import {Card, Col, Container, GoBack, Row, Timeline, TimelinePin} from "design-react-kit";
@@ -9,26 +9,26 @@ import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {RouterDesignLink} from "../../../components/links/RouterDesignLink.tsx";
 import "../../../styles/timeline-fix.css";
 
-export function PermitHistory() {
+export function VehicleHistory() {
     const navigate = useNavigate();
-    const [permitHistoryEvent, setPermitHistoryEvent] = useState<HistoryEvent[]>([]);
+    const [vehicleHistoryEvent, setVehicleHistoryEvent] = useState<HistoryEvent[]>([]);
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const urlParams = useParams();
 
     useEffect(() => {
-        if (urlParams.permitID == null || urlParams.permitID == "") {
-            navigate("/permits/list");
+        if (urlParams.vehicleID == null || urlParams.vehicleID == "") {
+            navigate("/vehicles/list");
         }
     }, [navigate, urlParams]);
 
     useEffect(() => {
-        const abort = fetchApiAsync<PermitHistoryApiResponse>({
-            urlFromApiRoot: "/permits/history/" + urlParams.permitID,
+        const abort = fetchApiAsync<VehicleHistoryApiResponse>({
+            urlFromApiRoot: "/vehicles/history/" + urlParams.vehicleID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
                 if (data != null) {
-                    setPermitHistoryEvent(data.permitHistory);
+                    setVehicleHistoryEvent(data.vehicleHistory);
                 }
             }
         });
@@ -41,12 +41,12 @@ export function PermitHistory() {
             <GoBack link>
                 Torna indietro
             </GoBack>
-            <h2>Storico permesso</h2>
+            <h2>Storico veicolo</h2>
 
-            {permitHistoryEvent != null && permitHistoryEvent.length > 0 && (
+            {vehicleHistoryEvent != null && vehicleHistoryEvent.length > 0 && (
                 <Timeline>
                     <Row>
-                        {permitHistoryEvent.map((event, index) => {
+                        {vehicleHistoryEvent.map((event, index) => {
                                 const timestamp = new Date(event.timestamp);
                                 return (
                                     <Col xs="12" key={index}>
@@ -77,13 +77,13 @@ export function PermitHistory() {
                                 )
                             }
                         )}
-                        {permitHistoryEvent.length > 0 && (
+                        {vehicleHistoryEvent.length > 0 && (
                             <Col xs="12">
                                 <TimelinePin iconTitle="Segnaposto" label="Versione corrente" now>
                                     <Card rounded shadow="sm">
                                         <h4 className="it-card-title mb-2">
-                                            <RouterDesignLink  to={"/permits/list/" + urlParams.permitID}>
-                                                Vedi dettagli permesso corrente
+                                            <RouterDesignLink  to={"/vehicle/list/" + urlParams.vehicleID}>
+                                                Vedi dettagli veicolo corrente
                                             </RouterDesignLink>
                                         </h4>
                                     </Card>

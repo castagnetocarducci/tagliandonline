@@ -13,6 +13,7 @@ import {PasswordResetExecute} from "../pages/profile/PasswordResetExecute.tsx";
 import {useUserDataContext} from "../hooks/useUserDataContext.ts";
 import {EditUser} from "../pages/users/EditUser.tsx";
 import {NewUser} from "../pages/users/NewUser.tsx";
+import {VehiclesManagement} from "../pages/vehicles/VehiclesManagement.tsx";
 
 export const RouteConfiguration = () => {
     const userDataCtx = useUserDataContext()
@@ -27,6 +28,7 @@ export const RouteConfiguration = () => {
                     <Route path="/inspections/*" element={<Inspections/>}/>
                     <Route path="/vouchers/*" element={<Vouchers/>}/>
                     <Route path="/permits/*" element={<PermitsManagement/>}/>
+                    <Route path="/vehicles/*" element={<VehiclesManagement/>}/>
                 </>
             )}
             {userDataCtx.userData && (userDataCtx.userData.role === "admin") && (

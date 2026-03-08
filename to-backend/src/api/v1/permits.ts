@@ -161,19 +161,19 @@ permitsRouter.get("/history/:permitID", middlewareAuthCheck(["admin", "operatore
 
         const permitHistoryRes: HistoryEvent[] = [];
         const currModificationEntries: HistoryModificationMap = {};
-        permitHistory.forEach((historyElem, index) => {
+        permitHistory.forEach((historyElem) => {
             const diffModificationEntries: HistoryModificationMap = {};
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "description", historyElem.description);
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "printedName", historyElem.printedName);
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "simultaneousPlatesAmount", "" + historyElem.simultaneousPlatesAmount);
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "applicationPlatesAmount", "" + historyElem.applicationPlatesAmount);
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "notes", historyElem.notes);
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "approveEmailTemplate", historyElem.approveEmailTemplate ? historyElem.approveEmailTemplate.id + ": " + historyElem.approveEmailTemplate.description : "sconosciuto");
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "revokeEmailTemplate", historyElem.revokeEmailTemplate ? historyElem.revokeEmailTemplate.id + ": " + historyElem.revokeEmailTemplate.description : "sconosciuto");
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "refuseEmailTemplate", historyElem.refuseEmailTemplate ? historyElem.refuseEmailTemplate.id + ": " + historyElem.refuseEmailTemplate.description : "sconosciuto");
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherDocTemplate", historyElem.voucherDocTemplate ? historyElem.voucherDocTemplate.id + ": " + historyElem.voucherDocTemplate.description : "sconosciuto");
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "authorizationDocTemplate", historyElem.authorizationDocTemplate ? historyElem.authorizationDocTemplate.id + ": " + historyElem.authorizationDocTemplate.description : "sconosciuto");
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "numerationRegister", historyElem.numerationRegister  ? historyElem.numerationRegister.id + ": " + historyElem.numerationRegister.description : "sconosciuto");
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "description", {description: "Descrizione", value: historyElem.description});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "printedName", {description: "Nome nel modello", value: historyElem.printedName});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "simultaneousPlatesAmount", {description: "Targhe simultanee", value: "" + historyElem.simultaneousPlatesAmount});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "applicationPlatesAmount", {description: "Targhe in domanda", value: "" + historyElem.applicationPlatesAmount});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "notes", {description: "Note", value: historyElem.notes});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "approveEmailTemplate", {description: "Mail approvazione", value: historyElem.approveEmailTemplate ? historyElem.approveEmailTemplate.id + ": " + historyElem.approveEmailTemplate.description : "sconosciuto"});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "revokeEmailTemplate", {description: "Mail revoca", value: historyElem.revokeEmailTemplate ? historyElem.revokeEmailTemplate.id + ": " + historyElem.revokeEmailTemplate.description : "sconosciuto"});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "refuseEmailTemplate", {description: "Mail rifiuto", value: historyElem.refuseEmailTemplate ? historyElem.refuseEmailTemplate.id + ": " + historyElem.refuseEmailTemplate.description : "sconosciuto"});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherDocTemplate", {description: "Modello tagliando", value: historyElem.voucherDocTemplate ? historyElem.voucherDocTemplate.id + ": " + historyElem.voucherDocTemplate.description : "sconosciuto"});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "authorizationDocTemplate", {description: "Modello autorizzazione", value: historyElem.authorizationDocTemplate ? historyElem.authorizationDocTemplate.id + ": " + historyElem.authorizationDocTemplate.description : "sconosciuto"});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "numerationRegister", {description: "Registro numerazione", value: historyElem.numerationRegister  ? historyElem.numerationRegister.id + ": " + historyElem.numerationRegister.description : "sconosciuto"});
             permitHistoryRes.push( {
                 userId: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.id : 0,
                 username: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.username : "unknown",
@@ -489,6 +489,4 @@ permitsRouter.get("/availableTemplates", middlewareAuthCheck(["admin", "operator
         }
     }
 );
-
-//TODO: storico permessi
 

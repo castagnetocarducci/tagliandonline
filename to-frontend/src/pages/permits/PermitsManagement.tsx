@@ -43,7 +43,6 @@ export const PermitsManagement = () => {
                 <TabNav>
                     <TabNavItem>
                         <RouterDesignTabLink to={"/permits/list"}> Permessi </RouterDesignTabLink>
-                        {/*<TabNavLink eventKey="permits"> Permessi </TabNavLink>*/}
                     </TabNavItem>
                     <TabNavItem>
                         <RouterDesignTabLink to={"/permits/docTemplates"}> Modelli documento </RouterDesignTabLink>

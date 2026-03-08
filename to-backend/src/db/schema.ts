@@ -248,7 +248,11 @@ export const applicationsToVehicles = toSchema.table("applicationsToVehicles",
         applicationId: integer().notNull().references(() => applications.id),
         vehicleId: integer().notNull().references(() => vehicles.id),
     },
-    (t) => [primaryKey({columns: [t.applicationId, t.vehicleId]})]
+    (t) => [
+        primaryKey({columns: [t.applicationId, t.vehicleId]}),
+        index("applicationsToVehiclesApplicationsIdIndex").on(t.applicationId),
+        index("applicationsToVehiclesVehicleIdIndex").on(t.vehicleId),
+    ]
 )
 
 export const applicationsHistoryToVehiclesHistory = toSchema.table("applicationsHistoryToVehiclesHistory",
@@ -256,7 +260,11 @@ export const applicationsHistoryToVehiclesHistory = toSchema.table("applications
         applicationHistoryId: integer().notNull().references(() => applicationsHistory.id),
         vehicleHistoryId: integer().notNull().references(() => vehiclesHistory.id),
     },
-    (t) => [primaryKey({columns: [t.applicationHistoryId, t.vehicleHistoryId]})]
+    (t) => [
+        primaryKey({columns: [t.applicationHistoryId, t.vehicleHistoryId]}),
+        index("applicationsHistoryToVehiclesApplicationsIdIndex").on(t.applicationHistoryId),
+        index("applicationsHistoryToVehiclesVehicleIdIndex").on(t.vehicleHistoryId),
+    ]
 )
 
 export const applicationOutcome = toSchema.table("applicationOutcome", {
@@ -330,7 +338,11 @@ export const vouchersToVehicles = toSchema.table("vouchersToVehicles",
         voucherId: integer().notNull().references(() => vouchers.id),
         vehicleId: integer().notNull().references(() => vehicles.id),
     },
-    (t) => [primaryKey({columns: [t.voucherId, t.vehicleId]})]
+    (t) => [
+        primaryKey({columns: [t.voucherId, t.vehicleId]}),
+        index("vouchersToVehiclesVoucherIdIndex").on(t.voucherId),
+        index("vouchersToVehiclesVehicleIdIndex").on(t.vehicleId),
+    ]
 )
 
 export const vouchersHistoryToVehiclesHistory = toSchema.table("vouchersHistoryToVehiclesHistory",
@@ -338,7 +350,11 @@ export const vouchersHistoryToVehiclesHistory = toSchema.table("vouchersHistoryT
         voucherHistoryId: integer().notNull().references(() => vouchersHistory.id),
         vehicleHistoryId: integer().notNull().references(() => vehiclesHistory.id),
     },
-    (t) => [primaryKey({columns: [t.voucherHistoryId, t.vehicleHistoryId]})]
+    (t) => [
+        primaryKey({columns: [t.voucherHistoryId, t.vehicleHistoryId]}),
+        index("vouchersHistoryToVehiclesVoucherIdIndex").on(t.voucherHistoryId),
+        index("vouchersHistoryToVehiclesVehicleIdIndex").on(t.vehicleHistoryId),
+    ]
 )
 
 export const vouchersEmailsHistory = toSchema.table("vouchersEmailsHistory", {
@@ -362,5 +378,8 @@ export const inspectionChecks = toSchema.table("inspectionChecks", {
     vehicleHistoryId: integer().notNull().references(() => vehiclesHistory.id),
     voucherHistoryId: integer().notNull().references(() => vouchersHistory.id),
     checkedByAuthUserId: integer().notNull().references(() => authUsers.id),
-})
+}, (t) => [
+    index("inspectionChecksVehicleHistoryIdIndex").on(t.vehicleHistoryId),
+    index("inspectionChecksVoucherHistoryIdIndex").on(t.voucherHistoryId),
+])
 

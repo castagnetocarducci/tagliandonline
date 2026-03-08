@@ -3,8 +3,13 @@ export type ErrOrSuccess = {
     success: boolean
 }
 
+export type ModificationEntry = {
+    description: string,
+    value: string
+}
+
 export type HistoryModificationMap = {
-    [key: string]: string
+    [key: string]: ModificationEntry
 }
 
 export type HistoryEvent = {
