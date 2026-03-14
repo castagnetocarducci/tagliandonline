@@ -7,10 +7,12 @@ import {
     primaryKey,
     text,
     timestamp,
+    uniqueIndex,
     varchar
 } from "drizzle-orm/pg-core";
 import {commonColumns} from "./common.columns.ts";
 import {generatePasswordResetToken, passwordResetTokenByteLength} from "../utils/pswHashing.ts";
+import {sqlLower} from "./common.functions.ts";
 
 export const toSchema = pgSchema("tagliandonline");
 
@@ -107,7 +109,7 @@ export const authUsers = toSchema.table("authUsers", {
     cf: commonColumns.cfVarchar(),
     firstname: commonColumns.firstnameVarchar(),
     lastname: commonColumns.lastnameVarchar(),
-    email: varchar({length: 128}).notNull().unique(),
+    email: varchar({length: 128}).notNull(),
     username: varchar({length: 32}).notNull().unique(),
     passwordHash: varchar({length: 60}).notNull(), //length of bcrypt hash
     lastPasswordResetDate: commonColumns.createdAt(),
@@ -115,6 +117,7 @@ export const authUsers = toSchema.table("authUsers", {
     passwordResetTokenGenerationDate: commonColumns.createdAt(),
     roleId: integer().notNull().references(() => roles.id),
 }, (t) => [
+    uniqueIndex('emailUniqueIndex').on(sqlLower(t.email)),
     index("authUsersEmailIndex").on(t.email),
     index("authUsersUsernameIndex").on(t.username),
 ]);
@@ -302,6 +305,7 @@ export const vouchers = toSchema.table("vouchers", {
     validFromDate: date().notNull(),
     validToDate: date().notNull(),
     notes: commonColumns.notes(),
+    permitId: integer().notNull().references(() => permits.id),
     generatedVoucherTemplatePath: commonColumns.path512(),
     generatedAuthorizationTemplatePath: commonColumns.path512(),
     generatedVoucherPdfPath: commonColumns.path512(),
@@ -310,6 +314,7 @@ export const vouchers = toSchema.table("vouchers", {
     lastVoucherHistoryId: integer().references((): AnyPgColumn => vouchersHistory.id),
 }, (t) => [
     index("vouchersNumberIndex").on(t.number),
+    index("vouchersPermitIdIndex").on(t.permitId),
 ])
 
 export const vouchersHistory = toSchema.table("vouchersHistory", {
@@ -323,6 +328,7 @@ export const vouchersHistory = toSchema.table("vouchersHistory", {
     validFromDate: date().notNull(),
     validToDate: date().notNull(),
     notes: commonColumns.notes(),
+    permitHistoryId: integer().notNull().references(() => permitsHistory.id),
     generatedVoucherTemplatePath: commonColumns.path512(),
     generatedAuthorizationTemplatePath: commonColumns.path512(),
     generatedVoucherPdfPath: commonColumns.path512(),
@@ -331,6 +337,7 @@ export const vouchersHistory = toSchema.table("vouchersHistory", {
 }, (t) => [
     index("voucherHistoryVoucherIdIndex").on(t.voucherId),
     index("vouchersHistoryNumberIndex").on(t.number),
+    index("vouchersHistoryPermitHistoryIdIndex").on(t.permitHistoryId),
 ])
 
 export const vouchersToVehicles = toSchema.table("vouchersToVehicles",

@@ -51,6 +51,9 @@ export function ValidatedInput(
     const labelContent = labelText || titleCase(name);
 
     const onParameterChange = (newValue: string) => {
+        if (inputType !== "password") {
+            newValue = newValue.trim();
+        }
         setValue(newValue);
     }
 

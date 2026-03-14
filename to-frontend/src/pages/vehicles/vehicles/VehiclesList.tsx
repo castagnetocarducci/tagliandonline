@@ -1,22 +1,49 @@
-import {useNavigate} from "react-router";
-import {useEffect, useState} from "react";
+import {useNavigate, useSearchParams} from "react-router";
+import {type FormEvent, type FormEventHandler, useEffect, useState} from "react";
 import type {VehicleListApiResponse, VehicleListEntry} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
-import {defaultGETRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
-import {Button, Col, Container, Icon, Row} from "design-react-kit";
+import {
+    defaultPOSTRequestInit,
+    fetchApiAsync,
+    fromSearchParamsToValuesMap,
+    fromValuesMapToSearchParams
+} from "../../../utils/fetching.ts";
+import {Button, Col, Container, Form, Icon, Row} from "design-react-kit";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
+import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
+import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
 
 export function VehiclesList() {
     const navigate = useNavigate();
     const [vehiclesList, setVehiclesList] = useState<VehicleListEntry[]>([]);
     const {err, setErr, setSucc, loading, setLoading} = useErrSuccLoad();
+    const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+
+    const onFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
+        e.preventDefault();
+        if (!valid) {
+            executeValidation(true);
+            return;
+        }
+        const formValues = getValueObject();
+        const urlSearchParams = fromValuesMapToSearchParams(formValues);
+        if (urlSearchParams.toString().length > 0) {
+            setSearchParams(urlSearchParams);
+        }
+    }
 
     useEffect(() => {
+        const valuesMap = fromSearchParamsToValuesMap(searchParams);
         const abort = fetchApiAsync<VehicleListApiResponse>({
             urlFromApiRoot: "/vehicles/list",
             errSuccLoading: {setErr, setSucc, setLoading},
-            requestInit: {...defaultGETRequestInit},
+            requestInit: {
+                ...defaultPOSTRequestInit,
+                body: JSON.stringify(valuesMap)
+            },
             callback: (data) => {
                 if (data != null && data.vehiclesList != null) {
                     setVehiclesList(data.vehiclesList);
@@ -24,19 +51,71 @@ export function VehiclesList() {
             }
         });
         return abort;
-    }, [setErr, setLoading, setSucc, setVehiclesList]);
+    }, [setErr, setLoading, setSucc, setVehiclesList, searchParams]);
 
 
     return (
         <Container>
             <h1 className={"mb-4"}>Veicoli</h1>
-            <Button className={"mb-4"} onClick={() => navigate(`/vehicles/list/new`)}
+            <Button className={"mb-4 me-2"} onClick={() => navigate(`/vehicles/list/new`)}
                     color={"primary"} icon={true} title={"Aggiungi nuovo veicolo"}>
                         <span className={"rounded-icon me-2"}>
                             <Icon icon={"it-plus"}/>
                         </span>
                 Nuovo
             </Button>
+
+            <h2 className={"mb-4"}>
+                Filtri
+            </h2>
+            <Form onSubmit={onFormSubmit} className={"mt-4"}>
+                <Row>
+                    <Col md={3}>
+                        <ValidatedInput name={"plate"} labelText={"Targa"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("plate") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"brand"} labelText={"Marca"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("brand") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={4}>
+                        <ValidatedInput name={"model"} labelText={"Modello"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("model") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                </Row>
+                <Button color={"primary"} type={"submit"} disabled={!valid || loading}
+                        className={"mb-4"} icon={true} title={"Cerca"}>
+                    <span className={"rounded-icon me-2"}>
+                        <Icon icon={"it-search"}/>
+                    </span>
+                    Cerca
+                </Button>
+            </Form>
+
+            <LoadingSpinner loading={loading}/>
+
+            <SuccessErrorAlert err={err} succ={null}/>
 
             {vehiclesList.length > 0 && (
                 <Row>
@@ -98,9 +177,6 @@ export function VehiclesList() {
                 </>
             )}
 
-            <LoadingSpinner loading={loading}/>
-
-            <SuccessErrorAlert err={err} succ={null}/>
         </Container>
     )
 }

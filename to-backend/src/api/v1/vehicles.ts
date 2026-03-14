@@ -28,14 +28,26 @@ type VehicleDetails = {
     vouchers: number[]
 }
 
-vehiclesRouter.get("/list", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+vehiclesRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
         return res.status(401).json({message: "Non autorizzato"});
     }
 
+    const {
+        plate,
+        model,
+        brand,
+        page,
+    } = req.body;
+    //TODO: limit offset using page
     const db = DatabaseManager.instance.db;
     const vehiclesArr = await db.query.vehicles.findMany({
-        orderBy: {updatedAt: "desc"},
+        where: {
+            plate: plate != null ? {ilike: `%${plate}%`}: undefined,
+            model: model != null ? {ilike: `%${model}%`}: undefined,
+            brand: brand != null ? {ilike: `%${brand}%`}: undefined,
+        },
+        orderBy: {id: "desc"},
     });
     if (vehiclesArr == null) {
         return res.status(500).json({message: "Errore nel reperire i veicoli"});
@@ -137,9 +149,18 @@ vehiclesRouter.get("/history/:vehicleID", middlewareAuthCheck(["admin", "operato
         const currModificationEntries: HistoryModificationMap = {};
         vehicleHistory.forEach((historyElem) => {
             const diffModificationEntries: HistoryModificationMap = {};
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "plate", {description: "Targa", value: historyElem.plate});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "brand", {description: "Marca", value: historyElem.brand});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "model", {description: "Modello", value: historyElem.model});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "plate", {
+                description: "Targa",
+                value: historyElem.plate
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "brand", {
+                description: "Marca",
+                value: historyElem.brand
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "model", {
+                description: "Modello",
+                value: historyElem.model
+            });
             vehicleHistoryRes.push({
                 userId: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.id : 0,
                 username: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.username : "unknown",
@@ -178,11 +199,12 @@ vehiclesRouter.post("/edit/:vehicleID", middlewareAuthCheck(["admin", "operatore
         res.status(400).json({message: "Richiesta con campi mancanti"});
         return;
     }
-    const {
+    let {
         plate,
         model,
         brand,
     } = req.body;
+    plate = plate.toUpperCase();
     const db = DatabaseManager.instance.db;
     try {
         const toUpdateVehicle = await db.query.vehicles.findFirst(
@@ -249,71 +271,71 @@ vehiclesRouter.post("/edit/:vehicleID", middlewareAuthCheck(["admin", "operatore
 
 
 vehiclesRouter.post("/new", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
-        if (req.user == null) {
-            res.status(401).json({message: "Non autorizzato"});
-            return;
-        }
-        const modifiedByAuthUserId = req.user.id;
-
-        if (req.body.plate == null || req.body.plate.trim() === "" ||
-            req.body.model == null || req.body.model.trim() === "" ||
-            req.body.brand == null || req.body.brand.trim() === "") {
-            res.status(400).json({message: "Richiesta con campi mancanti"});
-            return;
-        }
-        const {
-            plate,
-            model,
-            brand,
-        } = req.body;
-        const db = DatabaseManager.instance.db;
-        try {
-            const insertedVehicleId = await db.transaction(async (tx) => {
-                const insertedVehicle = await tx.insert(vehicles).values({
-                    plate,
-                    model,
-                    brand,
-                }).returning();
-                if (insertedVehicle == null || insertedVehicle.length !== 1 || insertedVehicle[0] == null) {
-                    console.log("Errore durante l'inserimento del veicolo");
-                    tx.rollback();
-                    return null;
-                }
-                const insertedVehicleHistory = await tx.insert(vehiclesHistory).values({
-                    vehicleId: insertedVehicle[0].id,
-                    modifiedByAuthUserId: modifiedByAuthUserId,
-
-                    plate: insertedVehicle[0].plate,
-                    model: insertedVehicle[0].model,
-                    brand: insertedVehicle[0].brand
-                }).returning();
-                if (insertedVehicleHistory == null || insertedVehicleHistory.length !== 1 || insertedVehicleHistory[0] == null) {
-                    console.log("Errore durante l'inserimento dello storico del veicolo");
-                    tx.rollback();
-                    return null;
-                }
-                const updateResult = await tx.update(vehicles)
-                    .set({lastVehiclesHistoryId: insertedVehicleHistory[0].id})
-                    .where(eq(vehicles.id, insertedVehicle[0].id));
-                if (updateResult == null || updateResult.rowCount !== 1) {
-                    console.log("Errore durante l'aggiornamento del veicolo con lo storico");
-                    tx.rollback();
-                    return null;
-                }
-                return insertedVehicle[0].id;
-            });
-
-            if (insertedVehicleId == null) {
-                res.status(500).json({message: "Errore durante l'inserimento del veicolo"});
-                return;
-            }
-            res.status(200).json({message: "Veicolo inserito con successo", id: insertedVehicleId});
-            return;
-        } catch (e) {
-            res.status(500).json({message: "Errore durante l'inserimento: " + e});
-            return;
-        }
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
     }
-);
+    const modifiedByAuthUserId = req.user.id;
+
+    if (req.body.plate == null || req.body.plate.trim() === "" ||
+        req.body.model == null || req.body.model.trim() === "" ||
+        req.body.brand == null || req.body.brand.trim() === "") {
+        res.status(400).json({message: "Richiesta con campi mancanti"});
+        return;
+    }
+    let {
+        plate,
+        model,
+        brand,
+    } = req.body;
+    plate = plate.toUpperCase();
+    const db = DatabaseManager.instance.db;
+    try {
+        const insertedVehicleId = await db.transaction(async (tx) => {
+            const insertedVehicle = await tx.insert(vehicles).values({
+                plate,
+                model,
+                brand,
+            }).returning();
+            if (insertedVehicle == null || insertedVehicle.length !== 1 || insertedVehicle[0] == null) {
+                console.log("Errore durante l'inserimento del veicolo");
+                tx.rollback();
+                return null;
+            }
+            const insertedVehicleHistory = await tx.insert(vehiclesHistory).values({
+                vehicleId: insertedVehicle[0].id,
+                modifiedByAuthUserId: modifiedByAuthUserId,
+
+                plate: insertedVehicle[0].plate,
+                model: insertedVehicle[0].model,
+                brand: insertedVehicle[0].brand
+            }).returning();
+            if (insertedVehicleHistory == null || insertedVehicleHistory.length !== 1 || insertedVehicleHistory[0] == null) {
+                console.log("Errore durante l'inserimento dello storico del veicolo");
+                tx.rollback();
+                return null;
+            }
+            const updateResult = await tx.update(vehicles)
+                .set({lastVehiclesHistoryId: insertedVehicleHistory[0].id})
+                .where(eq(vehicles.id, insertedVehicle[0].id));
+            if (updateResult == null || updateResult.rowCount !== 1) {
+                console.log("Errore durante l'aggiornamento del veicolo con lo storico");
+                tx.rollback();
+                return null;
+            }
+            return insertedVehicle[0].id;
+        });
+
+        if (insertedVehicleId == null) {
+            res.status(500).json({message: "Errore durante l'inserimento del veicolo"});
+            return;
+        }
+        res.status(200).json({message: "Veicolo inserito con successo", id: insertedVehicleId});
+        return;
+    } catch (e) {
+        res.status(500).json({message: "Errore durante l'inserimento: " + e});
+        return;
+    }
+});
 
 

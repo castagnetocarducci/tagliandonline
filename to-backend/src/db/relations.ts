@@ -284,6 +284,10 @@ export const relations = defineRelations(schema, (r) => ({
     },
 
     vouchers: {
+        permit: r.one.permits({
+            from: r.vouchers.permitId,
+            to: r.permits.id
+        }),
         applications: r.many.applications(),
         vehicles: r.many.vehicles({
             from: r.vouchers.id.through(r.vouchersToVehicles.voucherId),
@@ -309,6 +313,10 @@ export const relations = defineRelations(schema, (r) => ({
         modifiedByAuthUser: r.one.authUsers({
             from: r.vouchersHistory.modifiedByAuthUserId,
             to: r.authUsers.id
+        }),
+        permitHistory: r.one.permitsHistory({
+            from: r.vouchersHistory.permitHistoryId,
+            to: r.permitsHistory.id
         }),
         applicationsHistory: r.many.applicationsHistory(),
         vehiclesHistory: r.many.vehiclesHistory({

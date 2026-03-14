@@ -13,6 +13,8 @@ export type ValidationKit = {
 
 export type SetValidationFunc = (name: string, validationKit: ValidationKit) => void;
 
+export type ValidatedFormValuesMap = { [k: string]: ValidationSupportedTypes }
+
 export const useValidateFormInput = (setErr: (newVal: string | null) => void, setSucc: (newVal: string | null) => void) => {
     const mapRef = useRef(new Map<string, ValidationKit>());
     const [valid, setValid] = useState<boolean>(false);
@@ -47,8 +49,8 @@ export const useValidateFormInput = (setErr: (newVal: string | null) => void, se
         executeValidation(false, valueUpdated);
     }
 
-    const getValueObject = (): { [k: string]: ValidationSupportedTypes } => {
-        const valuesObj: { [k: string]: ValidationSupportedTypes } = {};
+    const getValueObject = (): ValidatedFormValuesMap => {
+        const valuesObj: ValidatedFormValuesMap = {};
         for (const [name, validationKit] of mapRef.current.entries()) {
             // if (validationKit.value instanceof Array) { //se è un array è sicuramente File[]
             //     //se l'array è vuoto non lo associo proprio

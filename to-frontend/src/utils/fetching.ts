@@ -1,4 +1,5 @@
 import {getApiUrl} from "./ConfigProvider.ts";
+import type {ValidatedFormValuesMap} from "../hooks/useValidateFormInput.ts";
 
 export type ErrSuccLoading = {
     setLoading: (newValue: boolean) => void,
@@ -85,6 +86,28 @@ export const defaultGETRequestInit: RequestInit = {
     credentials: "include"
 };
 
+export const fromValuesMapToSearchParams = (valuesMap: ValidatedFormValuesMap): URLSearchParams => {
+    const urlSearchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(valuesMap)) {
+        if (value == null) {
+            continue;
+        }
+        const strValue = value.toString().trim();
+        if (strValue.length === 0) {
+            continue;
+        }
+        urlSearchParams.append(key, strValue);
+    }
+    return urlSearchParams;
+}
+
+export const fromSearchParamsToValuesMap = (searchParams: URLSearchParams): ValidatedFormValuesMap => {
+    const valuesMap: ValidatedFormValuesMap = {};
+    for (const [key, value] of searchParams.entries()) {
+        valuesMap[key] = value;
+    }
+    return valuesMap;
+}
 
 
 
