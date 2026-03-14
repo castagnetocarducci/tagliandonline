@@ -18,3 +18,8 @@ export type HistoryEvent = {
     timestamp: Date,
     modificationsMap: HistoryModificationMap
 }
+
+export type PagerPageData = {
+    currentPage: number,
+    totalPages: number
+}

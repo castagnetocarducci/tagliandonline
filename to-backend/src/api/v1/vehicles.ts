@@ -3,8 +3,9 @@ import {DatabaseManager} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 import {vehicles, vehiclesHistory} from "../../db/schema.ts";
-import {eq} from "drizzle-orm";
+import {and, eq, ilike} from "drizzle-orm";
 import {Router} from "express";
+import {ConfigProvider} from "../../configProvider.ts";
 
 export const vehiclesRouter = Router();
 
@@ -39,15 +40,21 @@ vehiclesRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
         brand,
         page,
     } = req.body;
-    //TODO: limit offset using page
+
     const db = DatabaseManager.instance.db;
+    const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
+    const countConditions = [], queryConditions = [];
+    if (plate != null && plate.trim() !== "") { countConditions.push(ilike(vehicles.plate, `%${plate}%`)); queryConditions.push({plate: {ilike: `%${plate}%`}}); }
+    if (model != null && model.trim() !== "") { countConditions.push(ilike(vehicles.model, `%${model}%`)); queryConditions.push({model: {ilike: `%${model}%`}}); }
+    if (brand != null && brand.trim() !== "") { countConditions.push(ilike(vehicles.brand, `%${brand}%`)); queryConditions.push({brand: {ilike: `%${brand}%`}}); }
+    const totalAmount = await db.$count(vehicles, and(...countConditions));
     const vehiclesArr = await db.query.vehicles.findMany({
-        where: {
-            plate: plate != null ? {ilike: `%${plate}%`}: undefined,
-            model: model != null ? {ilike: `%${model}%`}: undefined,
-            brand: brand != null ? {ilike: `%${brand}%`}: undefined,
-        },
+        where: {AND: [
+            ...queryConditions,
+            ]},
         orderBy: {id: "desc"},
+        offset: page != null ? (page - 1) * resultsPerPage : undefined,
+        limit: resultsPerPage,
     });
     if (vehiclesArr == null) {
         return res.status(500).json({message: "Errore nel reperire i veicoli"});
@@ -65,7 +72,11 @@ vehiclesRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
     }
     res.json({
         message: "Veicoli acquisiti con successo",
-        vehiclesList: vehiclesList
+        vehiclesList: vehiclesList,
+        pageData: {
+            currentPage: page != null ? page : 1,
+            totalPages: Math.ceil(totalAmount / resultsPerPage),
+        }
     });
 });
 

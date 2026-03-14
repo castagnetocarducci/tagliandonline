@@ -1,3 +1,5 @@
+import type {PagerPageData} from "../components/AutoPager.tsx";
+
 export type Role = "admin" | "operatore" | "vigile";
 
 export type UserData = {
@@ -232,7 +234,8 @@ export type VehicleDetails = {
 
 export type VehicleListApiResponse = {
     message: string,
-    vehiclesList: VehicleListEntry[]
+    vehiclesList: VehicleListEntry[],
+    pageData: PagerPageData
 }
 
 export type VehicleDetailsApiResponse = {

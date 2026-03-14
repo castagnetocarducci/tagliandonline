@@ -36,6 +36,60 @@ export function NewVehicle() {
         });
     }
 
+    const createFakeVehicles = () => {
+        for (let i = 0; i < 100; i++) {
+            fetchApiAsync<AddedElementMessage>({
+                urlFromApiRoot: "/vehicles/new",
+                errSuccLoading: {setErr, setSucc, setLoading},
+                requestInit: {
+                    ...defaultPOSTRequestInit,
+                    body: JSON.stringify({
+                        plate: "AB" + i,
+                        brand: "Marca " + i,
+                        model: "Modello " + i
+                    })
+                },
+                callback: (data) => {
+                    console.log(data);
+                }
+            });
+        }
+        for (let i = 0; i < 100; i++) {
+            fetchApiAsync<AddedElementMessage>({
+                urlFromApiRoot: "/vehicles/new",
+                errSuccLoading: {setErr, setSucc, setLoading},
+                requestInit: {
+                    ...defaultPOSTRequestInit,
+                    body: JSON.stringify({
+                        plate: i + "CD",
+                        brand: "Marca " + i,
+                        model: "Modello " + i
+                    })
+                },
+                callback: (data) => {
+                    console.log(data);
+                }
+            });
+        }
+        for (let i = 0; i < 100; i++) {
+            fetchApiAsync<AddedElementMessage>({
+                urlFromApiRoot: "/vehicles/new",
+                errSuccLoading: {setErr, setSucc, setLoading},
+                requestInit: {
+                    ...defaultPOSTRequestInit,
+                    body: JSON.stringify({
+                        plate: "EF" + i + "HG",
+                        brand: "Marca " + i,
+                        model: "Modello " + i
+                    })
+                },
+                callback: (data) => {
+                    console.log(data);
+                }
+            });
+        }
+    }
+
 
     return (
         <Container>
@@ -88,11 +142,23 @@ export function NewVehicle() {
                     </Col>
                 </Row>
 
+
+
                 <LoadingSpinner loading={loading}/>
 
                 <SuccessErrorAlert err={err} succ={succ}/>
 
             </Form>
+
+            {import.meta.env.DEV && (
+                <Row className={"mt-4"}>
+                    <Col md={4}>
+                        <Button color={"primary"} onClick={() => createFakeVehicles()} outline> Crea veicoli
+                            fittizi </Button>
+                    </Col>
+                </Row>
+            )}
+
         </Container>
     );
 }

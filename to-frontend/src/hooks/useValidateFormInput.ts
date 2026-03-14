@@ -62,6 +62,10 @@ export const useValidateFormInput = (setErr: (newVal: string | null) => void, se
             //         continue;
             //     }
             // }
+            let toAssignValue = validationKit.value;
+            if (typeof(toAssignValue) === "string") {
+                toAssignValue = toAssignValue.trim();
+            }
             valuesObj[name] = validationKit.value;
         }
         return valuesObj;

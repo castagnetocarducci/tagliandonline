@@ -13,6 +13,7 @@ import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
+import {AutoPager, type PagerPageData} from "../../../components/AutoPager.tsx";
 
 export function VehiclesList() {
     const navigate = useNavigate();
@@ -20,6 +21,7 @@ export function VehiclesList() {
     const {err, setErr, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
     const [searchParams, setSearchParams] = useSearchParams();
+    const [pageData, setPageData] = useState<PagerPageData>({currentPage: 1, totalPages: 0});
 
 
     const onFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
@@ -30,13 +32,12 @@ export function VehiclesList() {
         }
         const formValues = getValueObject();
         const urlSearchParams = fromValuesMapToSearchParams(formValues);
-        if (urlSearchParams.toString().length > 0) {
-            setSearchParams(urlSearchParams);
-        }
+        setSearchParams(urlSearchParams);
     }
 
     useEffect(() => {
         const valuesMap = fromSearchParamsToValuesMap(searchParams);
+        valuesMap["page"] = pageData.currentPage;
         const abort = fetchApiAsync<VehicleListApiResponse>({
             urlFromApiRoot: "/vehicles/list",
             errSuccLoading: {setErr, setSucc, setLoading},
@@ -48,10 +49,13 @@ export function VehiclesList() {
                 if (data != null && data.vehiclesList != null) {
                     setVehiclesList(data.vehiclesList);
                 }
+                if (data != null && data.pageData != null) {
+                    setPageData(data.pageData)
+                }
             }
         });
         return abort;
-    }, [setErr, setLoading, setSucc, setVehiclesList, searchParams]);
+    }, [setErr, setLoading, setSucc, setVehiclesList, searchParams, pageData.currentPage, setPageData]);
 
 
     return (
@@ -113,10 +117,6 @@ export function VehiclesList() {
                 </Button>
             </Form>
 
-            <LoadingSpinner loading={loading}/>
-
-            <SuccessErrorAlert err={err} succ={null}/>
-
             {vehiclesList.length > 0 && (
                 <Row>
                     <Col md={1}>
@@ -176,6 +176,15 @@ export function VehiclesList() {
                     <hr/>
                 </>
             )}
+            <AutoPager pageData={pageData} onPageChange={(page) => {
+                setPageData((prevState) => {
+                    return {...prevState, currentPage: page}
+                })
+            }}/>
+
+            <LoadingSpinner loading={loading}/>
+
+            <SuccessErrorAlert err={err} succ={null}/>
 
         </Container>
     )
