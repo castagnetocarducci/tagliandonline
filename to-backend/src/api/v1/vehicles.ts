@@ -45,9 +45,9 @@ vehiclesRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
     const db = DatabaseManager.instance.db;
     const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
     // const countConditions = [], queryConditions = [];
-    const searchConditions = []; //, queryConditions = [];
-    if (idFrom != null && idFrom.trim() !== "" && !isNaN(parseInt(idFrom))) { searchConditions.push(gte(vehicles.id, parseInt(idFrom))); } // queryConditions.push({id: {gte: idFrom}}); }
-    if (idTo != null && idTo.trim() !== "" && !isNaN(parseInt(idTo))) { searchConditions.push(lte(vehicles.id, parseInt(idTo))); } // queryConditions.push({id: {lte: idTo}}); }
+    const searchConditions = [];
+    if (idFrom != null && !isNaN(parseInt(idFrom))) { searchConditions.push(gte(vehicles.id, parseInt(idFrom))); } // queryConditions.push({id: {gte: idFrom}}); }
+    if (idTo != null && !isNaN(parseInt(idTo))) { searchConditions.push(lte(vehicles.id, parseInt(idTo))); } // queryConditions.push({id: {lte: idTo}}); }
     if (plate != null && plate.trim() !== "") { searchConditions.push(ilike(vehicles.plate, `%${plate}%`)); } // queryConditions.push({plate: {ilike: `%${plate}%`}}); }
     if (model != null && model.trim() !== "") { searchConditions.push(ilike(vehicles.model, `%${model}%`)); } // queryConditions.push({model: {ilike: `%${model}%`}}); }
     if (brand != null && brand.trim() !== "") { searchConditions.push(ilike(vehicles.brand, `%${brand}%`)); } // queryConditions.push({brand: {ilike: `%${brand}%`}}); }
@@ -123,7 +123,7 @@ vehiclesRouter.get("/detail/:vehicleID", middlewareAuthCheck(["admin", "operator
         plate: vehicle.plate,
         model: vehicle.model,
         brand: vehicle.brand,
-        applications: vehicle.applications.map((app) => app.id),
+        applications: vehicle.applications.map((application) => application.id),
         vouchers: vehicle.vouchers.map((voucher) => voucher.id),
     };
 

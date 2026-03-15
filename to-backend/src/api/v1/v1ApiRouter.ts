@@ -7,6 +7,7 @@ import {numerationsRouter} from "./numerations.ts";
 import {permitsRouter} from "./permits.ts";
 import {downloadFileRouter} from "./downloadFile.ts";
 import {vehiclesRouter} from "./vehicles.ts";
+import {vouchersRouter} from "./vouchers.ts";
 
 export const v1ApiRouter = Router();
 
@@ -18,5 +19,6 @@ v1ApiRouter.use("/numerations", numerationsRouter);
 v1ApiRouter.use("/permits", permitsRouter);
 v1ApiRouter.use("/download", downloadFileRouter);
 v1ApiRouter.use("/vehicles", vehiclesRouter);
+v1ApiRouter.use("/vouchers", vouchersRouter);
 
 

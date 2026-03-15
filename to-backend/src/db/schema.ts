@@ -174,7 +174,7 @@ export const applications = toSchema.table("applications", {
     updatedAt: commonColumns.updatedAt(),
     requestDate: commonColumns.createdAt(),
     outcomeDate: date(),
-    registerNumber: varchar({length: 32}).notNull(), //numero di protocollo
+    registerNumber: integer().notNull(), //numero di protocollo
     registerDate: date(), //data di protocollazione
     cf: commonColumns.cfVarchar(),
     firstname: commonColumns.firstnameVarchar(),
@@ -214,7 +214,7 @@ export const applicationsHistory = toSchema.table("applicationsHistory", {
 
     requestDate: commonColumns.createdAt(),
     outcomeDate: date(),
-    registerNumber: varchar({length: 32}).notNull(),
+    registerNumber: integer().notNull(), //numero di protocollo
     registerDate: date(),
     cf: commonColumns.cfVarchar(),
     firstname: commonColumns.firstnameVarchar(),
@@ -287,7 +287,7 @@ export const applicationsEmailsHistory = toSchema.table("applicationsEmailsHisto
     createdAt: commonColumns.createdAt(),
     sentDate: timestamp(),
     to: varchar({length: 512}).notNull(),
-    object: varchar({length: 512}).notNull(),
+    subject: varchar({length: 512}).notNull(),
     body: text().notNull(),
     attachments: varchar({length: 2048}),
     applicationId: integer().notNull().references(() => applications.id),
@@ -369,7 +369,7 @@ export const vouchersEmailsHistory = toSchema.table("vouchersEmailsHistory", {
     createdAt: commonColumns.createdAt(),
     sentDate: timestamp(),
     to: varchar({length: 512}).notNull(),
-    object: varchar({length: 512}).notNull(),
+    subject: varchar({length: 512}).notNull(),
     body: text().notNull(),
     attachments: varchar({length: 2048}),
     voucherId: integer().notNull().references(() => vouchers.id),
