@@ -82,7 +82,7 @@ export function VehicleHistory() {
                                 <TimelinePin iconTitle="Segnaposto" label="Versione corrente" now>
                                     <Card rounded shadow="sm">
                                         <h4 className="it-card-title mb-2">
-                                            <RouterDesignLink  to={"/vehicle/list/" + urlParams.vehicleID}>
+                                            <RouterDesignLink  to={"/vehicles/list/" + urlParams.vehicleID}>
                                                 Vedi dettagli veicolo corrente
                                             </RouterDesignLink>
                                         </h4>

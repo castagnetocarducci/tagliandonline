@@ -3,7 +3,7 @@ import {DatabaseManager} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 import {vehicles, vehiclesHistory} from "../../db/schema.ts";
-import {and, eq, ilike} from "drizzle-orm";
+import {and, desc, eq, gte, ilike, lte} from "drizzle-orm";
 import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 
@@ -35,27 +35,35 @@ vehiclesRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
     }
 
     const {
+        idFrom,
+        idTo,
         plate,
         model,
         brand,
         page,
     } = req.body;
-
     const db = DatabaseManager.instance.db;
     const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
-    const countConditions = [], queryConditions = [];
-    if (plate != null && plate.trim() !== "") { countConditions.push(ilike(vehicles.plate, `%${plate}%`)); queryConditions.push({plate: {ilike: `%${plate}%`}}); }
-    if (model != null && model.trim() !== "") { countConditions.push(ilike(vehicles.model, `%${model}%`)); queryConditions.push({model: {ilike: `%${model}%`}}); }
-    if (brand != null && brand.trim() !== "") { countConditions.push(ilike(vehicles.brand, `%${brand}%`)); queryConditions.push({brand: {ilike: `%${brand}%`}}); }
-    const totalAmount = await db.$count(vehicles, and(...countConditions));
-    const vehiclesArr = await db.query.vehicles.findMany({
-        where: {AND: [
-            ...queryConditions,
-            ]},
-        orderBy: {id: "desc"},
-        offset: page != null ? (page - 1) * resultsPerPage : undefined,
-        limit: resultsPerPage,
-    });
+    // const countConditions = [], queryConditions = [];
+    const searchConditions = []; //, queryConditions = [];
+    if (idFrom != null && idFrom.trim() !== "" && !isNaN(parseInt(idFrom))) { searchConditions.push(gte(vehicles.id, parseInt(idFrom))); } // queryConditions.push({id: {gte: idFrom}}); }
+    if (idTo != null && idTo.trim() !== "" && !isNaN(parseInt(idTo))) { searchConditions.push(lte(vehicles.id, parseInt(idTo))); } // queryConditions.push({id: {lte: idTo}}); }
+    if (plate != null && plate.trim() !== "") { searchConditions.push(ilike(vehicles.plate, `%${plate}%`)); } // queryConditions.push({plate: {ilike: `%${plate}%`}}); }
+    if (model != null && model.trim() !== "") { searchConditions.push(ilike(vehicles.model, `%${model}%`)); } // queryConditions.push({model: {ilike: `%${model}%`}}); }
+    if (brand != null && brand.trim() !== "") { searchConditions.push(ilike(vehicles.brand, `%${brand}%`)); } // queryConditions.push({brand: {ilike: `%${brand}%`}}); }
+    const totalAmount = await db.$count(vehicles, and(...searchConditions));
+    const vehiclesArr = await db.select().from(vehicles)
+        .where(and(...searchConditions))
+        .orderBy(desc(vehicles.id))
+        .offset(page != null ? (page - 1) * resultsPerPage : 0).limit(resultsPerPage);
+    // const vehiclesArr = await db.query.vehicles.findMany({
+    //     where: {AND: [
+    //         ...queryConditions,
+    //         ]},
+    //     orderBy: {id: "desc"},
+    //     offset: page != null ? (page - 1) * resultsPerPage : undefined,
+    //     limit: resultsPerPage,
+    // });
     if (vehiclesArr == null) {
         return res.status(500).json({message: "Errore nel reperire i veicoli"});
     }

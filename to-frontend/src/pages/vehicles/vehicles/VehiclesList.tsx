@@ -32,6 +32,7 @@ export function VehiclesList() {
         }
         const formValues = getValueObject();
         const urlSearchParams = fromValuesMapToSearchParams(formValues);
+        setPageData((prevState) => {return {...prevState, currentPage: 1}});
         setSearchParams(urlSearchParams);
     }
 
@@ -74,7 +75,29 @@ export function VehiclesList() {
             </h2>
             <Form onSubmit={onFormSubmit} className={"mt-4"}>
                 <Row>
-                    <Col md={3}>
+                    <Col md={2}>
+                        <ValidatedInput name={"idFrom"} labelText={"ID (da)"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("idFrom") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "number"}}/>
+                    </Col>
+                    <Col md={2}>
+                        <ValidatedInput name={"idTo"} labelText={"ID (a)"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("idTo") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "number"}}/>
+                    </Col>
+                    <Col md={2}>
                         <ValidatedInput name={"plate"} labelText={"Targa"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -96,7 +119,7 @@ export function VehiclesList() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "text"}}/>
                     </Col>
-                    <Col md={4}>
+                    <Col md={3}>
                         <ValidatedInput name={"model"} labelText={"Modello"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
