@@ -1,8 +1,9 @@
 import {Router} from "express";
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
-import {numerationRegisters} from "../../db/schema.ts";
+import {numerationRegisters, permits} from "../../db/schema.ts";
 import {eq} from "drizzle-orm";
+import {PgAsyncTransaction} from "drizzle-orm/pg-core";
 
 export const numerationsRouter = Router();
 
@@ -23,7 +24,7 @@ numerationsRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), asyn
 
     const db = DatabaseManager.instance.db;
     const numerationsRegistersArr = await db.query.numerationRegisters.findMany({
-        orderBy: { updatedAt: "desc"},
+        orderBy: {updatedAt: "desc"},
     });
     if (numerationsRegistersArr == null) {
         return res.status(500).json({message: "Errore nel reperire le numerazioni"});
@@ -157,3 +158,28 @@ numerationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asyn
         }
     }
 );
+
+export const getVoucherNumerationNewData = async (tx: PgAsyncTransaction<any>, permitID: number): Promise<{number: number, durationDays: number}> => {
+    const numerationRes =
+        await tx.select().from(permits).where(eq(permits.id, permitID)).leftJoin(numerationRegisters, eq(permits.numerationRegisterId, numerationRegisters.id));
+    if (numerationRes == null || numerationRes.length !== 1 || numerationRes[0] == null ||
+        numerationRes[0].numerationRegisters == null || numerationRes[0].permits == null) {
+        throw new Error("Errore: registro numerazione non trovato");
+    }
+    const numeration = numerationRes[0].numerationRegisters;
+    const permit = numerationRes[0].permits;
+    const nextNumber = numeration.nextNumber;
+    const durationDays = permit.voucherDurationDays;
+    const updateResult = await tx.update(numerationRegisters).set(
+        {
+            nextNumber: nextNumber + 1
+        }).where(eq(numerationRegisters.id, numeration.id));
+    if (updateResult == null || updateResult.rowCount !== 1) {
+        throw new Error("Errore: aggiornamento non riuscito: " + updateResult);
+    }
+    return {
+        number: nextNumber,
+        durationDays: durationDays
+    };
+}
+

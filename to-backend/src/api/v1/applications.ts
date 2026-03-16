@@ -15,7 +15,7 @@ import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 import type {DocTemplateListEntry} from "./docTemplates.ts";
 import type {EmailTemplateListEntry} from "./emailTemplates.ts";
-import type {NumerationListEntry} from "./numerations.ts";
+import {getVoucherNumerationNewData, type NumerationListEntry} from "./numerations.ts";
 import {permitsRouter} from "./permits.ts";
 
 export const applicationsRouter = Router();
@@ -306,7 +306,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
         return;
     }
     const applicationID = parseInt(req.params.applicationID as string);
-
+    //TODO: fix put checks for all inputs: if they aren't null then they have to be valid
     if (req.body.registerNumber == null || isNaN(parseInt(req.body.registerNumber)) ||
         req.body.registerDate == null || new Date(req.body.registerDate).toString() === "Invalid Date" ||
         req.body.cf == null || req.body.cf.trim() === "" ||
@@ -383,14 +383,39 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
         }
 
         const updatedApplicationId = await db.transaction(async (tx) => {
-            //TODO: check createVoucher and creat it
+            //TODO: check createVoucher and create it
             let createdVoucherId: number | null = null;
             if (createVoucher && voucherId == null) {
-                // const createdVoucher = await tx.insert(vouchers).values({
-                //
-                // });
+                const outcomeDateT: Date = new Date(outcomeDate);
+                if (outcomeDateT.toString() === "Invalid Date") {
+                    console.log("Errore durante la creazione del tagliando: data esito non valida");
+                    tx.rollback();
+                    return null;
+                }
+                try {
+                    const {number, durationDays} = await getVoucherNumerationNewData(tx, toUpdateApplication.permitId);
+                    const expiryDateT: Date = new Date(outcomeDateT);
+                    expiryDateT.setDate(expiryDateT.getDate() + durationDays);
+                    const createdVoucher = await tx.insert(vouchers).values({
+                        number: number,
+                        revoked: false,
+                        validFromDate: outcomeDateT.toDateString(),
+                        validToDate: expiryDateT.toDateString(),
+                        notes: "",
+                        permitId: toUpdateApplication.permitId,
+                        generatedVoucherTemplatePath: "",
+                        generatedAuthorizationTemplatePath: "",
+                        generatedVoucherPdfPath: "",
+                        generatedAuthorizationPdfPath: "",
+                        signedAuthorizationPath: "",
+                    });
 
-                //creatededVoucherId =
+                    //creatededVoucherId =
+                } catch (e) {
+                    console.log("Errore durante la creazione del tagliando: " + e);
+                    tx.rollback();
+                    return null;
+                }
             }
 
             const updatedApplication = await tx.update(applications).set({
@@ -514,6 +539,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
         res.status(400).json({message: "Richiesta con campi mancanti"});
         return;
     }
+    //TODO: add creare voucher
     const {
         requestDate,
         outcomeDate,

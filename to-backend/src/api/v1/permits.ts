@@ -214,6 +214,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
         req.body.simultaneousPlatesAmount == null || isNaN(parseInt(req.body.simultaneousPlatesAmount)) ||
         req.body.applicationPlatesAmount == null || isNaN(parseInt(req.body.applicationPlatesAmount)) ||
         req.body.notes == null ||
+        req.body.voucherDurationDays == null || isNaN(parseInt(req.body.voucherDurationDays)) ||
         req.body.approveEmailTemplateId == null || isNaN(parseInt(req.body.approveEmailTemplateId)) ||
         req.body.revokeEmailTemplateId == null || isNaN(parseInt(req.body.revokeEmailTemplateId)) ||
         req.body.refuseEmailTemplateId == null || isNaN(parseInt(req.body.refuseEmailTemplateId)) ||
@@ -229,6 +230,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
         simultaneousPlatesAmount,
         applicationPlatesAmount,
         notes,
+        voucherDurationDays,
         approveEmailTemplateId,
         revokeEmailTemplateId,
         refuseEmailTemplateId,
@@ -251,6 +253,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
             simultaneousPlatesAmount === toUpdatePermit.simultaneousPlatesAmount &&
             applicationPlatesAmount === toUpdatePermit.applicationPlatesAmount &&
             notes === toUpdatePermit.notes &&
+            voucherDurationDays === toUpdatePermit.voucherDurationDays &&
             approveEmailTemplateId === toUpdatePermit.approveEmailTemplateId &&
             revokeEmailTemplateId === toUpdatePermit.revokeEmailTemplateId &&
             refuseEmailTemplateId === toUpdatePermit.refuseEmailTemplateId &&
@@ -268,6 +271,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
                 simultaneousPlatesAmount,
                 applicationPlatesAmount,
                 notes,
+                voucherDurationDays,
                 approveEmailTemplateId,
                 revokeEmailTemplateId,
                 refuseEmailTemplateId,
@@ -289,6 +293,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
                 simultaneousPlatesAmount: updatedPermit[0].simultaneousPlatesAmount,
                 applicationPlatesAmount: updatedPermit[0].applicationPlatesAmount,
                 notes: updatedPermit[0].notes,
+                voucherDurationDays: updatedPermit[0].voucherDurationDays,
                 approveEmailTemplateId: updatedPermit[0].approveEmailTemplateId,
                 revokeEmailTemplateId: updatedPermit[0].revokeEmailTemplateId,
                 refuseEmailTemplateId: updatedPermit[0].refuseEmailTemplateId,
@@ -337,6 +342,7 @@ permitsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (r
             req.body.simultaneousPlatesAmount == null || isNaN(parseInt(req.body.simultaneousPlatesAmount)) ||
             req.body.applicationPlatesAmount == null || isNaN(parseInt(req.body.applicationPlatesAmount)) ||
             req.body.notes == null ||
+            req.body.voucherDurationDays == null || isNaN(parseInt(req.body.voucherDurationDays)) ||
             req.body.approveEmailTemplateId == null || isNaN(parseInt(req.body.approveEmailTemplateId)) ||
             req.body.revokeEmailTemplateId == null || isNaN(parseInt(req.body.revokeEmailTemplateId)) ||
             req.body.refuseEmailTemplateId == null || isNaN(parseInt(req.body.refuseEmailTemplateId)) ||
@@ -352,6 +358,7 @@ permitsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (r
             simultaneousPlatesAmount,
             applicationPlatesAmount,
             notes,
+            voucherDurationDays,
             approveEmailTemplateId,
             revokeEmailTemplateId,
             refuseEmailTemplateId,
@@ -368,6 +375,7 @@ permitsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (r
                     simultaneousPlatesAmount,
                     applicationPlatesAmount,
                     notes,
+                    voucherDurationDays,
                     approveEmailTemplateId,
                     revokeEmailTemplateId,
                     refuseEmailTemplateId,
@@ -389,6 +397,7 @@ permitsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (r
                     simultaneousPlatesAmount: insertedPermit[0].simultaneousPlatesAmount,
                     applicationPlatesAmount: insertedPermit[0].applicationPlatesAmount,
                     notes: insertedPermit[0].notes,
+                    voucherDurationDays: insertedPermit[0].voucherDurationDays,
                     approveEmailTemplateId: insertedPermit[0].approveEmailTemplateId,
                     revokeEmailTemplateId: insertedPermit[0].revokeEmailTemplateId,
                     refuseEmailTemplateId: insertedPermit[0].refuseEmailTemplateId,
