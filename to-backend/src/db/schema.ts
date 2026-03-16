@@ -26,7 +26,7 @@ export const permits = toSchema.table("permits", {
     applicationPlatesAmount: integer().notNull(),
     disabled: commonColumns.disabled(),
     notes: commonColumns.notes(),
-    voucherDurationDays: integer().notNull().default(365),
+    voucherDurationDays: integer().notNull(),
     approveEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
     revokeEmailTemplateId: integer().notNull().references(() => emailTemplates.id),
     refuseEmailTemplateId: integer().notNull().references(() => emailTemplates.id),

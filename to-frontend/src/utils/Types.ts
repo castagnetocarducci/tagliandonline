@@ -179,6 +179,7 @@ export type PermitDetails = {
     applicationPlatesAmount: number,
     disabled: boolean,
     notes: string,
+    voucherDurationDays: number,
     approveEmailTemplateId: number,
     revokeEmailTemplateId: number,
     refuseEmailTemplateId: number,

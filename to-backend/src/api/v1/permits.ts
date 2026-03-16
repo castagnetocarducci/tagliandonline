@@ -33,6 +33,7 @@ type PermitDetails = {
     applicationPlatesAmount: number,
     disabled: boolean,
     notes: string,
+    voucherDurationDays: number,
     approveEmailTemplateId: number,
     revokeEmailTemplateId: number,
     refuseEmailTemplateId: number,
@@ -106,6 +107,7 @@ permitsRouter.get("/detail/:permitID", middlewareAuthCheck(["admin", "operatore"
         applicationPlatesAmount: permit.applicationPlatesAmount,
         disabled: permit.disabled,
         notes: permit.notes,
+        voucherDurationDays: permit.voucherDurationDays,
         approveEmailTemplateId: permit.approveEmailTemplateId,
         revokeEmailTemplateId: permit.revokeEmailTemplateId,
         refuseEmailTemplateId: permit.refuseEmailTemplateId,
@@ -168,6 +170,7 @@ permitsRouter.get("/history/:permitID", middlewareAuthCheck(["admin", "operatore
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "simultaneousPlatesAmount", {description: "Targhe simultanee", value: "" + historyElem.simultaneousPlatesAmount});
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "applicationPlatesAmount", {description: "Targhe in domanda", value: "" + historyElem.applicationPlatesAmount});
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "notes", {description: "Note", value: historyElem.notes});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherDurationDays", {description: "Durata tagliando (giorni)", value: "" + historyElem.voucherDurationDays});
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "approveEmailTemplate", {description: "Mail approvazione", value: historyElem.approveEmailTemplate ? historyElem.approveEmailTemplate.id + ": " + historyElem.approveEmailTemplate.description : "sconosciuto"});
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "revokeEmailTemplate", {description: "Mail revoca", value: historyElem.revokeEmailTemplate ? historyElem.revokeEmailTemplate.id + ": " + historyElem.revokeEmailTemplate.description : "sconosciuto"});
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "refuseEmailTemplate", {description: "Mail rifiuto", value: historyElem.refuseEmailTemplate ? historyElem.refuseEmailTemplate.id + ": " + historyElem.refuseEmailTemplate.description : "sconosciuto"});

@@ -156,6 +156,17 @@ export function NewPermit() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "number"}}/>
                     </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"voucherDurationDays"} labelText={"Durata tagliando (giorni)"}
+                                        validationFunc={(value) => parseInt("" + value) > 0}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={365}
+                                        isMandatory={true}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "number"}}/>
+                    </Col>
                 </Row>
                 <Row>
                     <Col md={4}>
