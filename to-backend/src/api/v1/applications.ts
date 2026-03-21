@@ -16,8 +16,8 @@ import {ConfigProvider} from "../../configProvider.ts";
 import type {DocTemplateListEntry} from "./docTemplates.ts";
 import type {EmailTemplateListEntry} from "./emailTemplates.ts";
 import {getVoucherNumerationNewData, type NumerationListEntry} from "./numerations.ts";
-import {getLastPermitHistoryId, getPermit, permitsRouter} from "./permits.ts";
-import {createNewVoucher, getLastVoucherHistoryId} from "./vouchers.ts";
+import {getLastPermitHistoryId, getPermit, getPermitsList, permitsRouter} from "./permits.ts";
+import {createNewVoucher, getLastVoucherHistoryId, updateVoucherWithApplication} from "./vouchers.ts";
 import {getLastVehicleHistoryId} from "./vehicles.ts";
 
 export const applicationsRouter = Router();
@@ -28,6 +28,11 @@ type ApplicationTypeListEntry = {
     disabled: boolean,
 }
 type ApplicationOutcomeListEntry = {
+    id: number,
+    description: string,
+    disabled: boolean,
+}
+type ApplicationPermitListEntry = {
     id: number,
     description: string,
     disabled: boolean,
@@ -428,6 +433,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                     permitHistoryId: permitHistoryId,
                     validFromDate: outcomeDate,
                     notes: "",
+                    permitApplicationPlatesAmount: permit.applicationPlatesAmount,
                     modifiedByAuthUserId: modifiedByAuthUserId,
                     vehicles: vehicles,
                 });
@@ -474,15 +480,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             });
 
             if (createdVoucherId == null) {
-                //TODO: update voucher vehicles if needed (latest outcomeDate counts)
-                // move to vouchers.ts
-                // const vehiclesToInsertVoucher = (vehicles as number[]).map((vehicleId) => {
-                //     return {
-                //         voucherId: createdVoucherId,
-                //         vehicleId: vehicleId as number,
-                //     }
-                // });
-
+                await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
             }
 
             const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
@@ -738,16 +736,21 @@ applicationsRouter.get("/availableOptions", middlewareAuthCheck(["admin", "opera
                     description: applicationOutcome.description
                 });
             }
-            //TODO: include permits (with amount of plates per application)
 
+            const permitsList = await getPermitsList();
+            if (permitsList == null) {
+                res.status(500).json({message: "Errore nel reperire elenco dei permessi"});
+                return;
+            }
 
             res.status(200).json({
                 message: "Tipi e Esiti domande acquisiti con successo",
                 applicationTypeList: applicationTypeList,
-                applicationOutcomeList: applicationOutcomeList
+                applicationOutcomeList: applicationOutcomeList,
+                permitsList: permitsList
             });
         } catch (e) {
-            res.status(500).json({message: "Errore nel reperire tipi e esiti domande: " + e});
+            res.status(500).json({message: "Errore nel reperire permessi, tipi o esiti domande: " + e});
         }
     }
 );

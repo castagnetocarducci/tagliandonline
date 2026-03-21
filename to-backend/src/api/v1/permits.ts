@@ -43,17 +43,13 @@ type PermitDetails = {
     numerationRegisterId: number
 }
 
-permitsRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
-    if (req.user == null) {
-        return res.status(401).json({message: "Non autorizzato"});
-    }
-
+export const getPermitsList = async (): Promise<PermitListEntry[] | null> => {
     const db = DatabaseManager.instance.db;
     const permitsArr = await db.query.permits.findMany({
         orderBy: {updatedAt: "desc"},
     });
     if (permitsArr == null) {
-        return res.status(500).json({message: "Errore nel reperire i permessi"});
+        return null;
     }
     const permitsList: PermitListEntry[] = [];
     for (const permitElem of permitsArr) {
@@ -67,6 +63,18 @@ permitsRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), async (r
             simultaneousPlatesAmount: permitElem.simultaneousPlatesAmount,
             applicationPlatesAmount: permitElem.applicationPlatesAmount
         });
+    }
+    return permitsList;
+}
+
+permitsRouter.get("/list", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        return res.status(401).json({message: "Non autorizzato"});
+    }
+    const db = DatabaseManager.instance.db;
+    const permitsList = await getPermitsList();
+    if (permitsList == null) {
+        return res.status(500).json({message: "Errore nel reperire i permessi"});
     }
     res.json({
         message: "Permessi acquisiti con successo",
