@@ -177,7 +177,7 @@ export const applications = toSchema.table("applications", {
     requestDate: commonColumns.createdAt(),
     outcomeDate: date(),
     registerNumber: integer().notNull(), //numero di protocollo
-    registerDate: date(), //data di protocollazione
+    registerDate: date().notNull(), //data di protocollazione
     cf: commonColumns.cfVarchar(),
     firstname: commonColumns.firstnameVarchar(),
     lastname: commonColumns.lastnameVarchar(),

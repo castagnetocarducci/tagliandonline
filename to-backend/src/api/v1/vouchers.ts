@@ -2,12 +2,13 @@ import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
-import {vehicles, vehiclesHistory} from "../../db/schema.ts";
+import {permits, vehicles, vehiclesHistory, vouchers, vouchersHistory} from "../../db/schema.ts";
 import {and, desc, eq, gte, ilike, lte} from "drizzle-orm";
 import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
-import {date, text, varchar} from "drizzle-orm/pg-core";
+import {date, PgAsyncTransaction, text, varchar} from "drizzle-orm/pg-core";
 import {commonColumns} from "../../db/common.columns.ts";
+import {getVoucherNumerationNewData} from "./numerations.ts";
 
 export const vouchersRouter = Router();
 
@@ -477,3 +478,73 @@ type VoucherDetails = {
 // });
 //
 //
+
+export type VoucherCreationData = {
+    permitId: number,
+    permitHistoryId: number,
+    validFromDate: string,
+    notes: string,
+    modifiedByAuthUserId: number,
+};
+
+export const createNewVoucher = async (tx: PgAsyncTransaction<any>, creationData: VoucherCreationData): Promise<{
+    newVoucherId: number,
+    newVoucherHistoryId: number
+}> => {
+    const validFromDateT: Date = new Date(creationData.validFromDate);
+    if (validFromDateT.toString() === "Invalid Date") {
+        throw new Error("Errore durante la creazione del tagliando: data esito non valida");
+    }
+    const {number, durationDays} = await getVoucherNumerationNewData(tx, creationData.permitId);
+    const expiryDateT: Date = new Date(validFromDateT);
+    expiryDateT.setDate(expiryDateT.getDate() + durationDays);
+    const createdVoucher = await tx.insert(vouchers).values({
+        number: number,
+        revoked: false,
+        validFromDate: validFromDateT.toDateString(),
+        validToDate: expiryDateT.toDateString(),
+        notes: "",
+        permitId: creationData.permitId,
+        generatedVoucherTemplatePath: "",
+        generatedAuthorizationTemplatePath: "",
+        generatedVoucherPdfPath: "",
+        generatedAuthorizationPdfPath: "",
+        signedAuthorizationPath: "",
+    }).returning();
+    if (createdVoucher == null || createdVoucher.length !== 1 || createdVoucher[0] == null) {
+        throw new Error("Creazione tagliando fallita: " + JSON.stringify(createdVoucher));
+    }
+    const createdVoucherId = createdVoucher[0].id;
+    const createdVoucherHistory = await tx.insert(vouchersHistory).values({
+        voucherId: createdVoucherId,
+        modifiedByAuthUserId: creationData.modifiedByAuthUserId,
+
+        number: number,
+        revoked: false,
+        validFromDate: validFromDateT.toDateString(),
+        validToDate: expiryDateT.toDateString(),
+        notes: "",
+        permitHistoryId: creationData.permitHistoryId,
+        generatedVoucherTemplatePath: "",
+        generatedAuthorizationTemplatePath: "",
+        generatedVoucherPdfPath: "",
+        generatedAuthorizationPdfPath: "",
+        signedAuthorizationPath: "",
+    }).returning();
+    if (createdVoucherHistory == null || createdVoucherHistory.length !== 1 || createdVoucherHistory[0] == null) {
+        throw new Error("Creazione storico tagliando fallita: " + JSON.stringify(createdVoucherHistory));
+    }
+    const createdVoucherHistoryId = createdVoucherHistory[0].id;
+    return {
+        newVoucherId: createdVoucherId,
+        newVoucherHistoryId: createdVoucherHistoryId,
+    };
+}
+
+export const getLastVoucherHistoryId = async (tx: PgAsyncTransaction<any>, voucherId: number): Promise<number> => {
+    const foundVouchers = await tx.select().from(vouchers).where(eq(vouchers.id, voucherId));
+    if (foundVouchers == null || foundVouchers.length !== 1 || foundVouchers[0] == null || foundVouchers[0].lastVoucherHistoryId == null) {
+        throw new Error("Errore tagliando non trovato");
+    }
+    return foundVouchers[0].lastVoucherHistoryId;
+}

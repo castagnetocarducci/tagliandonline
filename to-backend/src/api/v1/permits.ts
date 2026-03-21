@@ -8,6 +8,7 @@ import type {DocTemplateListEntry} from "./docTemplates.ts";
 import {type EmailTemplateListEntry} from "./emailTemplates.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
+import {PgAsyncTransaction} from "drizzle-orm/pg-core";
 
 export const permitsRouter = Router();
 
@@ -122,9 +123,6 @@ permitsRouter.get("/detail/:permitID", middlewareAuthCheck(["admin", "operatore"
     });
 });
 
-
-
-
 permitsRouter.get("/history/:permitID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
@@ -193,9 +191,6 @@ permitsRouter.get("/history/:permitID", middlewareAuthCheck(["admin", "operatore
         res.status(500).json({message: "Errore nel reperire lo storico del permesso: " + e});
         return;
     }
-
-
-
 });
 
 permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
@@ -501,4 +496,20 @@ permitsRouter.get("/availableTemplates", middlewareAuthCheck(["admin", "operator
         }
     }
 );
+
+export const getLastPermitHistoryId = async (tx: PgAsyncTransaction<any>, permitId: number): Promise<number> => {
+    const foundPermits = await tx.select().from(permits).where(eq(permits.id, permitId));
+    if (foundPermits == null || foundPermits.length !== 1 || foundPermits[0] == null || foundPermits[0].lastPermitHistoryId == null) {
+        throw new Error("Errore permesso non trovato");
+    }
+    return foundPermits[0].lastPermitHistoryId;
+}
+
+export const getPermit = async (tx: PgAsyncTransaction<any>, permitId: number) => {
+    const foundPermits = await tx.select().from(permits).where(eq(permits.id, permitId));
+    if (foundPermits == null || foundPermits.length !== 1 || foundPermits[0] == null || foundPermits[0].lastPermitHistoryId == null) {
+        throw new Error("Errore permesso non trovato");
+    }
+    return foundPermits[0];
+}
 

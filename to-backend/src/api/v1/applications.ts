@@ -4,7 +4,7 @@ import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 import {
     applications,
-    applicationsHistory, permits,
+    applicationsHistory, applicationsHistoryToVehiclesHistory, applicationsToVehicles, permits,
     permitsHistory,
     vehicles,
     vehiclesHistory, vouchers,
@@ -16,7 +16,8 @@ import {ConfigProvider} from "../../configProvider.ts";
 import type {DocTemplateListEntry} from "./docTemplates.ts";
 import type {EmailTemplateListEntry} from "./emailTemplates.ts";
 import {getVoucherNumerationNewData, type NumerationListEntry} from "./numerations.ts";
-import {permitsRouter} from "./permits.ts";
+import {getLastPermitHistoryId, getPermit, permitsRouter} from "./permits.ts";
+import {createNewVoucher, getLastVoucherHistoryId} from "./vouchers.ts";
 
 export const applicationsRouter = Router();
 
@@ -294,6 +295,35 @@ type ApplicationDetails = {
 //     }
 // });
 
+const checkApplicationParameters = (req: AuthRequest) => {
+    //TODO: add vehicles
+    if (req.body.registerNumber == null || isNaN(parseInt(req.body.registerNumber)) ||
+        req.body.registerDate == null || new Date(req.body.registerDate).toString() === "Invalid Date" ||
+        req.body.cf == null || req.body.cf.trim() === "" ||
+        req.body.firstname == null || req.body.firstname.trim() === "" ||
+        req.body.lastname == null || req.body.lastname.trim() === "" ||
+        req.body.email == null || req.body.email.trim() === "" ||
+        req.body.notes == null || typeof req.body.notes !== "string" ||
+        req.body.permitId == null || isNaN(parseInt(req.body.permitId)) ||
+        req.body.outcomeId == null || isNaN(parseInt(req.body.outcomeId)) ||
+        req.body.typeId == null || isNaN(parseInt(req.body.typeId)) ||
+        req.body.vehicles == null || !Array.isArray(req.body.vehicles) || req.body.vehicles.some((elem: any) => typeof elem !== 'number')) {
+        return false;
+    }
+    if (
+        (req.body.requestDate != null && new Date(req.body.requestDate).toString() === "Invalid Date") ||
+        (req.body.outcomeDate != null && new Date(req.body.outcomeDate).toString() === "Invalid Date") ||
+        (req.body.birthDate != null && new Date(req.body.birthDate).toString() === "Invalid Date") ||
+        (req.body.birthCity != null && typeof req.body.birthCity !== "string") ||
+        (req.body.outcomeAuthUserId != null && isNaN(parseInt(req.body.outcomeAuthUserId))) ||
+        (req.body.voucherId != null && isNaN(parseInt(req.body.voucherId))) ||
+        (req.body.createVoucher != null && typeof req.body.createVoucher !== "boolean")
+    ) {
+        return false;
+    }
+    return true;
+}
+
 applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
@@ -306,19 +336,11 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
         return;
     }
     const applicationID = parseInt(req.params.applicationID as string);
-    //TODO: fix put checks for all inputs: if they aren't null then they have to be valid
-    if (req.body.registerNumber == null || isNaN(parseInt(req.body.registerNumber)) ||
-        req.body.registerDate == null || new Date(req.body.registerDate).toString() === "Invalid Date" ||
-        req.body.cf == null || req.body.cf.trim() === "" ||
-        req.body.firstname == null || req.body.firstname.trim() === "" ||
-        req.body.lastname == null || req.body.lastname.trim() === "" ||
-        req.body.notes == null ||
-        req.body.permitId == null || isNaN(parseInt(req.body.permitId)) ||
-        req.body.outcomeId == null || isNaN(parseInt(req.body.outcomeId)) ||
-        req.body.typeId == null || isNaN(parseInt(req.body.typeId))) {
-        res.status(400).json({message: "Richiesta con campi mancanti"});
+    if (!checkApplicationParameters(req)) {
+        res.status(400).json({message: "Parametri di aggiornamento non validi"});
         return;
     }
+
     const {
         requestDate,
         outcomeDate,
@@ -342,6 +364,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
         typeId,
         outcomeAuthUserId,
         voucherId,
+        vehicles,
         //EXTRA
         createVoucher, //boolean for creating a voucher for this application
     } = req.body;
@@ -350,7 +373,8 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
     try {
         const toUpdateApplication = await db.query.applications.findFirst(
             {
-                where: {id: applicationID}
+                where: {id: applicationID},
+                with: {vehicles: true,},
             });
         if (toUpdateApplication == null) {
             res.status(500).json({message: "Domanda non trovata"});
@@ -377,46 +401,38 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             outcomeId === toUpdateApplication.outcomeId &&
             typeId === toUpdateApplication.typeId &&
             outcomeAuthUserId === toUpdateApplication.outcomeAuthUserId &&
-            voucherId === toUpdateApplication.voucherId) {
+            voucherId === toUpdateApplication.voucherId &&
+            toUpdateApplication.vehicles.length === vehicles.length &&
+            toUpdateApplication.vehicles.map((vehicle) => vehicle.id).every((id) => vehicles.includes(id)) &&
+            createVoucher === false) {
             res.status(200).json({message: "Nessuna modifica effettuata"});
             return;
         }
 
         const updatedApplicationId = await db.transaction(async (tx) => {
-            //TODO: check createVoucher and create it
-            let createdVoucherId: number | null = null;
-            if (createVoucher && voucherId == null) {
-                const outcomeDateT: Date = new Date(outcomeDate);
-                if (outcomeDateT.toString() === "Invalid Date") {
-                    console.log("Errore durante la creazione del tagliando: data esito non valida");
-                    tx.rollback();
-                    return null;
-                }
-                try {
-                    const {number, durationDays} = await getVoucherNumerationNewData(tx, toUpdateApplication.permitId);
-                    const expiryDateT: Date = new Date(outcomeDateT);
-                    expiryDateT.setDate(expiryDateT.getDate() + durationDays);
-                    const createdVoucher = await tx.insert(vouchers).values({
-                        number: number,
-                        revoked: false,
-                        validFromDate: outcomeDateT.toDateString(),
-                        validToDate: expiryDateT.toDateString(),
-                        notes: "",
-                        permitId: toUpdateApplication.permitId,
-                        generatedVoucherTemplatePath: "",
-                        generatedAuthorizationTemplatePath: "",
-                        generatedVoucherPdfPath: "",
-                        generatedAuthorizationPdfPath: "",
-                        signedAuthorizationPath: "",
-                    });
+            const permit = await getPermit(tx, permitId);
+            const permitHistoryId = permit.lastPermitHistoryId as number;
 
-                    //creatededVoucherId =
-                } catch (e) {
-                    console.log("Errore durante la creazione del tagliando: " + e);
-                    tx.rollback();
-                    return null;
-                }
+            if (permit.applicationPlatesAmount != vehicles.length) {
+                res.status(400).json({message: "Numero di veicoli non valido"});
+                tx.rollback();
+                return;
             }
+
+            let createdVoucherId: number | null = null;
+            let createdVoucherHistoryId: number | null = null;
+            if (createVoucher && voucherId == null) {
+                const {newVoucherId, newVoucherHistoryId} = await createNewVoucher(tx, {
+                    permitId: permitId,
+                    permitHistoryId: permitHistoryId,
+                    validFromDate: outcomeDate,
+                    notes: "",
+                    modifiedByAuthUserId: modifiedByAuthUserId,
+                });
+                createdVoucherId = newVoucherId;
+                createdVoucherHistoryId = newVoucherHistoryId;
+            }
+
 
             const updatedApplication = await tx.update(applications).set({
                 requestDate: requestDate,
@@ -447,23 +463,33 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 tx.rollback();
                 return null;
             }
-            const foundPermits = await tx.select().from(permits).where(eq(permits.id, permitId));
-            if (foundPermits == null || foundPermits.length !== 1 || foundPermits[0] == null || foundPermits[0].lastPermitHistoryId == null) {
-                console.log("Errore permesso non trovato");
+
+            const deleteResult = await tx.delete(applicationsToVehicles).where(eq(applicationsToVehicles.applicationId, applicationID));
+            const vehiclesToInsertApplication = (vehicles as number[]).map((vehicleId) => {
+                return {
+                    applicationId: applicationID,
+                    vehicleId: vehicleId as number,
+                }
+            });
+            //TODO: update voucher vehicles if needed (latest oucomeDate counts)
+            // move to vouchers.ts
+            // const vehiclesToInsertVoucher = (vehicles as number[]).map((vehicleId) => {
+            //     return {
+            //         voucherId: createdVoucherId,
+            //         vehicleId: vehicleId as number,
+            //     }
+            // });
+
+            const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
+            if (insertResult == null || insertResult.rowCount !== vehicles.length) {
+                console.log("Errore durante l'aggiornamento delle associazioni tra domanda e veicoli");
                 tx.rollback();
                 return null;
             }
-            const permitHistoryId = foundPermits[0].lastPermitHistoryId;
 
             let voucherHistoryId: number | null = null;
             if (voucherId != null) {
-                const foundVouchers = await tx.select().from(vouchers).where(eq(vouchers.id, voucherId));
-                if (foundVouchers == null || foundVouchers.length !== 1 || foundVouchers[0] == null || foundVouchers[0].lastVoucherHistoryId == null) {
-                    console.log("Errore tagliando non trovato");
-                    tx.rollback();
-                    return null;
-                }
-                voucherHistoryId = foundVouchers[0].lastVoucherHistoryId;
+                voucherHistoryId = await getLastVoucherHistoryId(tx, voucherId);
             }
 
             const updatedApplicationHistory = await tx.insert(applicationsHistory).values({
@@ -491,16 +517,31 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 outcomeId: updatedApplication[0].outcomeId,
                 typeId: updatedApplication[0].typeId,
                 outcomeAuthUserId: updatedApplication[0].outcomeAuthUserId,
-                ...(voucherHistoryId != null && { voucherHistoryId: voucherHistoryId }),
+                voucherHistoryId: (createdVoucherHistoryId != null ? createdVoucherHistoryId : voucherHistoryId),
             }).returning();
             if (updatedApplicationHistory == null || updatedApplicationHistory.length !== 1 || updatedApplicationHistory[0] == null) {
                 console.log("Errore durante l'aggiornamento dello storico della domanda");
                 tx.rollback();
                 return null;
             }
+            const updatedApplicationHistoryId = updatedApplicationHistory[0].id;
             const updateResult = await tx.update(applications)
-                .set({lastApplicationHistoryId: updatedApplicationHistory[0].id})
+                .set({lastApplicationHistoryId: updatedApplicationHistoryId})
                 .where(eq(applications.id, updatedApplication[0].id));
+            const vehiclesToInsertApplicationHistory = (vehicles as number[]).map((vehicleId) => {
+                //TODO: retrive vehicleHistoryID
+                return {
+                    applicationHistoryId: updatedApplicationHistoryId,
+                    vehicleId: vehicleId,
+                }
+            });
+            const insertASVSResult = await tx.insert(applicationsHistoryToVehiclesHistory).values(vehiclesToInsertApplicationHistory);
+            if (insertASVSResult == null || insertASVSResult.rowCount !== vehicles.length) {
+                console.log("Errore durante l'aggiornamento delle associazioni tra storico domanda e storico veicoli");
+                tx.rollback();
+                return null;
+            }
+
             if (updateResult == null || updateResult.rowCount !== 1) {
                 console.log("Errore durante l'aggiornamento della domanda con lo storico");
                 tx.rollback();
@@ -521,25 +562,18 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
 });
 
 applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+    //TODO: redo this function based on /edit
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
         return;
     }
     const modifiedByAuthUserId = req.user.id;
 
-    if (req.body.registerNumber == null || isNaN(parseInt(req.body.registerNumber)) ||
-        req.body.registerDate == null || new Date(req.body.registerDate).toString() === "Invalid Date" ||
-        req.body.cf == null || req.body.cf.trim() === "" ||
-        req.body.firstname == null || req.body.firstname.trim() === "" ||
-        req.body.lastname == null || req.body.lastname.trim() === "" ||
-        req.body.notes == null ||
-        req.body.permitId == null || isNaN(parseInt(req.body.permitId)) ||
-        req.body.outcomeId == null || isNaN(parseInt(req.body.outcomeId)) ||
-        req.body.typeId == null || isNaN(parseInt(req.body.typeId))) {
-        res.status(400).json({message: "Richiesta con campi mancanti"});
+    if (!checkApplicationParameters(req)) {
+        res.status(400).json({message: "Parametri di inserimento non validi"});
         return;
     }
-    //TODO: add creare voucher
+
     const {
         requestDate,
         outcomeDate,
@@ -562,6 +596,8 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
         outcomeId,
         typeId,
         voucherId,
+        //EXTRA
+        createVoucher, //boolean for creating a voucher for this application
     } = req.body;
 
     const db = DatabaseManager.instance.db;
@@ -597,13 +633,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 return null;
             }
 
-            const foundPermits = await tx.select().from(permits).where(eq(permits.id, permitId));
-            if (foundPermits == null || foundPermits.length !== 1 || foundPermits[0] == null || foundPermits[0].lastPermitHistoryId == null) {
-                console.log("Errore permesso non trovato");
-                tx.rollback();
-                return null;
-            }
-            const permitHistoryId = foundPermits[0].lastPermitHistoryId;
+            const permitHistoryId = await getLastPermitHistoryId(tx, permitId);
 
             let voucherHistoryId: number | null = null;
             if (voucherId != null) {
@@ -641,7 +671,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 outcomeId: insertedApplication[0].outcomeId,
                 typeId: insertedApplication[0].typeId,
                 outcomeAuthUserId: insertedApplication[0].outcomeAuthUserId,
-                ...(voucherHistoryId != null && { voucherHistoryId: voucherHistoryId }), // aggiunta condizionale perché drizzle orm non accetta null in insert tramite typescript
+                ...(voucherHistoryId != null && {voucherHistoryId: voucherHistoryId}), // aggiunta condizionale perché drizzle orm non accetta null in insert tramite typescript
             }).returning();
             if (insertedApplicationHistory == null || insertedApplicationHistory.length !== 1 || insertedApplicationHistory[0] == null) {
                 console.log("Errore durante l'inserimento dello storico della domanda");
@@ -701,6 +731,7 @@ applicationsRouter.get("/availableOptions", middlewareAuthCheck(["admin", "opera
                     description: applicationOutcome.description
                 });
             }
+            //TODO: include permits (with amount of plates per application)
 
 
             res.status(200).json({
