@@ -18,6 +18,7 @@ import type {EmailTemplateListEntry} from "./emailTemplates.ts";
 import {getVoucherNumerationNewData, type NumerationListEntry} from "./numerations.ts";
 import {getLastPermitHistoryId, getPermit, permitsRouter} from "./permits.ts";
 import {createNewVoucher, getLastVoucherHistoryId} from "./vouchers.ts";
+import {getLastVehicleHistoryId} from "./vehicles.ts";
 
 export const applicationsRouter = Router();
 
@@ -428,11 +429,11 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                     validFromDate: outcomeDate,
                     notes: "",
                     modifiedByAuthUserId: modifiedByAuthUserId,
+                    vehicles: vehicles,
                 });
                 createdVoucherId = newVoucherId;
                 createdVoucherHistoryId = newVoucherHistoryId;
             }
-
 
             const updatedApplication = await tx.update(applications).set({
                 requestDate: requestDate,
@@ -471,14 +472,18 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                     vehicleId: vehicleId as number,
                 }
             });
-            //TODO: update voucher vehicles if needed (latest oucomeDate counts)
-            // move to vouchers.ts
-            // const vehiclesToInsertVoucher = (vehicles as number[]).map((vehicleId) => {
-            //     return {
-            //         voucherId: createdVoucherId,
-            //         vehicleId: vehicleId as number,
-            //     }
-            // });
+
+            if (createdVoucherId == null) {
+                //TODO: update voucher vehicles if needed (latest outcomeDate counts)
+                // move to vouchers.ts
+                // const vehiclesToInsertVoucher = (vehicles as number[]).map((vehicleId) => {
+                //     return {
+                //         voucherId: createdVoucherId,
+                //         vehicleId: vehicleId as number,
+                //     }
+                // });
+
+            }
 
             const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
             if (insertResult == null || insertResult.rowCount !== vehicles.length) {
@@ -528,13 +533,15 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             const updateResult = await tx.update(applications)
                 .set({lastApplicationHistoryId: updatedApplicationHistoryId})
                 .where(eq(applications.id, updatedApplication[0].id));
-            const vehiclesToInsertApplicationHistory = (vehicles as number[]).map((vehicleId) => {
-                //TODO: retrive vehicleHistoryID
-                return {
+            const vehiclesToInsertApplicationHistory: {applicationHistoryId: number, vehicleHistoryId: number}[] = [];
+            for (const vehicleId of vehicles) {
+                const vehicleHistoryId = await getLastVehicleHistoryId(tx, vehicleId);
+                vehiclesToInsertApplicationHistory.push({
                     applicationHistoryId: updatedApplicationHistoryId,
-                    vehicleId: vehicleId,
-                }
-            });
+                    vehicleHistoryId: vehicleHistoryId,
+                });
+            }
+
             const insertASVSResult = await tx.insert(applicationsHistoryToVehiclesHistory).values(vehiclesToInsertApplicationHistory);
             if (insertASVSResult == null || insertASVSResult.rowCount !== vehicles.length) {
                 console.log("Errore durante l'aggiornamento delle associazioni tra storico domanda e storico veicoli");

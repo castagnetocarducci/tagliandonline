@@ -2,10 +2,11 @@ import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
-import {vehicles, vehiclesHistory} from "../../db/schema.ts";
+import {vehicles, vehiclesHistory, vouchers} from "../../db/schema.ts";
 import {and, desc, eq, gte, ilike, lte} from "drizzle-orm";
 import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
+import {PgAsyncTransaction} from "drizzle-orm/pg-core";
 
 export const vehiclesRouter = Router();
 
@@ -356,5 +357,14 @@ vehiclesRouter.post("/new", middlewareAuthCheck(["admin", "operatore", "vigile"]
         return;
     }
 });
+
+export const getLastVehicleHistoryId = async (tx: PgAsyncTransaction<any>, vehicleId: number): Promise<number> => {
+    const foundVehicles = await tx.select().from(vehicles).where(eq(vehicles.id, vehicleId));
+    if (foundVehicles == null || foundVehicles.length !== 1 || foundVehicles[0] == null || foundVehicles[0].lastVehiclesHistoryId == null) {
+        throw new Error("Errore tagliando non trovato");
+    }
+    return foundVehicles[0].lastVehiclesHistoryId;
+}
+
 
 

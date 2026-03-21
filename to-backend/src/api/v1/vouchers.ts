@@ -2,13 +2,22 @@ import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
-import {permits, vehicles, vehiclesHistory, vouchers, vouchersHistory} from "../../db/schema.ts";
+import {
+    applications, applicationsHistoryToVehiclesHistory,
+    applicationsToVehicles,
+    permits,
+    vehicles,
+    vehiclesHistory,
+    vouchers,
+    vouchersHistory, vouchersHistoryToVehiclesHistory, vouchersToVehicles
+} from "../../db/schema.ts";
 import {and, desc, eq, gte, ilike, lte} from "drizzle-orm";
 import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 import {date, PgAsyncTransaction, text, varchar} from "drizzle-orm/pg-core";
 import {commonColumns} from "../../db/common.columns.ts";
 import {getVoucherNumerationNewData} from "./numerations.ts";
+import {getLastVehicleHistoryId} from "./vehicles.ts";
 
 export const vouchersRouter = Router();
 
@@ -485,6 +494,7 @@ export type VoucherCreationData = {
     validFromDate: string,
     notes: string,
     modifiedByAuthUserId: number,
+    vehicles: number[]
 };
 
 export const createNewVoucher = async (tx: PgAsyncTransaction<any>, creationData: VoucherCreationData): Promise<{
@@ -515,6 +525,18 @@ export const createNewVoucher = async (tx: PgAsyncTransaction<any>, creationData
         throw new Error("Creazione tagliando fallita: " + JSON.stringify(createdVoucher));
     }
     const createdVoucherId = createdVoucher[0].id;
+    // const deleteResult = await tx.delete(vouchersToVehicles).where(eq(vouchersToVehicles.voucherId, createdVoucherId));
+    const vehiclesToInsertVoucher = creationData.vehicles.map((vehicleId) => {
+        return {
+            voucherId: createdVoucherId,
+            vehicleId: vehicleId,
+        }
+    });
+    const insertResult = await tx.insert(vouchersToVehicles).values(vehiclesToInsertVoucher);
+    if (insertResult == null || insertResult.rowCount !== creationData.vehicles.length) {
+        throw new Error("Errore durante l'aggiornamento delle associazioni tra tagliando e veicoli");
+    }
+
     const createdVoucherHistory = await tx.insert(vouchersHistory).values({
         voucherId: createdVoucherId,
         modifiedByAuthUserId: creationData.modifiedByAuthUserId,
@@ -535,6 +557,18 @@ export const createNewVoucher = async (tx: PgAsyncTransaction<any>, creationData
         throw new Error("Creazione storico tagliando fallita: " + JSON.stringify(createdVoucherHistory));
     }
     const createdVoucherHistoryId = createdVoucherHistory[0].id;
+    const vehiclesToInsertVoucherHistory: {voucherHistoryId: number, vehicleHistoryId: number}[] = [];
+    for (const vehicleId of creationData.vehicles) {
+        const vehicleHistoryId = await getLastVehicleHistoryId(tx, vehicleId);
+        vehiclesToInsertVoucherHistory.push({
+            voucherHistoryId: createdVoucherHistoryId,
+            vehicleHistoryId: vehicleHistoryId,
+        });
+    }
+    const insertASVSResult = await tx.insert(vouchersHistoryToVehiclesHistory).values(vehiclesToInsertVoucherHistory);
+    if (insertASVSResult == null || insertASVSResult.rowCount !== creationData.vehicles.length) {
+        throw new Error("Errore durante l'aggiornamento delle associazioni tra storico tagliando e storico veicoli");
+    }
     return {
         newVoucherId: createdVoucherId,
         newVoucherHistoryId: createdVoucherHistoryId,
@@ -548,3 +582,15 @@ export const getLastVoucherHistoryId = async (tx: PgAsyncTransaction<any>, vouch
     }
     return foundVouchers[0].lastVoucherHistoryId;
 }
+
+export const updateVoucherWithApplication = async (tx: PgAsyncTransaction<any>, voucherId: number): Promise<void> => {
+    const foundApplications = await tx.select().from(applications).where(eq(applications.voucherId, voucherId)).orderBy(desc(applications.outcomeDate));
+    if (foundApplications == null || foundApplications.length !== 1) {
+        throw new Error("Errore domanda non trovata");
+    }
+
+}
+
+
+
+
