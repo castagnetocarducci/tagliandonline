@@ -50,7 +50,7 @@ export const NavHeader = () => {
                                         </NavItem>
                                         <NavItem>
                                             <RouterDesignNavLink openNav={openNav} setOpenNav={setOpenNav}
-                                                                 to={"/vehicles"}> Veicoli </RouterDesignNavLink>
+                                                                 to={"/applications"}> Veicoli </RouterDesignNavLink>
                                         </NavItem>
                                     </>)}
                                 {(userDataCtx.userData.role === "admin") && (

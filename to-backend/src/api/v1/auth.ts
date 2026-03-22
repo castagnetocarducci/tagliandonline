@@ -10,7 +10,7 @@ import {
     generatePasswordResetToken
 } from "../../utils/pswHashing.ts";
 import {SmtpManager} from "../../smtpManager.ts";
-import {eq, or} from "drizzle-orm";
+import {eq} from "drizzle-orm";
 import {sleep} from "../../utils/commonFunctions.ts";
 
 export type UserToken = {

@@ -1,24 +1,22 @@
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
-import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
-import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 import {
     applications,
-    applicationsHistory, applicationsHistoryToVehiclesHistory, applicationsToVehicles, permits,
-    permitsHistory,
+    applicationsHistory,
+    applicationsHistoryToVehiclesHistory,
+    applicationsEmailsHistory,
+    applicationsToVehicles,
+    applicationTypes,
+    applicationOutcome,
     vehicles,
-    vehiclesHistory, vouchers,
-    vouchersHistory
+    vouchers
 } from "../../db/schema.ts";
-import {and, desc, eq, gte, ilike, lte} from "drizzle-orm";
+import {and, count, desc, eq, exists, gte, ilike, lte} from "drizzle-orm";
 import {Router} from "express";
-import {ConfigProvider} from "../../configProvider.ts";
-import type {DocTemplateListEntry} from "./docTemplates.ts";
-import type {EmailTemplateListEntry} from "./emailTemplates.ts";
-import {getVoucherNumerationNewData, type NumerationListEntry} from "./numerations.ts";
-import {getLastPermitHistoryId, getPermit, getPermitsList, permitsRouter} from "./permits.ts";
+import {getPermit, getPermitsList} from "./permits.ts";
 import {createNewVoucher, getLastVoucherHistoryId, updateVoucherWithApplication} from "./vouchers.ts";
 import {getLastVehicleHistoryId} from "./vehicles.ts";
+import { ConfigProvider } from "../../configProvider.ts";
 
 export const applicationsRouter = Router();
 
@@ -32,11 +30,11 @@ type ApplicationOutcomeListEntry = {
     description: string,
     disabled: boolean,
 }
-type ApplicationPermitListEntry = {
-    id: number,
-    description: string,
-    disabled: boolean,
-}
+// type ApplicationPermitListEntry = {
+//     id: number,
+//     description: string,
+//     disabled: boolean,
+// }
 
 type ApplicationListEntry = {
     id: number,
@@ -75,7 +73,15 @@ type ApplicationListEntry = {
         to: string,
         subject: string,
         attachmentsPresent: boolean
-    }[]
+    }[],
+    vehicles: {
+        id: number,
+        createdAt: Date,
+        updatedAt: Date,
+        plate: string,
+        model: string,
+        brand: string,
+    }[],
 }
 
 type ApplicationDetails = {
@@ -129,67 +135,282 @@ type ApplicationDetails = {
         to: string,
         subject: string,
         attachmentsPresent: boolean
-    }[]
+    }[],
+    vehicles: {
+        id: number,
+        createdAt: Date,
+        updatedAt: Date,
+        plate: string,
+        model: string,
+        brand: string,
+    }[],
 }
 
-// vehiclesRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
-//     if (req.user == null) {
-//         return res.status(401).json({message: "Non autorizzato"});
-//     }
-//
-//     const {
-//         idFrom,
-//         idTo,
-//         plate,
-//         model,
-//         brand,
-//         page,
-//     } = req.body;
-//     const db = DatabaseManager.instance.db;
-//     const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
-//     // const countConditions = [], queryConditions = [];
-//     const searchConditions = [];
-//     if (idFrom != null && !isNaN(parseInt(idFrom))) { searchConditions.push(gte(vehicles.id, parseInt(idFrom))); } // queryConditions.push({id: {gte: idFrom}}); }
-//     if (idTo != null && !isNaN(parseInt(idTo))) { searchConditions.push(lte(vehicles.id, parseInt(idTo))); } // queryConditions.push({id: {lte: idTo}}); }
-//     if (plate != null && plate.trim() !== "") { searchConditions.push(ilike(vehicles.plate, `%${plate}%`)); } // queryConditions.push({plate: {ilike: `%${plate}%`}}); }
-//     if (model != null && model.trim() !== "") { searchConditions.push(ilike(vehicles.model, `%${model}%`)); } // queryConditions.push({model: {ilike: `%${model}%`}}); }
-//     if (brand != null && brand.trim() !== "") { searchConditions.push(ilike(vehicles.brand, `%${brand}%`)); } // queryConditions.push({brand: {ilike: `%${brand}%`}}); }
-//     const totalAmount = await db.$count(vehicles, and(...searchConditions));
-//     const vehiclesArr = await db.select().from(vehicles)
-//         .where(and(...searchConditions))
-//         .orderBy(desc(vehicles.id))
-//         .offset(page != null ? (page - 1) * resultsPerPage : 0).limit(resultsPerPage);
-//     // const vehiclesArr = await db.query.vehicles.findMany({
-//     //     where: {AND: [
-//     //         ...queryConditions,
-//     //         ]},
-//     //     orderBy: {id: "desc"},
-//     //     offset: page != null ? (page - 1) * resultsPerPage : undefined,
-//     //     limit: resultsPerPage,
-//     // });
-//     if (vehiclesArr == null) {
-//         return res.status(500).json({message: "Errore nel reperire i veicoli"});
-//     }
-//     const vehiclesList: VehicleListEntry[] = [];
-//     for (const vehicleElem of vehiclesArr) {
-//         vehiclesList.push({
-//             id: vehicleElem.id,
-//             createdAt: vehicleElem.createdAt,
-//             updatedAt: vehicleElem.updatedAt,
-//             plate: vehicleElem.plate,
-//             brand: vehicleElem.brand,
-//             model: vehicleElem.model
-//         });
-//     }
-//     res.json({
-//         message: "Veicoli acquisiti con successo",
-//         vehiclesList: vehiclesList,
-//         pageData: {
-//             currentPage: page != null ? page : 1,
-//             totalPages: Math.ceil(totalAmount / resultsPerPage),
-//         }
-//     });
-// });
+applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        return res.status(401).json({message: "Non autorizzato"});
+    }
+    /*
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    requestDate: Date,
+    outcomeDate: Date,
+    registerNumber: number,
+    registerDate: Date,
+    cf: string,
+    firstname: string,
+    lastname: string,
+    targetHousePlace: string,
+    permit: {
+        id: number,
+        description: string,
+        disabled: boolean,
+    },
+    outcome: {
+        id: number,
+        description: string
+    },
+    type: {
+        id: number,
+        description: string
+    }
+    voucher: {
+        id: number,
+        number: number,
+        revoked: boolean,
+        validFromDate: Date,
+        validToDate: Date
+    } | null,
+    emails: {
+        id: number,
+        to: string,
+        subject: string,
+        attachmentsPresent: boolean
+    }[],
+    vehicles: {
+        id: number,
+        createdAt: Date,
+        updatedAt: Date,
+        plate: string,
+        model: string,
+        brand: string,
+    }[],
+
+     */
+
+    const {
+        idFrom,
+        idTo,
+        requestDate,
+        outcomeDate,
+        registerNumber,
+        registerDate,
+        cf,
+        firstname,
+        lastname,
+        email,
+        birthDate,
+        birthCity,
+        residencePlace,
+        targetHousePlace,
+        targetHouseLandRegistrySheet,
+        targetHouseLandRegistryMap,
+        targetHouseLandRegistrySubaltern,
+        targetHouseLandRegistryCategory,
+        permitId,
+        outcomeId,
+        typeId,
+        voucherId,
+        voucherNumber,
+        emailTo,
+        vehicleId,
+        vehiclePlate,
+        vehicleModel,
+        vehicleBrand,
+        page,
+    } = req.body;
+    const db = DatabaseManager.instance.db;
+    const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
+    // const countConditions = [], queryConditions = [];
+    const applicationsCountConditions = [], applicationsQueryConditions = [];
+    const vehiclesCountConditions = [], vehiclesQueryConditions = [];
+    const vouchersCountConditions = [], vouchersQueryConditions = [];
+    const emailsCountConditions = [], emailsQueryConditions = [];
+    if (idFrom != null && !isNaN(parseInt(idFrom))) { applicationsCountConditions.push(gte(applications.id, parseInt(idFrom))); applicationsQueryConditions.push({id: {gte: idFrom}}); }
+    if (idTo != null && !isNaN(parseInt(idTo))) { applicationsCountConditions.push(lte(applications.id, parseInt(idTo))); applicationsQueryConditions.push({id: {lte: idTo}}); }
+
+    //TODO: controllare requestDate (potrebbe richiedere anche l'ora che invece non verrà utilizzata)
+    //if (requestDate != null && new Date(requestDate).toString() === "Invalid Date") { applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate))); applicationsQueryConditions.push({requestDate: new Date(requestDate)}); }
+    if (outcomeDate != null && new Date(outcomeDate).toString() === "Invalid Date") { applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toLocaleDateString())); applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toLocaleDateString()}); }
+    if (registerNumber != null && !isNaN(parseInt(registerNumber))) { applicationsCountConditions.push(eq(applications.registerNumber, parseInt(registerNumber))); applicationsQueryConditions.push({registerNumber: parseInt(registerNumber)}); }
+    if (registerDate != null && new Date(registerDate).toString() === "Invalid Date") { applicationsCountConditions.push(eq(applications.registerDate, new Date(registerDate).toLocaleDateString())); applicationsQueryConditions.push({registerDate: new Date(registerDate).toLocaleDateString()}); }
+    if (cf != null && cf.trim() !== "") { applicationsCountConditions.push(ilike(applications.cf, `%${cf}%`)); applicationsQueryConditions.push({cf: {ilike: `%${cf}%`}}); }
+    if (firstname != null && firstname.trim() !== "") { applicationsCountConditions.push(ilike(applications.firstname, `%${firstname}%`)); applicationsQueryConditions.push({firstname: {ilike: `%${firstname}%`}}); }
+    if (lastname != null && lastname.trim() !== "") { applicationsCountConditions.push(ilike(applications.lastname, `%${lastname}%`)); applicationsQueryConditions.push({lastname: {ilike: `%${lastname}%`}}); }
+    if (email != null && email.trim() !== "") { applicationsCountConditions.push(ilike(applications.email, `%${email}%`)); applicationsQueryConditions.push({email: {ilike: `%${email}%`}}); }
+    if (birthDate != null && new Date(birthDate).toString() === "Invalid Date") { applicationsCountConditions.push(eq(applications.birthDate, new Date(birthDate).toLocaleDateString())); applicationsQueryConditions.push({birthDate: new Date(birthDate).toLocaleDateString()}); }
+    if (birthCity != null && birthCity.trim() !== "") { applicationsCountConditions.push(ilike(applications.birthCity, `%${birthCity}%`)); applicationsQueryConditions.push({birthCity: {ilike: `%${birthCity}%`}}); }
+    if (residencePlace != null && residencePlace.trim() !== "") { applicationsCountConditions.push(ilike(applications.residencePlace, `%${residencePlace}%`)); applicationsQueryConditions.push({residencePlace: {ilike: `%${residencePlace}%`}}); }
+    if (targetHousePlace != null && targetHousePlace.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHousePlace, `%${targetHousePlace}%`)); applicationsQueryConditions.push({targetHousePlace: {ilike: `%${targetHousePlace}%`}}); }
+    if (targetHouseLandRegistrySheet != null && targetHouseLandRegistrySheet.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySheet, `%${targetHouseLandRegistrySheet}%`)); applicationsQueryConditions.push({targetHouseLandRegistrySheet: {ilike: `%${targetHouseLandRegistrySheet}%`}}); }
+    if (targetHouseLandRegistryMap != null && targetHouseLandRegistryMap.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryMap, `%${targetHouseLandRegistryMap}%`)); applicationsQueryConditions.push({targetHouseLandRegistryMap: {ilike: `%${targetHouseLandRegistryMap}%`}}); }
+    if (targetHouseLandRegistrySubaltern != null && targetHouseLandRegistrySubaltern.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySubaltern, `%${targetHouseLandRegistrySubaltern}%`)); applicationsQueryConditions.push({targetHouseLandRegistrySubaltern: {ilike: `%${targetHouseLandRegistrySubaltern}%`}}); }
+    if (targetHouseLandRegistryCategory != null && targetHouseLandRegistryCategory.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryCategory, `%${targetHouseLandRegistryCategory}%`)); applicationsQueryConditions.push({targetHouseLandRegistryCategory: {ilike: `%${targetHouseLandRegistryCategory}%`}}); }
+    if (permitId != null && !isNaN(parseInt(permitId))) { applicationsCountConditions.push(eq(applications.permitId, parseInt(permitId))); applicationsQueryConditions.push({permitId: parseInt(permitId)}); }
+    if (outcomeId != null && !isNaN(parseInt(outcomeId))) { applicationsCountConditions.push(eq(applications.outcomeId, parseInt(outcomeId))); applicationsQueryConditions.push({outcomeId: parseInt(outcomeId)}); }
+    if (typeId != null && !isNaN(parseInt(typeId))) { applicationsCountConditions.push(eq(applications.typeId, parseInt(typeId))); applicationsQueryConditions.push({typeId: parseInt(typeId)}); }
+    if (voucherId != null && !isNaN(parseInt(voucherId))) { applicationsCountConditions.push(eq(applications.voucherId, parseInt(voucherId))); applicationsQueryConditions.push({voucherId: parseInt(voucherId)}); }
+
+    if (voucherNumber != null && !isNaN(parseInt(voucherNumber))) {
+        vouchersCountConditions.push(eq(vouchers.number, voucherNumber));
+        vouchersQueryConditions.push({number: parseInt(voucherNumber)});
+        // const vouchersSubQuery = db.select({id: vouchers.id}).from(vouchers).where(eq(vouchers.number, parseInt(voucherNumber)));
+        // applicationsCountConditions.push(exists(vouchersSubQuery.where(eq(applications.voucherId, vouchers.id))));
+    }
+
+    if (emailTo != null && emailTo.trim() !== "") {
+        emailsCountConditions.push(ilike(applicationsEmailsHistory.to, `%${emailTo}%`));
+        emailsQueryConditions.push({to: {ilike: `%${emailTo}%`}});
+        // const emailsSubQuery = db.select({id: applicationsEmailsHistory.id}).from(applicationsEmailsHistory).where(ilike(applicationsEmailsHistory.to, `%${emailTo}%`));
+        // applicationsCountConditions.push(exists(emailsSubQuery.where(eq(applications.id, applicationsEmailsHistory.applicationId))));
+    }
+
+    if (vehicleId != null && !isNaN(parseInt(vehicleId))) {
+        vehiclesCountConditions.push(eq(vehicles.id, parseInt(vehicleId)));
+        vehiclesQueryConditions.push({id: parseInt(vehicleId)});
+    }
+    if (vehiclePlate != null && vehiclePlate.trim() !== "") {
+        vehiclesCountConditions.push(ilike(vehicles.plate, `%${vehiclePlate}%`));
+        vehiclesQueryConditions.push({plate: {ilike: `%${vehiclePlate}%`}});
+    }
+    if (vehicleModel != null && vehicleModel.trim() !== "") {
+        vehiclesCountConditions.push(ilike(vehicles.model, `%${vehicleModel}%`));
+        vehiclesQueryConditions.push({model: {ilike: `%${vehicleModel}%`}});
+    }
+    if (vehicleBrand != null && vehicleBrand.trim() !== "") {
+        vehiclesCountConditions.push(ilike(vehicles.brand, `%${vehicleBrand}%`));
+        vehiclesQueryConditions.push({brand: {ilike: `%${vehicleBrand}%`}});
+    }
+
+    // if (plate != null && plate.trim() !== "") { vehiclesCountConditions.push(ilike(vehicles.plate, `%${plate}%`)); vehiclesQueryConditions.push({plate: {ilike: `%${plate}%`}}); }
+    // if (model != null && model.trim() !== "") { vehiclesCountConditions.push(ilike(vehicles.model, `%${model}%`)); vehiclesQueryConditions.push({model: {ilike: `%${model}%`}}); }
+    // if (brand != null && brand.trim() !== "") { vehiclesCountConditions.push(ilike(vehicles.brand, `%${brand}%`)); vehiclesQueryConditions.push({brand: {ilike: `%${brand}%`}}); }
+
+    //const totalAmount = await db.$count(applications, and(...applicationsCountConditions));
+
+    // counting section
+    const vehiclesCountFilterSubQuery = db.select().from(applicationsToVehicles)
+        .leftJoin(vehicles, eq(applicationsToVehicles.vehicleId, vehicles.id))
+        .where(and(eq(applications.id, applicationsToVehicles.applicationId), ...vehiclesCountConditions));
+    const vouchersCountFilterSubQuery = db.select().from(vouchers)
+        .where(and(eq(applications.voucherId, vouchers.id), ...vouchersCountConditions));
+    const emailsCountFilterSubQuery = db.select().from(applicationsEmailsHistory)
+        .where(and(eq(applications.id, applicationsEmailsHistory.applicationId), ...emailsCountConditions));
+
+    const totalAmount = await db.select({count: count()}).from(applications)
+        .where(and(...applicationsCountConditions,
+            exists(vehiclesCountFilterSubQuery),
+            exists(vouchersCountFilterSubQuery),
+            exists(emailsCountFilterSubQuery)
+        ));
+    if (totalAmount == null || totalAmount.length !== 1 || totalAmount[0] == null) {
+        return res.status(500).json({message: "Errore nel conteggio dei risultati"});
+    }
+
+    // const vehiclesArr = await db.select().from(applications)
+    //     .where(and(...applicationsSearchConditions))
+    //     .orderBy(desc(applications.id))
+    //     .offset(page != null ? (page - 1) * resultsPerPage : 0).limit(resultsPerPage);
+
+    // query section
+    const applicationsArr = await db.query.applications.findMany({
+        where: {AND: [
+            ...applicationsQueryConditions,
+            ]},
+        with: {
+            vehicles: {
+                where: {AND: [...vehiclesQueryConditions],},
+            },
+            permit: true,
+            outcome: true,
+            type: true,
+            voucher: {
+                where: {AND: [...vouchersQueryConditions]},
+            },
+            emails: {
+                where: {AND: [...emailsQueryConditions]},
+            },
+        },
+        orderBy: {id: "desc"},
+        offset: page != null ? (page - 1) * resultsPerPage : 0,
+        limit: resultsPerPage,
+    });
+    if (applicationsArr == null) {
+        return res.status(500).json({message: "Errore nel reperire le domande"});
+    }
+    const applicationsList: ApplicationListEntry[] = [];
+    for (const app of applicationsArr) {
+        if (app.permit == null || app.outcome == null || app.type == null) {
+            return res.status(500).json({message: "Errore nel reperire le associazioni di una delle domande"});
+        }
+        applicationsList.push({
+            id: app.id,
+            createdAt: app.createdAt,
+            updatedAt: app.updatedAt,
+            requestDate: app.requestDate,
+            outcomeDate: app.outcomeDate != null ? new Date(app.outcomeDate) : null as any,
+            registerNumber: app.registerNumber,
+            registerDate: new Date(app.registerDate),
+            cf: app.cf ?? "",
+            firstname: app.firstname,
+            lastname: app.lastname,
+            targetHousePlace: app.targetHousePlace ?? "",
+            permit: {
+                id: app.permit.id,
+                description: app.permit.description,
+                disabled: app.permit.disabled,
+            },
+            outcome: {
+                id: app.outcome.id,
+                description: app.outcome.description,
+            },
+            type: {
+                id: app.type.id,
+                description: app.type.description,
+            },
+            voucher: app.voucher ? {
+                id: app.voucher.id,
+                number: app.voucher.number,
+                revoked: app.voucher.revoked,
+                validFromDate: new Date(app.voucher.validFromDate),
+                validToDate: new Date(app.voucher.validToDate),
+            } : null,
+            emails: app.emails.map(e => ({
+                id: e.id,
+                to: e.to,
+                subject: e.subject,
+                attachmentsPresent: e.attachments != null && e.attachments.length > 0,
+            })),
+            vehicles: app.vehicles.map(v => ({
+                id: v.id,
+                createdAt: v.createdAt,
+                updatedAt: v.updatedAt,
+                plate: v.plate,
+                model: v.model,
+                brand: v.brand,
+            })),
+        });
+    }
+    res.json({
+        message: "Domande acquisite con successo",
+        applicationsList: applicationsList,
+        pageData: {
+            currentPage: page != null ? page : 1,
+            totalPages: Math.ceil(totalAmount[0].count / resultsPerPage),
+        }
+    });
+});
 
 // vehiclesRouter.get("/detail/:vehicleID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
 //     if (req.user == null) {
@@ -302,7 +523,6 @@ type ApplicationDetails = {
 // });
 
 const checkApplicationParameters = (req: AuthRequest) => {
-    //TODO: add vehicles
     if (req.body.registerNumber == null || isNaN(parseInt(req.body.registerNumber)) ||
         req.body.registerDate == null || new Date(req.body.registerDate).toString() === "Invalid Date" ||
         req.body.cf == null || req.body.cf.trim() === "" ||
@@ -373,6 +593,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
         vehicles,
         //EXTRA
         createVoucher, //boolean for creating a voucher for this application
+        //updateVoucher,
     } = req.body;
 
     const db = DatabaseManager.instance.db;
@@ -531,7 +752,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             const updateResult = await tx.update(applications)
                 .set({lastApplicationHistoryId: updatedApplicationHistoryId})
                 .where(eq(applications.id, updatedApplication[0].id));
-            const vehiclesToInsertApplicationHistory: {applicationHistoryId: number, vehicleHistoryId: number}[] = [];
+            const vehiclesToInsertApplicationHistory: { applicationHistoryId: number, vehicleHistoryId: number }[] = [];
             for (const vehicleId of vehicles) {
                 const vehicleHistoryId = await getLastVehicleHistoryId(tx, vehicleId);
                 vehiclesToInsertApplicationHistory.push({
@@ -558,16 +779,15 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             res.status(500).json({message: "Errore durante l'aggiornamento della domanda"});
             return;
         }
-        res.status(200).json({message: "Veicolo aggiornato con successo"});
+        res.status(200).json({message: "Domanda aggiornata con successo"});
         return;
     } catch (e) {
-        res.status(500).json({message: "Errore durante l'aggiornamento: " + e});
+        res.status(500).json({message: "Errore durante l'aggiornamento della domanda: " + e});
         return;
     }
 });
 
 applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
-    //TODO: redo this function based on /edit
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
         return;
@@ -575,7 +795,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
     const modifiedByAuthUserId = req.user.id;
 
     if (!checkApplicationParameters(req)) {
-        res.status(400).json({message: "Parametri di inserimento non validi"});
+        res.status(400).json({message: "Parametri di aggiornamento non validi"});
         return;
     }
 
@@ -600,108 +820,165 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
         permitId,
         outcomeId,
         typeId,
+        outcomeAuthUserId,
         voucherId,
+        vehicles,
         //EXTRA
         createVoucher, //boolean for creating a voucher for this application
+        //updateVoucher,
     } = req.body;
 
     const db = DatabaseManager.instance.db;
     try {
-        const insertedApplicationId = await db.transaction(async (tx) => {
-            const insertedApplication = await tx.insert(applications).values({
-                requestDate,
-                outcomeDate,
-                registerNumber,
-                registerDate,
-                cf,
-                firstname,
-                lastname,
-                email,
-                birthDate,
-                birthCity,
-                residencePlace,
-                targetHousePlace,
-                targetHouseLandRegistrySheet,
-                targetHouseLandRegistryMap,
-                targetHouseLandRegistrySubaltern,
-                targetHouseLandRegistryCategory,
-                notes,
-                permitId,
-                outcomeId,
-                typeId,
+
+        const createdApplicationId = await db.transaction(async (tx) => {
+            const permit = await getPermit(tx, permitId);
+            const permitHistoryId = permit.lastPermitHistoryId as number;
+
+            if (permit.applicationPlatesAmount != vehicles.length) {
+                res.status(400).json({message: "Numero di veicoli non valido"});
+                tx.rollback();
+                return;
+            }
+
+            let createdVoucherId: number | null = null;
+            let createdVoucherHistoryId: number | null = null;
+            if (createVoucher && voucherId == null) {
+                const {newVoucherId, newVoucherHistoryId} = await createNewVoucher(tx, {
+                    permitId: permitId,
+                    permitHistoryId: permitHistoryId,
+                    validFromDate: outcomeDate,
+                    notes: "",
+                    permitApplicationPlatesAmount: permit.applicationPlatesAmount,
+                    modifiedByAuthUserId: modifiedByAuthUserId,
+                    vehicles: vehicles,
+                });
+                createdVoucherId = newVoucherId;
+                createdVoucherHistoryId = newVoucherHistoryId;
+            }
+
+            const createdApplication = await tx.insert(applications).values({
+                requestDate: requestDate,
+                outcomeDate: outcomeDate,
+                registerNumber: registerNumber,
+                registerDate: registerDate,
+                cf: cf,
+                firstname: firstname,
+                lastname: lastname,
+                email: email,
+                birthDate: birthDate,
+                birthCity: birthCity,
+                residencePlace: residencePlace,
+                targetHousePlace: targetHousePlace,
+                targetHouseLandRegistrySheet: targetHouseLandRegistrySheet,
+                targetHouseLandRegistryMap: targetHouseLandRegistryMap,
+                targetHouseLandRegistrySubaltern: targetHouseLandRegistrySubaltern,
+                targetHouseLandRegistryCategory: targetHouseLandRegistryCategory,
+                notes: notes,
+                permitId: permitId,
+                typeId: typeId,
+                outcomeId: outcomeId,
+                voucherId: (createdVoucherId != null ? createdVoucherId : voucherId),
                 outcomeAuthUserId: modifiedByAuthUserId,
-                voucherId,
             }).returning();
-            if (insertedApplication == null || insertedApplication.length !== 1 || insertedApplication[0] == null) {
-                console.log("Errore durante l'inserimento della domanda");
+            if (createdApplication == null || createdApplication.length !== 1 || createdApplication[0] == null) {
+                console.log("Errore durante la creazione della domanda");
+                tx.rollback();
+                return null;
+            }
+            const createdApplicationId = createdApplication[0].id;
+
+            // const deleteResult = await tx.delete(applicationsToVehicles).where(eq(applicationsToVehicles.applicationId, applicationID));
+            const vehiclesToInsertApplication = (vehicles as number[]).map((vehicleId) => {
+                return {
+                    applicationId: createdApplicationId,
+                    vehicleId: vehicleId as number,
+                }
+            });
+
+            //if (createdVoucherId == null) {
+            //    await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
+            //}
+
+            const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
+            if (insertResult == null || insertResult.rowCount !== vehicles.length) {
+                console.log("Errore durante l'inserimento delle associazioni tra domanda e veicoli");
                 tx.rollback();
                 return null;
             }
 
-            const permitHistoryId = await getLastPermitHistoryId(tx, permitId);
-
             let voucherHistoryId: number | null = null;
             if (voucherId != null) {
-                const foundVouchers = await tx.select().from(vouchers).where(eq(vouchers.id, voucherId));
-                if (foundVouchers == null || foundVouchers.length !== 1 || foundVouchers[0] == null || foundVouchers[0].lastVoucherHistoryId == null) {
-                    console.log("Errore tagliando non trovato");
-                    tx.rollback();
-                    return null;
-                }
-                voucherHistoryId = foundVouchers[0].lastVoucherHistoryId;
+                voucherHistoryId = await getLastVoucherHistoryId(tx, voucherId);
             }
 
-            const insertedApplicationHistory = await tx.insert(applicationsHistory).values({
-                applicationId: insertedApplication[0].id,
+            const createdApplicationHistory = await tx.insert(applicationsHistory).values({
+                applicationId: createdApplication[0].id,
                 modifiedByAuthUserId: modifiedByAuthUserId,
 
-                requestDate: insertedApplication[0].requestDate,
-                outcomeDate: insertedApplication[0].outcomeDate,
-                registerNumber: insertedApplication[0].registerNumber,
-                registerDate: insertedApplication[0].registerDate,
-                cf: insertedApplication[0].cf,
-                firstname: insertedApplication[0].firstname,
-                lastname: insertedApplication[0].lastname,
-                email: insertedApplication[0].email,
-                birthDate: insertedApplication[0].birthDate,
-                birthCity: insertedApplication[0].birthCity,
-                residencePlace: insertedApplication[0].residencePlace,
-                targetHousePlace: insertedApplication[0].targetHousePlace,
-                targetHouseLandRegistrySheet: insertedApplication[0].targetHouseLandRegistrySheet,
-                targetHouseLandRegistryMap: insertedApplication[0].targetHouseLandRegistryMap,
-                targetHouseLandRegistrySubaltern: insertedApplication[0].targetHouseLandRegistrySubaltern,
-                targetHouseLandRegistryCategory: insertedApplication[0].targetHouseLandRegistryCategory,
-                notes: insertedApplication[0].notes,
+                requestDate: createdApplication[0].requestDate,
+                outcomeDate: createdApplication[0].outcomeDate,
+                registerNumber: createdApplication[0].registerNumber,
+                registerDate: createdApplication[0].registerDate,
+                cf: createdApplication[0].cf,
+                firstname: createdApplication[0].firstname,
+                lastname: createdApplication[0].lastname,
+                email: createdApplication[0].email,
+                birthDate: createdApplication[0].birthDate,
+                birthCity: createdApplication[0].birthCity,
+                residencePlace: createdApplication[0].residencePlace,
+                targetHousePlace: createdApplication[0].targetHousePlace,
+                targetHouseLandRegistrySheet: createdApplication[0].targetHouseLandRegistrySheet,
+                targetHouseLandRegistryMap: createdApplication[0].targetHouseLandRegistryMap,
+                targetHouseLandRegistrySubaltern: createdApplication[0].targetHouseLandRegistrySubaltern,
+                targetHouseLandRegistryCategory: createdApplication[0].targetHouseLandRegistryCategory,
+                notes: createdApplication[0].notes,
                 permitHistoryId: permitHistoryId,
-                outcomeId: insertedApplication[0].outcomeId,
-                typeId: insertedApplication[0].typeId,
-                outcomeAuthUserId: insertedApplication[0].outcomeAuthUserId,
-                ...(voucherHistoryId != null && {voucherHistoryId: voucherHistoryId}), // aggiunta condizionale perché drizzle orm non accetta null in insert tramite typescript
+                outcomeId: createdApplication[0].outcomeId,
+                typeId: createdApplication[0].typeId,
+                outcomeAuthUserId: createdApplication[0].outcomeAuthUserId,
+                voucherHistoryId: (createdVoucherHistoryId != null ? createdVoucherHistoryId : voucherHistoryId),
             }).returning();
-            if (insertedApplicationHistory == null || insertedApplicationHistory.length !== 1 || insertedApplicationHistory[0] == null) {
+            if (createdApplicationHistory == null || createdApplicationHistory.length !== 1 || createdApplicationHistory[0] == null) {
                 console.log("Errore durante l'inserimento dello storico della domanda");
                 tx.rollback();
                 return null;
             }
+            const updatedApplicationHistoryId = createdApplicationHistory[0].id;
             const updateResult = await tx.update(applications)
-                .set({lastApplicationHistoryId: insertedApplicationHistory[0].id})
-                .where(eq(applications.id, insertedApplication[0].id));
+                .set({lastApplicationHistoryId: updatedApplicationHistoryId})
+                .where(eq(applications.id, createdApplication[0].id));
+            const vehiclesToInsertApplicationHistory: { applicationHistoryId: number, vehicleHistoryId: number }[] = [];
+            for (const vehicleId of vehicles) {
+                const vehicleHistoryId = await getLastVehicleHistoryId(tx, vehicleId);
+                vehiclesToInsertApplicationHistory.push({
+                    applicationHistoryId: updatedApplicationHistoryId,
+                    vehicleHistoryId: vehicleHistoryId,
+                });
+            }
+
+            const insertASVSResult = await tx.insert(applicationsHistoryToVehiclesHistory).values(vehiclesToInsertApplicationHistory);
+            if (insertASVSResult == null || insertASVSResult.rowCount !== vehicles.length) {
+                console.log("Errore durante l'inserimento delle associazioni tra storico domanda e storico veicoli");
+                tx.rollback();
+                return null;
+            }
+
             if (updateResult == null || updateResult.rowCount !== 1) {
                 console.log("Errore durante l'aggiornamento della domanda con lo storico");
                 tx.rollback();
                 return null;
             }
-            return insertedApplication[0].id;
+            return createdApplication[0].id;
         });
-
-        if (insertedApplicationId == null) {
+        if (createdApplicationId == null) {
             res.status(500).json({message: "Errore durante l'inserimento della domanda"});
             return;
         }
-        res.status(200).json({message: "Domanda inserita con successo", id: insertedApplicationId});
+        res.status(200).json({message: "Domanda creata con successo"});
         return;
     } catch (e) {
-        res.status(500).json({message: "Errore durante l'inserimento: " + e});
+        res.status(500).json({message: "Errore durante la creazione della domanda: " + e});
         return;
     }
 });
