@@ -233,7 +233,7 @@ export const relations = defineRelations(schema, (r) => ({
             from: r.applicationsHistory.id.through(r.applicationsHistoryToVehiclesHistory.applicationHistoryId),
             to: r.vehiclesHistory.id.through(r.applicationsHistoryToVehiclesHistory.vehicleHistoryId)
         }),
-        voucherHistory: r.many.vouchersHistory({
+        voucherHistory: r.one.vouchersHistory({
             from: r.applicationsHistory.voucherHistoryId,
             to: r.vouchersHistory.id,
         }),

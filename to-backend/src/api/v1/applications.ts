@@ -2,21 +2,21 @@ import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
 import {
     applications,
+    applicationsEmailsHistory,
     applicationsHistory,
     applicationsHistoryToVehiclesHistory,
-    applicationsEmailsHistory,
     applicationsToVehicles,
-    applicationTypes,
-    applicationOutcome,
     vehicles,
     vouchers
 } from "../../db/schema.ts";
-import {and, count, desc, eq, exists, gte, ilike, lte} from "drizzle-orm";
+import {and, count, eq, exists, gte, ilike, lte} from "drizzle-orm";
 import {Router} from "express";
 import {getPermit, getPermitsList} from "./permits.ts";
 import {createNewVoucher, getLastVoucherHistoryId, updateVoucherWithApplication} from "./vouchers.ts";
 import {getLastVehicleHistoryId} from "./vehicles.ts";
-import { ConfigProvider } from "../../configProvider.ts";
+import {ConfigProvider} from "../../configProvider.ts";
+import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
+import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 
 export const applicationsRouter = Router();
 
@@ -41,7 +41,7 @@ type ApplicationListEntry = {
     createdAt: Date,
     updatedAt: Date,
     requestDate: Date,
-    outcomeDate: Date,
+    outcomeDate: Date | null,
     registerNumber: number,
     registerDate: Date,
     cf: string,
@@ -89,21 +89,21 @@ type ApplicationDetails = {
     createdAt: Date,
     updatedAt: Date,
     requestDate: Date,
-    outcomeDate: Date,
+    outcomeDate: Date | null,
     registerNumber: number,
     registerDate: Date,
     cf: string,
     firstname: string,
     lastname: string,
     email: string,
-    birthDate: Date,
-    birthCity: string,
-    residencePlace: string,
-    targetHousePlace: string,
-    targetHouseLandRegistrySheet: string,
-    targetHouseLandRegistryMap: string,
-    targetHouseLandRegistrySubaltern: string,
-    targetHouseLandRegistryCategory: string,
+    birthDate: Date | null,
+    birthCity: string | null,
+    residencePlace: string | null,
+    targetHousePlace: string | null,
+    targetHouseLandRegistrySheet: string | null,
+    targetHouseLandRegistryMap: string | null,
+    targetHouseLandRegistrySubaltern: string | null,
+    targetHouseLandRegistryCategory: string | null,
     notes: string,
 
     permit: {
@@ -237,30 +237,93 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
     const vehiclesCountConditions = [], vehiclesQueryConditions = [];
     const vouchersCountConditions = [], vouchersQueryConditions = [];
     const emailsCountConditions = [], emailsQueryConditions = [];
-    if (idFrom != null && !isNaN(parseInt(idFrom))) { applicationsCountConditions.push(gte(applications.id, parseInt(idFrom))); applicationsQueryConditions.push({id: {gte: idFrom}}); }
-    if (idTo != null && !isNaN(parseInt(idTo))) { applicationsCountConditions.push(lte(applications.id, parseInt(idTo))); applicationsQueryConditions.push({id: {lte: idTo}}); }
+    if (idFrom != null && !isNaN(parseInt(idFrom))) {
+        applicationsCountConditions.push(gte(applications.id, parseInt(idFrom)));
+        applicationsQueryConditions.push({id: {gte: idFrom}});
+    }
+    if (idTo != null && !isNaN(parseInt(idTo))) {
+        applicationsCountConditions.push(lte(applications.id, parseInt(idTo)));
+        applicationsQueryConditions.push({id: {lte: idTo}});
+    }
 
     //TODO: controllare requestDate (potrebbe richiedere anche l'ora che invece non verrà utilizzata)
     //if (requestDate != null && new Date(requestDate).toString() !== "Invalid Date") { applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate))); applicationsQueryConditions.push({requestDate: new Date(requestDate)}); }
-    if (outcomeDate != null && new Date(outcomeDate).toString() !== "Invalid Date") { applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toLocaleDateString())); applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toLocaleDateString()}); }
-    if (registerNumber != null && !isNaN(parseInt(registerNumber))) { applicationsCountConditions.push(eq(applications.registerNumber, parseInt(registerNumber))); applicationsQueryConditions.push({registerNumber: parseInt(registerNumber)}); }
-    if (registerDate != null && new Date(registerDate).toString() !== "Invalid Date") { applicationsCountConditions.push(eq(applications.registerDate, new Date(registerDate).toLocaleDateString())); applicationsQueryConditions.push({registerDate: new Date(registerDate).toLocaleDateString()}); }
-    if (cf != null && cf.trim() !== "") { applicationsCountConditions.push(ilike(applications.cf, `%${cf}%`)); applicationsQueryConditions.push({cf: {ilike: `%${cf}%`}}); }
-    if (firstname != null && firstname.trim() !== "") { applicationsCountConditions.push(ilike(applications.firstname, `%${firstname}%`)); applicationsQueryConditions.push({firstname: {ilike: `%${firstname}%`}}); }
-    if (lastname != null && lastname.trim() !== "") { applicationsCountConditions.push(ilike(applications.lastname, `%${lastname}%`)); applicationsQueryConditions.push({lastname: {ilike: `%${lastname}%`}}); }
-    if (email != null && email.trim() !== "") { applicationsCountConditions.push(ilike(applications.email, `%${email}%`)); applicationsQueryConditions.push({email: {ilike: `%${email}%`}}); }
-    if (birthDate != null && new Date(birthDate).toString() !== "Invalid Date") { applicationsCountConditions.push(eq(applications.birthDate, new Date(birthDate).toLocaleDateString())); applicationsQueryConditions.push({birthDate: new Date(birthDate).toLocaleDateString()}); }
-    if (birthCity != null && birthCity.trim() !== "") { applicationsCountConditions.push(ilike(applications.birthCity, `%${birthCity}%`)); applicationsQueryConditions.push({birthCity: {ilike: `%${birthCity}%`}}); }
-    if (residencePlace != null && residencePlace.trim() !== "") { applicationsCountConditions.push(ilike(applications.residencePlace, `%${residencePlace}%`)); applicationsQueryConditions.push({residencePlace: {ilike: `%${residencePlace}%`}}); }
-    if (targetHousePlace != null && targetHousePlace.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHousePlace, `%${targetHousePlace}%`)); applicationsQueryConditions.push({targetHousePlace: {ilike: `%${targetHousePlace}%`}}); }
-    if (targetHouseLandRegistrySheet != null && targetHouseLandRegistrySheet.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySheet, `%${targetHouseLandRegistrySheet}%`)); applicationsQueryConditions.push({targetHouseLandRegistrySheet: {ilike: `%${targetHouseLandRegistrySheet}%`}}); }
-    if (targetHouseLandRegistryMap != null && targetHouseLandRegistryMap.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryMap, `%${targetHouseLandRegistryMap}%`)); applicationsQueryConditions.push({targetHouseLandRegistryMap: {ilike: `%${targetHouseLandRegistryMap}%`}}); }
-    if (targetHouseLandRegistrySubaltern != null && targetHouseLandRegistrySubaltern.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySubaltern, `%${targetHouseLandRegistrySubaltern}%`)); applicationsQueryConditions.push({targetHouseLandRegistrySubaltern: {ilike: `%${targetHouseLandRegistrySubaltern}%`}}); }
-    if (targetHouseLandRegistryCategory != null && targetHouseLandRegistryCategory.trim() !== "") { applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryCategory, `%${targetHouseLandRegistryCategory}%`)); applicationsQueryConditions.push({targetHouseLandRegistryCategory: {ilike: `%${targetHouseLandRegistryCategory}%`}}); }
-    if (permitId != null && !isNaN(parseInt(permitId))) { applicationsCountConditions.push(eq(applications.permitId, parseInt(permitId))); applicationsQueryConditions.push({permitId: parseInt(permitId)}); }
-    if (outcomeId != null && !isNaN(parseInt(outcomeId))) { applicationsCountConditions.push(eq(applications.outcomeId, parseInt(outcomeId))); applicationsQueryConditions.push({outcomeId: parseInt(outcomeId)}); }
-    if (typeId != null && !isNaN(parseInt(typeId))) { applicationsCountConditions.push(eq(applications.typeId, parseInt(typeId))); applicationsQueryConditions.push({typeId: parseInt(typeId)}); }
-    if (voucherId != null && !isNaN(parseInt(voucherId))) { applicationsCountConditions.push(eq(applications.voucherId, parseInt(voucherId))); applicationsQueryConditions.push({voucherId: parseInt(voucherId)}); }
+    if (outcomeDate != null && new Date(outcomeDate).toString() !== "Invalid Date") {
+        applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toLocaleDateString()));
+        applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toLocaleDateString()});
+    }
+    if (registerNumber != null && !isNaN(parseInt(registerNumber))) {
+        applicationsCountConditions.push(eq(applications.registerNumber, parseInt(registerNumber)));
+        applicationsQueryConditions.push({registerNumber: parseInt(registerNumber)});
+    }
+    if (registerDate != null && new Date(registerDate).toString() !== "Invalid Date") {
+        applicationsCountConditions.push(eq(applications.registerDate, new Date(registerDate).toLocaleDateString()));
+        applicationsQueryConditions.push({registerDate: new Date(registerDate).toLocaleDateString()});
+    }
+    if (cf != null && cf.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.cf, `%${cf}%`));
+        applicationsQueryConditions.push({cf: {ilike: `%${cf}%`}});
+    }
+    if (firstname != null && firstname.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.firstname, `%${firstname}%`));
+        applicationsQueryConditions.push({firstname: {ilike: `%${firstname}%`}});
+    }
+    if (lastname != null && lastname.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.lastname, `%${lastname}%`));
+        applicationsQueryConditions.push({lastname: {ilike: `%${lastname}%`}});
+    }
+    if (email != null && email.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.email, `%${email}%`));
+        applicationsQueryConditions.push({email: {ilike: `%${email}%`}});
+    }
+    if (birthDate != null && new Date(birthDate).toString() !== "Invalid Date") {
+        applicationsCountConditions.push(eq(applications.birthDate, new Date(birthDate).toLocaleDateString()));
+        applicationsQueryConditions.push({birthDate: new Date(birthDate).toLocaleDateString()});
+    }
+    if (birthCity != null && birthCity.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.birthCity, `%${birthCity}%`));
+        applicationsQueryConditions.push({birthCity: {ilike: `%${birthCity}%`}});
+    }
+    if (residencePlace != null && residencePlace.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.residencePlace, `%${residencePlace}%`));
+        applicationsQueryConditions.push({residencePlace: {ilike: `%${residencePlace}%`}});
+    }
+    if (targetHousePlace != null && targetHousePlace.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHousePlace, `%${targetHousePlace}%`));
+        applicationsQueryConditions.push({targetHousePlace: {ilike: `%${targetHousePlace}%`}});
+    }
+    if (targetHouseLandRegistrySheet != null && targetHouseLandRegistrySheet.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySheet, `%${targetHouseLandRegistrySheet}%`));
+        applicationsQueryConditions.push({targetHouseLandRegistrySheet: {ilike: `%${targetHouseLandRegistrySheet}%`}});
+    }
+    if (targetHouseLandRegistryMap != null && targetHouseLandRegistryMap.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryMap, `%${targetHouseLandRegistryMap}%`));
+        applicationsQueryConditions.push({targetHouseLandRegistryMap: {ilike: `%${targetHouseLandRegistryMap}%`}});
+    }
+    if (targetHouseLandRegistrySubaltern != null && targetHouseLandRegistrySubaltern.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySubaltern, `%${targetHouseLandRegistrySubaltern}%`));
+        applicationsQueryConditions.push({targetHouseLandRegistrySubaltern: {ilike: `%${targetHouseLandRegistrySubaltern}%`}});
+    }
+    if (targetHouseLandRegistryCategory != null && targetHouseLandRegistryCategory.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryCategory, `%${targetHouseLandRegistryCategory}%`));
+        applicationsQueryConditions.push({targetHouseLandRegistryCategory: {ilike: `%${targetHouseLandRegistryCategory}%`}});
+    }
+    if (permitId != null && !isNaN(parseInt(permitId))) {
+        applicationsCountConditions.push(eq(applications.permitId, parseInt(permitId)));
+        applicationsQueryConditions.push({permitId: parseInt(permitId)});
+    }
+    if (outcomeId != null && !isNaN(parseInt(outcomeId))) {
+        applicationsCountConditions.push(eq(applications.outcomeId, parseInt(outcomeId)));
+        applicationsQueryConditions.push({outcomeId: parseInt(outcomeId)});
+    }
+    if (typeId != null && !isNaN(parseInt(typeId))) {
+        applicationsCountConditions.push(eq(applications.typeId, parseInt(typeId)));
+        applicationsQueryConditions.push({typeId: parseInt(typeId)});
+    }
+    if (voucherId != null && !isNaN(parseInt(voucherId))) {
+        applicationsCountConditions.push(eq(applications.voucherId, parseInt(voucherId)));
+        applicationsQueryConditions.push({voucherId: parseInt(voucherId)});
+    }
 
     if (voucherNumber != null && !isNaN(parseInt(voucherNumber))) {
         vouchersCountConditions.push(eq(vouchers.number, voucherNumber));
@@ -325,9 +388,11 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
 
     // query section
     const applicationsArr = await db.query.applications.findMany({
-        where: {AND: [
-            ...applicationsQueryConditions,
-            ]},
+        where: {
+            AND: [
+                ...applicationsQueryConditions,
+            ]
+        },
         with: {
             vehicles: {
                 where: {AND: [...vehiclesQueryConditions],},
@@ -359,7 +424,7 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
             createdAt: app.createdAt,
             updatedAt: app.updatedAt,
             requestDate: app.requestDate,
-            outcomeDate: app.outcomeDate != null ? new Date(app.outcomeDate) : null as any,
+            outcomeDate: app.outcomeDate != null ? new Date(app.outcomeDate) : null,
             registerNumber: app.registerNumber,
             registerDate: new Date(app.registerDate),
             cf: app.cf ?? "",
@@ -412,115 +477,264 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
     });
 });
 
-// vehiclesRouter.get("/detail/:vehicleID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
-//     if (req.user == null) {
-//         res.status(401).json({message: "Non autorizzato"});
-//         return;
-//     }
-//     if (req.params.vehicleID == null || ("" + req.params.vehicleID).trim() == "") {
-//         res.status(400).json({message: "ID veicolo non valido"});
-//         return;
-//     }
-//     const vehicleID = parseInt(req.params.vehicleID as string);
-//     if (isNaN(vehicleID)) {
-//         res.status(400).json({message: "ID veicolo non valido"});
-//         return;
-//     }
-//
-//     const db = DatabaseManager.instance.db;
-//     const vehicle = await db.query.vehicles.findFirst(
-//         {
-//             where: {id: vehicleID},
-//             with: {
-//                 applications: true,
-//                 vouchers: true,
-//             },
-//         });
-//     if (vehicle == null) {
-//         res.status(500).json({message: "Veicolo non trovato"});
-//         return;
-//     }
-//     const vehicleDetails: VehicleDetails = {
-//         id: vehicle.id,
-//         createdAt: vehicle.createdAt,
-//         updatedAt: vehicle.updatedAt,
-//         plate: vehicle.plate,
-//         model: vehicle.model,
-//         brand: vehicle.brand,
-//         applications: vehicle.applications.map((application) => application.id),
-//         vouchers: vehicle.vouchers.map((voucher) => voucher.id),
-//     };
-//
-//     res.json({
-//         message: "Veicolo acquisito con successo",
-//         vehicle: vehicleDetails
-//     });
-// });
+applicationsRouter.get("/detail/:applicationID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+    if (req.params.applicationID == null || ("" + req.params.applicationID).trim() == "") {
+        res.status(400).json({message: "Domanda non trovata"});
+        return;
+    }
+    const applicationID = parseInt(req.params.applicationID as string);
+    if (isNaN(applicationID)) {
+        res.status(400).json({message: "ID domanda non valido"});
+        return;
+    }
+
+    const db = DatabaseManager.instance.db;
+    const application = await db.query.applications.findFirst({
+        where: {
+            id: applicationID,
+        },
+        with: {
+            vehicles: true,
+            permit: true,
+            outcome: true,
+            type: true,
+            voucher: true,
+            emails: true,
+            outcomeAuthUser: true,
+        }
+    });
+    if (application == null) {
+        res.status(500).json({message: "Domanda non trovata"});
+        return;
+    }
+    if (application.permit == null || application.outcome == null || application.type == null) {
+        res.status(500).json({message: "Errore nel reperire le associazioni della domanda"});
+        return;
+    }
+    const applicationDetails: ApplicationDetails = {
+        id: application.id,
+        createdAt: application.createdAt,
+        updatedAt: application.updatedAt,
+        requestDate: application.requestDate,
+        outcomeDate: application.outcomeDate != null ? new Date(application.outcomeDate) : null,
+        outcomeAuthUser: application.outcomeAuthUser != null ? {
+            id: application.outcomeAuthUser.id,
+            username: application.outcomeAuthUser.username
+        } : null,
+        registerNumber: application.registerNumber,
+        registerDate: new Date(application.registerDate),
+        cf: application.cf ?? "",
+        firstname: application.firstname,
+        lastname: application.lastname,
+        email: application.email,
+        birthDate: application.birthDate != null ? new Date(application.birthDate) : null,
+        birthCity: application.birthCity,
+        residencePlace: application.residencePlace,
+        targetHousePlace: application.targetHousePlace,
+        targetHouseLandRegistrySheet: application.targetHouseLandRegistrySheet,
+        targetHouseLandRegistryMap: application.targetHouseLandRegistryMap,
+        targetHouseLandRegistrySubaltern: application.targetHouseLandRegistrySubaltern,
+        targetHouseLandRegistryCategory: application.targetHouseLandRegistryCategory,
+        notes: application.notes,
+        permit: {
+            id: application.permit.id,
+            description: application.permit.description,
+            disabled: application.permit.disabled,
+        },
+        outcome: {
+            id: application.outcome.id,
+            description: application.outcome.description,
+        },
+        type: {
+            id: application.type.id,
+            description: application.type.description,
+        },
+        voucher: application.voucher ? {
+            id: application.voucher.id,
+            number: application.voucher.number,
+            revoked: application.voucher.revoked,
+            validFromDate: new Date(application.voucher.validFromDate),
+            validToDate: new Date(application.voucher.validToDate),
+        } : null,
+        emails: application.emails.map(e => ({
+            id: e.id,
+            to: e.to,
+            subject: e.subject,
+            attachmentsPresent: e.attachments != null && e.attachments.length > 0,
+        })),
+        vehicles: application.vehicles.map(v => ({
+            id: v.id,
+            createdAt: v.createdAt,
+            updatedAt: v.updatedAt,
+            plate: v.plate,
+            model: v.model,
+            brand: v.brand,
+        })),
+    };
+
+    res.json({
+        message: "Domanda acquisita con successo",
+        vehicle: applicationDetails
+    });
+});
 
 
-// vehiclesRouter.get("/history/:vehicleID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
-//     if (req.user == null) {
-//         res.status(401).json({message: "Non autorizzato"});
-//         return;
-//     }
-//     if (req.params.vehicleID == null || ("" + req.params.vehicleID).trim() == "") {
-//         res.status(400).json({message: "ID veicolo non valido"});
-//         return;
-//     }
-//     const vehicleID = parseInt(req.params.vehicleID as string);
-//     if (isNaN(vehicleID)) {
-//         res.status(400).json({message: "ID veicolo non valido"});
-//         return;
-//     }
-//
-//     try {
-//         const db = DatabaseManager.instance.db;
-//         const vehicleHistory = await db.query.vehiclesHistory.findMany(
-//             {
-//                 where: {vehicleId: vehicleID},
-//                 with: {
-//                     modifiedByAuthUser: true
-//                 },
-//                 orderBy: {createdAt: "asc"},
-//             });
-//         if (vehicleHistory == null || vehicleHistory.length === 0) {
-//             res.status(500).json({message: "Storico veicolo non trovato"});
-//             return;
-//         }
-//
-//         const vehicleHistoryRes: HistoryEvent[] = [];
-//         const currModificationEntries: HistoryModificationMap = {};
-//         vehicleHistory.forEach((historyElem) => {
-//             const diffModificationEntries: HistoryModificationMap = {};
-//             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "plate", {
-//                 description: "Targa",
-//                 value: historyElem.plate
-//             });
-//             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "brand", {
-//                 description: "Marca",
-//                 value: historyElem.brand
-//             });
-//             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "model", {
-//                 description: "Modello",
-//                 value: historyElem.model
-//             });
-//             vehicleHistoryRes.push({
-//                 userId: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.id : 0,
-//                 username: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.username : "unknown",
-//                 timestamp: historyElem.createdAt,
-//                 modificationsMap: diffModificationEntries
-//             });
-//         });
-//
-//         res.status(200).json({
-//             message: "Storico del veicolo acquisito con successo",
-//             vehicleHistory: vehicleHistoryRes
-//         });
-//     } catch (e) {
-//         res.status(500).json({message: "Errore nel reperire lo storico del veicolo: " + e});
-//         return;
-//     }
-// });
+applicationsRouter.get("/history/:applicationID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+    if (req.params.applicationID == null || ("" + req.params.applicationID).trim() == "") {
+        res.status(400).json({message: "Domanda non trovata"});
+        return;
+    }
+    const applicationID = parseInt(req.params.applicationID as string);
+    if (isNaN(applicationID)) {
+        res.status(400).json({message: "ID domanda non valido"});
+        return;
+    }
+
+    try {
+        const db = DatabaseManager.instance.db;
+        const applicationHistory = await db.query.applicationsHistory.findMany(
+            {
+                where: {applicationId: applicationID},
+                with: {
+                    modifiedByAuthUser: true,
+                    vehiclesHistory: true,
+                    permitHistory: true,
+                    outcome: true,
+                    type: true,
+                    voucherHistory: true,
+                    outcomeAuthUser: true,
+                },
+                orderBy: {createdAt: "asc"},
+            });
+        if (applicationHistory == null || applicationHistory.length === 0) {
+            res.status(500).json({message: "Storico domanda non trovato"});
+            return;
+        }
+
+        const vehicleHistoryRes: HistoryEvent[] = [];
+        const currModificationEntries: HistoryModificationMap = {};
+        applicationHistory.forEach((historyElem) => {
+            const diffModificationEntries: HistoryModificationMap = {};
+
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "requestDate", {
+                description: "Data richiesta",
+                value: historyElem.requestDate.toLocaleDateString()
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "outcomeDate", {
+                description: "Data completamento",
+                value: historyElem.outcomeDate != null ? historyElem.outcomeDate : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "outcomeAuthUser", {
+                description: "Utente completamento",
+                value: historyElem.outcomeAuthUser != null ? historyElem.outcomeAuthUser.username : ""
+            });
+
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "registerNumber", {
+                description: "Numero protocollo",
+                value: "" + historyElem.registerNumber
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "registerDate", {
+                description: "Data protocollo",
+                value: historyElem.registerDate != null ? historyElem.registerDate : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "cf", {
+                description: "CF",
+                value: historyElem.cf != null ? historyElem.cf : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "firstname", {
+                description: "Nome",
+                value: historyElem.firstname
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "lastname", {
+                description: "Cognome",
+                value: historyElem.lastname
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "email", {
+                description: "Email",
+                value: historyElem.email
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "birthDate", {
+                description: "Data di nascita",
+                value: historyElem.birthDate != null ? historyElem.birthDate : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "birthCity", {
+                description: "Luogo di nascita",
+                value: historyElem.birthCity != null ? historyElem.birthCity : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "residencePlace", {
+                description: "Luogo di residenza",
+                value: historyElem.residencePlace != null ? historyElem.residencePlace : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "targetHousePlace", {
+                description: "Luogo abitazione designata",
+                value: historyElem.targetHousePlace != null ? historyElem.targetHousePlace : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "targetHouseLandRegistrySheet", {
+                description: "Foglio abitazione designata",
+                value: historyElem.targetHouseLandRegistrySheet != null ? historyElem.targetHouseLandRegistrySheet : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "targetHouseLandRegistryMap", {
+                description: "Mappale abitazione designata",
+                value: historyElem.targetHouseLandRegistryMap != null ? historyElem.targetHouseLandRegistryMap : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "targetHouseLandRegistrySubaltern", {
+                description: "Subalterno abitazione designata",
+                value: historyElem.targetHouseLandRegistrySubaltern != null ? historyElem.targetHouseLandRegistrySubaltern : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "targetHouseLandRegistryCategory", {
+                description: "Categoria abitazione designata",
+                value: historyElem.targetHouseLandRegistryCategory != null ? historyElem.targetHouseLandRegistryCategory : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "notes", {
+                description: "Note",
+                value: historyElem.notes
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "permitHistory", {
+                description: "Permesso",
+                value: historyElem.permitHistory != null ? historyElem.permitHistory.description : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "outcome", {
+                description: "Esito",
+                value: historyElem.outcome != null ? historyElem.outcome.description : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "type", {
+                description: "Tipo",
+                value: historyElem.type != null ? historyElem.type.description : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherHistory", {
+                description: "Tagliando",
+                value: historyElem.voucherHistory != null ? (historyElem.voucherHistory.number + " " + "(" + historyElem.voucherHistory.voucherId + ")") : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "vehicles", {
+                description: "Veicoli",
+                value: historyElem.vehiclesHistory != null ? ("["+historyElem.vehiclesHistory.map((v) =>v.vehicleId + ": " + v.plate + ", " + v.model + ", " + v.brand).join("; ") + "]") : ""
+            });
+
+            vehicleHistoryRes.push({
+                userId: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.id : 0,
+                username: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.username : "unknown",
+                timestamp: historyElem.createdAt,
+                modificationsMap: diffModificationEntries
+            });
+        });
+
+        res.status(200).json({
+            message: "Storico della domanda acquisito con successo",
+            vehicleHistory: vehicleHistoryRes
+        });
+    } catch (e) {
+        res.status(500).json({message: "Errore nel reperire lo storico della domanda: " + e});
+        return;
+    }
+});
 
 const checkApplicationParameters = (req: AuthRequest) => {
     if (req.body.registerNumber == null || isNaN(parseInt(req.body.registerNumber)) ||
