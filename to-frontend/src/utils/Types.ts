@@ -82,7 +82,7 @@ export type HistoryEvent = {
     modificationsMap: HistoryModificationMap
 }
 
-export type AddedElementMessage = {
+export type AddedElementMessageApiResponse = {
     message: string,
     id: number
 }
@@ -249,7 +249,23 @@ export type VehicleHistoryApiResponse = {
     vehicleHistory: HistoryEvent[]
 }
 
+export type ApplicationTypeListEntry = {
+    id: number,
+    description: string,
+    disabled: boolean,
+}
+export type ApplicationOutcomeListEntry = {
+    id: number,
+    description: string,
+    disabled: boolean,
+}
 
+export type ApplicationAvailableOptionsApiResponse = {
+    message: string,
+    applicationTypes: ApplicationTypeListEntry[],
+    applicationOutcomes: ApplicationOutcomeListEntry[],
+    permits: PermitListEntry[]
+}
 
 
 

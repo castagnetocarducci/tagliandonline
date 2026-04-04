@@ -1,18 +1,45 @@
-import {type FormEvent, type FormEventHandler} from "react";
-import type {AddedElementMessage} from "../../../utils/Types.ts";
+import {type FormEvent, type FormEventHandler, useEffect, useState} from "react";
+import type {
+    AddedElementMessageApiResponse,
+    ApplicationAvailableOptionsApiResponse,
+    ApplicationOutcomeListEntry,
+    ApplicationTypeListEntry,
+    PermitListEntry
+} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
-import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
-import {defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
+import {useValidateFormInput, type ValidationSupportedTypes} from "../../../hooks/useValidateFormInput.ts";
+import {defaultGETRequestInit, defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
 import {Button, Col, Container, Form, GoBack, Row} from "design-react-kit";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {useNavigate} from "react-router";
+import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
 
 export function NewApplication() {
     const navigate = useNavigate();
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
+    const [applicationTypeList, setApplicationTypeList] = useState<ApplicationTypeListEntry[]>([]);
+    const [applicationOutcomeList, setApplicationOutcomeList] = useState<ApplicationOutcomeListEntry[]>([]);
+    const [permitsList, setPermitsList] = useState<PermitListEntry[]>([]);
+    const [vehiclesAmount, setVehiclesAmount] = useState<number>(2);
+
+    useEffect(() => {
+        const abort = fetchApiAsync<ApplicationAvailableOptionsApiResponse>({
+            urlFromApiRoot: "/applications/availableOptions",
+            errSuccLoading: {setErr, setSucc, setLoading},
+            requestInit: {...defaultGETRequestInit},
+            callback: (data) => {
+                if (data != null) {
+                    setApplicationTypeList(data.applicationTypes);
+                    setApplicationOutcomeList(data.applicationOutcomes);
+                    setPermitsList(data.permits);
+                }
+            }
+        });
+        return abort;
+    }, [setErr, setLoading, setSucc, setApplicationTypeList, setApplicationOutcomeList]);
 
     const onFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
         e.preventDefault();
@@ -21,7 +48,7 @@ export function NewApplication() {
             return;
         }
         const formValues = getValueObject();
-        fetchApiAsync<AddedElementMessage>({
+        fetchApiAsync<AddedElementMessageApiResponse>({
             urlFromApiRoot: "/applications/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
@@ -30,15 +57,16 @@ export function NewApplication() {
             },
             callback: (data) => {
                 if (data != null && data.id != null) {
-                    navigate("/vehicles/list/" + data.id);
+                    navigate("/applications/list/" + data.id);
                 }
             }
         });
     }
 
+    //TODO: redo
     const createFakeVehicles = () => {
         for (let i = 0; i < 100; i++) {
-            fetchApiAsync<AddedElementMessage>({
+            fetchApiAsync<AddedElementMessageApiResponse>({
                 urlFromApiRoot: "/applications/new",
                 errSuccLoading: {setErr, setSucc, setLoading},
                 requestInit: {
@@ -55,7 +83,7 @@ export function NewApplication() {
             });
         }
         for (let i = 0; i < 100; i++) {
-            fetchApiAsync<AddedElementMessage>({
+            fetchApiAsync<AddedElementMessageApiResponse>({
                 urlFromApiRoot: "/applications/new",
                 errSuccLoading: {setErr, setSucc, setLoading},
                 requestInit: {
@@ -72,7 +100,7 @@ export function NewApplication() {
             });
         }
         for (let i = 0; i < 100; i++) {
-            fetchApiAsync<AddedElementMessage>({
+            fetchApiAsync<AddedElementMessageApiResponse>({
                 urlFromApiRoot: "/applications/new",
                 errSuccLoading: {setErr, setSucc, setLoading},
                 requestInit: {
@@ -91,18 +119,157 @@ export function NewApplication() {
     }
 
 
+    const selectableApplicationTypes: SelectOption[] = [{label: "seleziona", value: ""}];
+    if (applicationTypeList.length > 0) {
+        for (const applicationTypeListEntry of applicationTypeList) {
+            if (applicationTypeListEntry.disabled) {
+                continue;
+            }
+            selectableApplicationTypes.push({
+                label: applicationTypeListEntry.description,
+                value: "" + applicationTypeListEntry.id
+            })
+        }
+    }
+
+    const selectableApplicationOutcomes: SelectOption[] = [{label: "seleziona", value: ""}];
+    if (applicationOutcomeList.length > 0) {
+        for (const applicationOutcomeListEntry of applicationOutcomeList) {
+            if (applicationOutcomeListEntry.disabled) {
+                continue;
+            }
+            selectableApplicationOutcomes.push({
+                label: applicationOutcomeListEntry.description,
+                value: "" + applicationOutcomeListEntry.id
+            })
+        }
+    }
+
+    const selectablePermits: SelectOption[] = [{label: "seleziona", value: ""}];
+    if (permitsList.length > 0) {
+        for (const permitsListEntry of permitsList) {
+            if (permitsListEntry.disabled) {
+                continue;
+            }
+            selectablePermits.push({
+                label: permitsListEntry.description,
+                value: "" + permitsListEntry.id
+            })
+        }
+    }
+
+    const selectedPermitChanged = (newValue: ValidationSupportedTypes) => {
+        for (const permit of permitsList) {
+            if ("" + permit.id === newValue) {
+                setVehiclesAmount(permit.applicationPlatesAmount);
+            }
+        }
+    }
+
     return (
         <Container>
             <GoBack link>
                 Torna indietro
             </GoBack>
-            <h2>Nuovo veicolo</h2>
+            <h2>Nuova domanda</h2>
 
             <Form onSubmit={onFormSubmit} className={"mt-4"}>
 
                 <Row className={"mt-4"}>
+                    {/*
+        requestDate,
+        outcomeDate,
+        registerNumber,
+        registerDate,
+
+        cf,
+        firstname,
+        lastname,
+        email,
+
+        birthDate,
+        birthCity,
+        residencePlace,
+        targetHousePlace,
+
+        targetHouseLandRegistrySheet,
+        targetHouseLandRegistryMap,
+        targetHouseLandRegistrySubaltern,
+        targetHouseLandRegistryCategory,
+
+        notes,
+
+        permitId,
+        outcomeId,
+        typeId,
+
+        // outcomeAuthUserId,
+
+        TODO: ricerca veicoli
+        vehicles,
+
+        TODO: ricerca voucher
+        voucherId,
+        //EXTRA
+        createVoucher, //boolean for creating a voucher for this application
+        //updateVoucher,
+
+
+
+                    */}
                     <Col md={3}>
-                        <ValidatedInput name={"plate"} labelText={"Targa"}
+                        <ValidatedInput name={"requestDate"} labelText={"Data richiesta"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "date"}}/>
+                    </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"outcomeDate"} labelText={"Data esito"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "date"}}/>
+                    </Col>
+                    <Col md={2}>
+                        <ValidatedInput name={"registerNumber"} labelText={"Numero protocollo"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={true}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "number"}}/>
+                    </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"registerDate"} labelText={"Data protocollo"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={true}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "date"}}/>
+                    </Col>
+                </Row>
+                <Row className={"mt-4"}>
+                    {/*cf,
+        firstname,
+        lastname,
+        email,*/}
+
+                    <Col md={3}>
+                        <ValidatedInput name={"cf"} labelText={"Codice fiscale"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
                                         validationMark={false}
@@ -112,8 +279,8 @@ export function NewApplication() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "text"}}/>
                     </Col>
-                    <Col md={3}>
-                        <ValidatedInput name={"brand"} labelText={"Marca"}
+                    <Col md={2}>
+                        <ValidatedInput name={"firstname"} labelText={"Nome"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
                                         validationMark={false}
@@ -123,8 +290,19 @@ export function NewApplication() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "text"}}/>
                     </Col>
-                    <Col md={4}>
-                        <ValidatedInput name={"model"} labelText={"Modello"}
+                    <Col md={2}>
+                        <ValidatedInput name={"lastname"} labelText={"Cognome"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={true}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={5}>
+                        <ValidatedInput name={"email"} labelText={"Targa"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
                                         validationMark={false}
@@ -135,12 +313,175 @@ export function NewApplication() {
                                         inputProps={{type: "text"}}/>
                     </Col>
                 </Row>
+                <Row className={"mt-4"}>
+                    {/*
+       birthDate,
+        birthCity,
+        residencePlace,
+        targetHousePlace,*/}
+
+                    <Col md={3}>
+                        <ValidatedInput name={"birthDate"} labelText={"Data di nascita"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "date"}}/>
+                    </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"birthCity"} labelText={"Luogo di nascita"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"residencePlace"} labelText={"Indirizzo di residenza"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"targetHousePlace"} labelText={"Indirizzo immobile"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+
+                </Row>
+                <Row className={"mt-4"}>
+                    {/*
+        targetHouseLandRegistrySheet,
+        targetHouseLandRegistryMap,
+        targetHouseLandRegistrySubaltern,
+        targetHouseLandRegistryCategory,*/}
+
+                    <Col md={3}>
+                        <ValidatedInput name={"targetHouseLandRegistrySheet"} labelText={"Foglio"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "date"}}/>
+                    </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"targetHouseLandRegistryMap"} labelText={"Mappale"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"targetHouseLandRegistrySubaltern"} labelText={"Subalterno"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={3}>
+                        <ValidatedInput name={"targetHouseLandRegistryCategory"} labelText={"Categoria"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                </Row>
+                {/*notes,*/}
+                <Row className={"mt-4"}>
+                    <Col md={8}>
+                        <ValidatedInput name={"notes"} labelText={"Note"}
+                                        validationFunc={() => true}
+                                        validationText={""} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={""}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                </Row>
+
+                <Row className={"mt-4"}>
+                    {/*
+        permitId,
+        outcomeId,
+        typeId,
+        */}
+                    <Col md={4}>
+                        <ValidatedSelect name={"permitId"} validationFunc={() => true}
+                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                         defaultValue={""}
+                                         isMandatory={true}
+                                         errorMessage={"Compilare i campi obbligatori"}
+                                         setNewValidation={setValidation}
+                                         labelText={"Permesso associato"}
+                                         valueChangedCallback={selectedPermitChanged}
+                                         options={selectablePermits}/>
+                    </Col>
+                    <Col md={4}>
+                        <ValidatedSelect name={"typeId"} validationFunc={() => true}
+                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                         defaultValue={""}
+                                         isMandatory={true}
+                                         errorMessage={"Compilare i campi obbligatori"}
+                                         setNewValidation={setValidation}
+                                         labelText={"Tipo"}
+                                         options={selectableApplicationTypes}/>
+                    </Col>
+                    <Col md={4}>
+                        <ValidatedSelect name={"outcomeId"} validationFunc={() => true}
+                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                         defaultValue={""}
+                                         isMandatory={true}
+                                         errorMessage={"Compilare i campi obbligatori"}
+                                         setNewValidation={setValidation}
+                                         labelText={"Esito"}
+                                         options={selectableApplicationOutcomes}/>
+                    </Col>
+                </Row>
+
+
+
+
 
                 <Row className={"mt-4"}>
                     <Col md={4}>
                         <Button color={"primary"} type={"submit"} disabled={!valid || loading}> Salva </Button>
                     </Col>
                 </Row>
+
 
 
 

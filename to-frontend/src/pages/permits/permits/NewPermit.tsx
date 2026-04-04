@@ -1,6 +1,6 @@
 import {type FormEvent, type FormEventHandler, useEffect, useState} from "react";
 import type {
-    AddedElementMessage,
+    AddedElementMessageApiResponse,
     DocTemplateListEntry,
     EmailTemplateListEntry, NumerationRegisterListEntry,
     PermitAvailableTemplatesApiResponse
@@ -46,7 +46,7 @@ export function NewPermit() {
             return;
         }
         const formValues = getValueObject();
-        fetchApiAsync<AddedElementMessage>({
+        fetchApiAsync<AddedElementMessageApiResponse>({
             urlFromApiRoot: "/permits/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {

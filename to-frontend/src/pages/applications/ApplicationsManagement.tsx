@@ -29,7 +29,9 @@ export const ApplicationsManagement = () => {
 
         <Container className={"mt-2"}>
             <Routes>
-                <Route path="/list/new" element={<NewApplication/>}/>
+                {(userDataCtx.userData != null && (userDataCtx.userData.role === "operatore" || userDataCtx.userData.role === "admin")) &&
+                    <Route path="/list/new" element={<NewApplication/>}/>
+                }
                 <Route path="/list/:applicationID/history" element={<ApplicationHistory/>}/>
                 <Route path="/list/:applicationID" element={<EditApplication/>}/>
                 <Route path="/list" element={<ApplicationsList/>}/>

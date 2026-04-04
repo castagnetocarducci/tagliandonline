@@ -802,7 +802,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
         permitId,
         outcomeId,
         typeId,
-        outcomeAuthUserId,
+        // outcomeAuthUserId,
         voucherId,
         vehicles,
         //EXTRA
@@ -841,7 +841,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             permitId === toUpdateApplication.permitId &&
             outcomeId === toUpdateApplication.outcomeId &&
             typeId === toUpdateApplication.typeId &&
-            outcomeAuthUserId === toUpdateApplication.outcomeAuthUserId &&
+            // outcomeAuthUserId === toUpdateApplication.outcomeAuthUserId &&
             voucherId === toUpdateApplication.voucherId &&
             toUpdateApplication.vehicles.length === vehicles.length &&
             toUpdateApplication.vehicles.map((vehicle) => vehicle.id).every((id) => vehicles.includes(id)) &&
@@ -1034,7 +1034,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
         permitId,
         outcomeId,
         typeId,
-        outcomeAuthUserId,
+        // outcomeAuthUserId,
         voucherId,
         vehicles,
         //EXTRA

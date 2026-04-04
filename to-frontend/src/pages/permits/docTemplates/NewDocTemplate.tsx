@@ -1,5 +1,5 @@
 import {type FormEvent, type FormEventHandler} from "react";
-import type {AddedElementMessage} from "../../../utils/Types.ts";
+import type {AddedElementMessageApiResponse} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
 import {fetchApiAsync, multipartPOSTRequestInit} from "../../../utils/fetching.ts";
@@ -33,7 +33,7 @@ export function NewDocTemplate() {
             }
         }
 
-        fetchApiAsync<AddedElementMessage>({
+        fetchApiAsync<AddedElementMessageApiResponse>({
             urlFromApiRoot: "/templates/doc/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {

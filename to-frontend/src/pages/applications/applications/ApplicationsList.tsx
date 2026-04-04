@@ -62,8 +62,8 @@ export function ApplicationsList() {
     return (
         <Container>
             <h1 className={"mb-4"}>Veicoli</h1>
-            <Button className={"mb-4 me-2"} onClick={() => navigate(`/vehicles/list/new`)}
-                    color={"primary"} icon={true} title={"Aggiungi nuovo veicolo"}>
+            <Button className={"mb-4 me-2"} onClick={() => navigate(`/applications/list/new`)}
+                    color={"primary"} icon={true} title={"Aggiungi nuova domanda"}>
                         <span className={"rounded-icon me-2"}>
                             <Icon icon={"it-plus"}/>
                         </span>
@@ -163,26 +163,26 @@ export function ApplicationsList() {
                 </Row>
             )}
             <hr/>
-            {vehiclesList.map((vehicleListEntry, index) => (
+            {vehiclesList.map((applicationListEntry, index) => (
                 <div key={index}>
                     <Row className={"mt-2 d-flex align-items-center"}>
                         <Col md={1} className={""}>
-                            {vehicleListEntry.id}
+                            {applicationListEntry.id}
                         </Col>
                         <Col md={2}>
-                            {vehicleListEntry.plate}
+                            {applicationListEntry.plate}
                         </Col>
                         <Col md={3} className={"text-wrap"}>
-                            {vehicleListEntry.brand}
+                            {applicationListEntry.brand}
                         </Col>
                         <Col md={3} className={"text-wrap"}>
-                            {vehicleListEntry.model}
+                            {applicationListEntry.model}
                         </Col>
                         <Col md={2}>
-                            {new Date(vehicleListEntry.updatedAt).toLocaleString()}
+                            {new Date(applicationListEntry.updatedAt).toLocaleString()}
                         </Col>
                         <Col md={1}>
-                            <Button onClick={() => navigate(`/vehicles/list/${vehicleListEntry.id}`)}
+                            <Button onClick={() => navigate(`/applications/list/${applicationListEntry.id}`)}
                                     color={"secondary"} icon={true} outline title={"Modifica"}>
                                 <Icon icon={"it-pencil"}/>
                             </Button>

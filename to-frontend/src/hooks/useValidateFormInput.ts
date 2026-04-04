@@ -1,6 +1,6 @@
 import {useRef, useState} from "react";
 
-export type ValidationSupportedTypes = string | number | boolean | Date | File[];
+export type ValidationSupportedTypes = string | number | boolean | Date | File[] | number[];
 // export type ValidationValueObjectTypes = string | number | boolean | Date | File;
 
 export type ValidationFunc = (value: ValidationSupportedTypes) => boolean;

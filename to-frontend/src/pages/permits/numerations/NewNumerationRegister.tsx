@@ -1,5 +1,5 @@
 import {type FormEvent, type FormEventHandler} from "react";
-import type {AddedElementMessage} from "../../../utils/Types.ts";
+import type {AddedElementMessageApiResponse} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
 import {defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
@@ -21,7 +21,7 @@ export function NewNumerationRegister() {
             return;
         }
         const formValues = getValueObject();
-        fetchApiAsync<AddedElementMessage>({
+        fetchApiAsync<AddedElementMessageApiResponse>({
             urlFromApiRoot: "/numerations/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {

@@ -1,5 +1,5 @@
 import {type FormEvent, type FormEventHandler} from "react";
-import type {AddedElementMessage} from "../../../utils/Types.ts";
+import type {AddedElementMessageApiResponse} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
 import {defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
@@ -21,7 +21,7 @@ export function NewVehicle() {
             return;
         }
         const formValues = getValueObject();
-        fetchApiAsync<AddedElementMessage>({
+        fetchApiAsync<AddedElementMessageApiResponse>({
             urlFromApiRoot: "/vehicles/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
@@ -38,7 +38,7 @@ export function NewVehicle() {
 
     const createFakeVehicles = () => {
         for (let i = 0; i < 100; i++) {
-            fetchApiAsync<AddedElementMessage>({
+            fetchApiAsync<AddedElementMessageApiResponse>({
                 urlFromApiRoot: "/vehicles/new",
                 errSuccLoading: {setErr, setSucc, setLoading},
                 requestInit: {
@@ -55,7 +55,7 @@ export function NewVehicle() {
             });
         }
         for (let i = 0; i < 100; i++) {
-            fetchApiAsync<AddedElementMessage>({
+            fetchApiAsync<AddedElementMessageApiResponse>({
                 urlFromApiRoot: "/vehicles/new",
                 errSuccLoading: {setErr, setSucc, setLoading},
                 requestInit: {
@@ -72,7 +72,7 @@ export function NewVehicle() {
             });
         }
         for (let i = 0; i < 100; i++) {
-            fetchApiAsync<AddedElementMessage>({
+            fetchApiAsync<AddedElementMessageApiResponse>({
                 urlFromApiRoot: "/vehicles/new",
                 errSuccLoading: {setErr, setSucc, setLoading},
                 requestInit: {

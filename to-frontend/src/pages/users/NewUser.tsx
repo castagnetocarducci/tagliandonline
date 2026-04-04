@@ -8,7 +8,7 @@ import {useNavigate} from "react-router";
 import {useErrSuccLoad} from "../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput} from "../../hooks/useValidateFormInput.ts";
 import {defaultPOSTRequestInit, fetchApiAsync} from "../../utils/fetching.ts";
-import type {AddedElementMessage} from "../../utils/Types.ts";
+import type {AddedElementMessageApiResponse} from "../../utils/Types.ts";
 import {type FormEvent, type FormEventHandler, useEffect} from "react";
 
 export function NewUser() {
@@ -37,7 +37,7 @@ export function NewUser() {
             return;
         }
         const formValues = getValueObject();
-        fetchApiAsync<AddedElementMessage>({
+        fetchApiAsync<AddedElementMessageApiResponse>({
             urlFromApiRoot: "/users/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
