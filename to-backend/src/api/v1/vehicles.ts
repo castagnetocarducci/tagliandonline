@@ -3,7 +3,7 @@ import {DatabaseManager} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 import {vehicles, vehiclesHistory, vouchers} from "../../db/schema.ts";
-import {and, desc, eq, gte, ilike, lte} from "drizzle-orm";
+import {and, desc, eq, gte, ilike, lte, or} from "drizzle-orm";
 import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 import {PgAsyncTransaction} from "drizzle-orm/pg-core";
@@ -85,6 +85,53 @@ vehiclesRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
         pageData: {
             currentPage: page != null ? page : 1,
             totalPages: Math.ceil(totalAmount / resultsPerPage),
+        }
+    });
+});
+vehiclesRouter.post("/byArr", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        return res.status(401).json({message: "Non autorizzato"});
+    }
+
+    const {
+        idArr
+    } = req.body;
+    const db = DatabaseManager.instance.db;
+    const searchConditions = [];
+    if (idArr == null || !(idArr instanceof Array)) {
+        return res.status(400).json({message: "Array di ID veicoli non valido"});
+    }
+    for (const id of idArr) {
+        if (id != null && !isNaN(parseInt(id))) {
+            searchConditions.push(eq(vehicles.id, parseInt(id)));
+        } else {
+            return res.status(400).json({message: "ID veicolo non valido: " + id});
+        }
+    }
+
+    const vehiclesArr = await db.select().from(vehicles)
+        .where(or(...searchConditions))
+        .orderBy(desc(vehicles.id))
+    if (vehiclesArr == null) {
+        return res.status(500).json({message: "Errore nel reperire i veicoli"});
+    }
+    const vehiclesList: VehicleListEntry[] = [];
+    for (const vehicleElem of vehiclesArr) {
+        vehiclesList.push({
+            id: vehicleElem.id,
+            createdAt: vehicleElem.createdAt,
+            updatedAt: vehicleElem.updatedAt,
+            plate: vehicleElem.plate,
+            brand: vehicleElem.brand,
+            model: vehicleElem.model
+        });
+    }
+    res.json({
+        message: "Veicoli acquisiti con successo",
+        vehiclesList: vehiclesList,
+        pageData: {
+            currentPage: 0,
+            totalPages: 0,
         }
     });
 });

@@ -61,9 +61,36 @@ export function ValidatedVehiclesList(
 
 
     useEffect(() => {
-        // TODO: populate with default value
+        if (defaultValue == null ||
+            !(defaultValue instanceof Array)) {
+            return;
+        }
+        for (const v of defaultValue) {
+            if (typeof v !== "number") {
+                return;
+            }
+        }
 
-    }, [defaultValue, selectedVehiclesList, value, setValue, setSelectedVehiclesList]);
+        const valuesMap = {
+            idArr: defaultValue,
+        };
+        const abort = fetchApiAsync<VehicleListApiResponse>({
+            urlFromApiRoot: "/vehicles/byArr",
+            errSuccLoading: {setErr, setSucc, setLoading},
+            requestInit: {
+                ...defaultPOSTRequestInit,
+                body: JSON.stringify(valuesMap)
+            },
+            callback: (data) => {
+                if (data != null && data.vehiclesList != null) {
+                    setSelectedVehiclesList(data.vehiclesList);
+                    setValue(defaultValue as number[]);
+                }
+            }
+        });
+
+        return abort();
+    }, [defaultValue, selectedVehiclesList, setValue, setSelectedVehiclesList, setErr, setSucc, setLoading]);
 
     const incrementedValidationFunc = useCallback((value: ValidationSupportedTypes): boolean => {
         const isEmpty = value == null || value === "" ||
@@ -209,27 +236,27 @@ export function ValidatedVehiclesList(
             )}
             {vehiclesList.length > 0 ? (
                 <List>
-                {vehiclesList.map((vehicleListEntry, index) => (
-                    <ListItem key={index}>
+                    {vehiclesList.map((vehicleListEntry, index) => (
+                        <ListItem key={index}>
                         <span>
                             {vehicleListEntry.id}:
                         </span>
-                        <span>
+                            <span>
                             <strong>{vehicleListEntry.plate}</strong> -
                         </span>
-                        <span>
+                            <span>
                             {vehicleListEntry.brand} {vehicleListEntry.model}
                         </span>
-                        <Button onClick={() => removeVehicle(vehicleListEntry)}
-                                color={"secondary"} icon={true} title={"Rimuovi veicolo"}>
+                            <Button onClick={() => removeVehicle(vehicleListEntry)}
+                                    color={"secondary"} icon={true} title={"Rimuovi veicolo"}>
                                 <span className={"rounded-icon me-2"}>
                                     <Icon icon={"it-minus"}/>
                                 </span>
-                        </Button>
-                    </ListItem>
+                            </Button>
+                        </ListItem>
                     ))}
                 </List>
-                ) : (
+            ) : (
                 <Row>
                     <strong>Nessun veicolo associato</strong>
                 </Row>
@@ -358,7 +385,7 @@ export function ValidatedVehiclesList(
                         <Col md={1}>
                             {isVehicleSelected(vehicleListEntry.id) ? (
                                 <Button onClick={() => removeVehicle(vehicleListEntry)}
-                                    color={"secondary"} icon={true} title={"Rimuovi veicolo"}>
+                                        color={"secondary"} icon={true} title={"Rimuovi veicolo"}>
                                     <span className={"rounded-icon me-2"}>
                                         <Icon icon={"it-minus"}/>
                                     </span>
@@ -366,7 +393,7 @@ export function ValidatedVehiclesList(
                                 </Button>
                             ) : (
                                 <Button onClick={() => addVehicle(vehicleListEntry)}
-                                    color={"primary"} icon={true} title={"Associa veicolo"}>
+                                        color={"primary"} icon={true} title={"Associa veicolo"}>
                                     <span className={"rounded-icon me-2"}>
                                         <Icon icon={"it-plus"}/>
                                     </span>
