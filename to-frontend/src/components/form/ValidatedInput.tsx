@@ -63,7 +63,6 @@ export function ValidatedInput(
         if (valueChangedCallback != null) valueChangedCallback(value);
     }, [errorMessage, incrementedValidationFunc, isMandatory, name, setNewValidation, validationFunc, value, valueChangedCallback]);
 
-
     return (
         <>
             {inputType === "checkbox" &&
@@ -81,11 +80,14 @@ export function ValidatedInput(
             {inputType !== "checkbox" &&
                 <Input id={name} name={name}
                        label={labelContent}
+                       placeholder={inputType === "number" ? labelContent : undefined}
                        validationText={persistingValidationText ? validationText : (isValid ? "" : validationText)}
                        valid={validationMark ? isValid : (isValid ? undefined : isValid)}
                        value={"" + value} onChange={(e) => onParameterChange(e.target.value)}
                     //rimuove il punto esclamativo alla fine per estetica
-                       style={inputType === "password" ? {backgroundImage: "none"} : {}}
+                       style={inputType === "password" ? {backgroundImage: "none"} :
+                           {} //(inputType === "number" && value === "" ? {backgroundColor: "transparent"} : {})
+                       }
                        {...inputPropsNN}
                 />
             }

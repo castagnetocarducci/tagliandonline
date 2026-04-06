@@ -62,7 +62,8 @@ export function ValidatedVehiclesList(
 
     useEffect(() => {
         if (defaultValue == null ||
-            !(defaultValue instanceof Array)) {
+            !(defaultValue instanceof Array) ||
+            defaultValue.length === 0) {
             return;
         }
         for (const v of defaultValue) {
@@ -222,46 +223,234 @@ export function ValidatedVehiclesList(
 
     return (
         <Container>
-            <h2 className={"mb-4"}>{labelContent}</h2>
-            {!isValid && (
-                <p style={{color: "#d9364f"}}>
-                    {validationText}
-                </p>
-            )}
+            <Row className={"m-2"}>
+                <Col md={5}>
+                    <h2>{labelContent}</h2>
+                    {!isValid && (
+                        <span style={{color: "#d9364f"}}>
+                            {validationText}
+                            <br/>
+                        </span>
+                    )}
 
-            {exactAmount ? (
-                <p>Sono richiesti esattamente {amount} veicoli</p>
-            ) : (
-                <p>Sono ammessi {isMandatory ? "da 1 a" : "al più"} {amount} veicoli</p>
-            )}
-            {vehiclesList.length > 0 ? (
-                <List>
+                    {exactAmount ? (
+                        <span>Sono richiesti esattamente {amount} veicoli</span>
+                    ) : (
+                        <span>Sono ammessi {isMandatory ? "da 1 a" : "al più"} {amount} veicoli</span>
+                    )}
+                    <br/>
+
+                    {selectedVehiclesList.length > 0 ? (
+
+                        <List>
+                            {selectedVehiclesList.map((vehicleListEntry, index) => (
+                                <ListItem key={index}>
+                                    <span>
+                                        <Button onClick={() => removeVehicle(vehicleListEntry)}
+                                                color={"secondary"} icon={true} size={"xs"} title={"Rimuovi veicolo"}>
+                                            <span className={"rounded-icon me-2"}>
+                                                <Icon icon={"it-minus"}/>
+                                            </span>
+                                            Rimuovi
+                                        </Button>
+                                        <span className={"ms-3"}>
+                                            {vehicleListEntry.id}{": "}
+                                            <strong>{vehicleListEntry.plate}</strong>{" - "}
+                                            {vehicleListEntry.brand} {vehicleListEntry.model}
+                                        </span>
+                                    </span>
+                                </ListItem>
+                            ))}
+                        </List>
+
+                    ) : (
+                        <strong>Nessun veicolo associato</strong>
+                    )}
+                </Col>
+                <Col md={7} className={"border border-secondary rounded"}>
+                    <h3 className={"mb-4 mt-3"}>
+                        Ricerca veicoli
+                    </h3>
+                    <Form onSubmit={onFormSubmit} className={"mt-4"}>
+                        <Row>
+                            <Col md={4}>
+                                <ValidatedInput name={"idFrom"} labelText={"ID (da)"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={""}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "number"}}/>
+                            </Col>
+                            <Col md={4}>
+                                <ValidatedInput name={"idTo"} labelText={"ID (a)"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={""}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "number"}}/>
+                            </Col>
+                            <Col md={4}>
+                                <ValidatedInput name={"plate"} labelText={"Targa"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={""}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "text"}}/>
+                            </Col>
+                        </Row>
+                        <Row>
+                            <Col md={6}>
+                                <ValidatedInput name={"brand"} labelText={"Marca"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={""}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "text"}}/>
+                            </Col>
+                            <Col md={6}>
+                                <ValidatedInput name={"model"} labelText={"Modello"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={""}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "text"}}/>
+                            </Col>
+                        </Row>
+                        <Button color={"primary"} type={"submit"} disabled={!valid || loading}
+                                className={"mb-4"} icon={true} title={"Cerca"}>
+                    <span className={"rounded-icon me-2"}>
+                        <Icon icon={"it-search"}/>
+                    </span>
+                            Cerca
+                        </Button>
+                    </Form>
+
+                    {vehiclesList.length > 0 && (
+                        <Row>
+                    <span className={"ms-3"}>
+                        {"ID: "}
+                        <strong>Targa</strong>{" - "}
+                        Marca Modello{" - "}
+                        Ultima modifica
+                    </span>
+                            {/*<Col md={1}>*/}
+                            {/*    <strong>#</strong>*/}
+                            {/*</Col>*/}
+                            {/*<Col md={2}>*/}
+                            {/*    <strong>Targa</strong>*/}
+                            {/*</Col>*/}
+                            {/*<Col md={2}>*/}
+                            {/*    <strong>Marca</strong>*/}
+                            {/*</Col>*/}
+                            {/*<Col md={3}>*/}
+                            {/*    <strong>Modello</strong>*/}
+                            {/*</Col>*/}
+                            {/*<Col md={2}>*/}
+                            {/*    <strong>Modifica</strong>*/}
+                            {/*</Col>*/}
+                        </Row>
+                    )}
+                    <hr/>
                     {vehiclesList.map((vehicleListEntry, index) => (
-                        <ListItem key={index}>
+                        <div key={index}>
+                            <Row className={"mt-2 d-flex align-items-center"}>
                         <span>
-                            {vehicleListEntry.id}:
-                        </span>
-                            <span>
-                            <strong>{vehicleListEntry.plate}</strong> -
-                        </span>
-                            <span>
-                            {vehicleListEntry.brand} {vehicleListEntry.model}
-                        </span>
-                            <Button onClick={() => removeVehicle(vehicleListEntry)}
-                                    color={"secondary"} icon={true} title={"Rimuovi veicolo"}>
-                                <span className={"rounded-icon me-2"}>
-                                    <Icon icon={"it-minus"}/>
-                                </span>
-                            </Button>
-                        </ListItem>
-                    ))}
-                </List>
-            ) : (
-                <Row>
-                    <strong>Nessun veicolo associato</strong>
-                </Row>
-            )}
+                                        {isVehicleSelected(vehicleListEntry.id) ? (
+                                            <Button onClick={() => removeVehicle(vehicleListEntry)}
+                                                    color={"secondary"} icon={true} title={"Rimuovi veicolo"} size={"xs"}>
+                                    <span className={"rounded-icon me-2"}>
+                                        <Icon icon={"it-minus"}/>
+                                    </span>
+                                                Rimuovi
+                                            </Button>
+                                        ) : (
+                                            <Button onClick={() => addVehicle(vehicleListEntry)}
+                                                    color={"primary"} icon={true} title={"Associa veicolo"} size={"xs"}>
+                                    <span className={"rounded-icon me-2"}>
+                                        <Icon icon={"it-plus"}/>
+                                    </span>
+                                                Associa
+                                            </Button>
+                                        )}
+                            <span className={"ms-3"}>
+                                            {vehicleListEntry.id}{": "}
+                                <strong>{vehicleListEntry.plate}</strong>{" - "}
+                                {vehicleListEntry.brand} {vehicleListEntry.model}{" - "}
+                                {new Date(vehicleListEntry.updatedAt).toLocaleString()}
+                                        </span>
+                                    </span>
+                                {/*<Col md={1} className={""}>*/}
+                                {/*    {vehicleListEntry.id}*/}
+                                {/*</Col>*/}
+                                {/*<Col md={2}>*/}
+                                {/*    {vehicleListEntry.plate}*/}
+                                {/*</Col>*/}
+                                {/*<Col md={2} className={"text-wrap"}>*/}
+                                {/*    {vehicleListEntry.brand}*/}
+                                {/*</Col>*/}
+                                {/*<Col md={3} className={"text-wrap"}>*/}
+                                {/*    {vehicleListEntry.model}*/}
+                                {/*</Col>*/}
+                                {/*<Col md={2}>*/}
+                                {/*    {isVehicleSelected(vehicleListEntry.id) ? (*/}
+                                {/*        <Button onClick={() => removeVehicle(vehicleListEntry)}*/}
+                                {/*                color={"secondary"} icon={true} title={"Rimuovi veicolo"}>*/}
+                                {/*            <span className={"rounded-icon me-2"}>*/}
+                                {/*                <Icon icon={"it-minus"}/>*/}
+                                {/*            </span>*/}
+                                {/*            Rimuovi*/}
+                                {/*        </Button>*/}
+                                {/*    ) : (*/}
+                                {/*        <Button onClick={() => addVehicle(vehicleListEntry)}*/}
+                                {/*                color={"primary"} icon={true} title={"Associa veicolo"}>*/}
+                                {/*            <span className={"rounded-icon me-2"}>*/}
+                                {/*                <Icon icon={"it-plus"}/>*/}
+                                {/*            </span>*/}
+                                {/*            Associa*/}
+                                {/*        </Button>*/}
+                                {/*    )}*/}
+                                {/*</Col>*/}
 
+                                {/*<Col md={1}>*/}
+                                {/*    <Button onClick={() => navigate(`/vehicles/list/${vehicleListEntry.id}`)}*/}
+                                {/*            color={"secondary"} icon={true} outline title={"Modifica"}>*/}
+                                {/*        <Icon icon={"it-pencil"}/>*/}
+                                {/*    </Button>*/}
+                                {/*</Col>*/}
+                            </Row>
+                            <hr/>
+                        </div>
+                    ))}
+                    {vehiclesList.length === 0 && (
+                        <>
+                            <Row>
+                                <strong>Nessun risultato</strong>
+                            </Row>
+                            <hr/>
+                        </>
+                    )}
+                    <AutoPager pageData={pageData} onPageChange={(page) => {
+                        setPageData((prevState) => {
+                            return {...prevState, currentPage: page}
+                        })
+                    }}/>
+                </Col>
+            </Row>
 
             {/*<Button className={"mb-4 me-2"} onClick={() => navigate(`/vehicles/list/new`)}*/}
             {/*        color={"primary"} icon={true} title={"Aggiungi nuovo veicolo"}>*/}
@@ -271,161 +460,7 @@ export function ValidatedVehiclesList(
             {/*    Nuovo*/}
             {/*</Button>*/}
 
-            <h3 className={"mb-4"}>
-                Filtri
-            </h3>
-            <Form onSubmit={onFormSubmit} className={"mt-4"}>
-                <Row>
-                    <Col md={2}>
-                        <ValidatedInput name={"idFrom"} labelText={"ID (da)"}
-                                        validationFunc={() => true}
-                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                        validationMark={false}
-                                        defaultValue={""}
-                                        isMandatory={false}
-                                        errorMessage={"Compilare i campi obbligatori"}
-                                        setNewValidation={setValidation}
-                                        inputProps={{type: "number"}}/>
-                    </Col>
-                    <Col md={2}>
-                        <ValidatedInput name={"idTo"} labelText={"ID (a)"}
-                                        validationFunc={() => true}
-                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                        validationMark={false}
-                                        defaultValue={""}
-                                        isMandatory={false}
-                                        errorMessage={"Compilare i campi obbligatori"}
-                                        setNewValidation={setValidation}
-                                        inputProps={{type: "number"}}/>
-                    </Col>
-                    <Col md={2}>
-                        <ValidatedInput name={"plate"} labelText={"Targa"}
-                                        validationFunc={() => true}
-                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                        validationMark={false}
-                                        defaultValue={""}
-                                        isMandatory={false}
-                                        errorMessage={"Compilare i campi obbligatori"}
-                                        setNewValidation={setValidation}
-                                        inputProps={{type: "text"}}/>
-                    </Col>
-                    <Col md={3}>
-                        <ValidatedInput name={"brand"} labelText={"Marca"}
-                                        validationFunc={() => true}
-                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                        validationMark={false}
-                                        defaultValue={""}
-                                        isMandatory={false}
-                                        errorMessage={"Compilare i campi obbligatori"}
-                                        setNewValidation={setValidation}
-                                        inputProps={{type: "text"}}/>
-                    </Col>
-                    <Col md={3}>
-                        <ValidatedInput name={"model"} labelText={"Modello"}
-                                        validationFunc={() => true}
-                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                        validationMark={false}
-                                        defaultValue={""}
-                                        isMandatory={false}
-                                        errorMessage={"Compilare i campi obbligatori"}
-                                        setNewValidation={setValidation}
-                                        inputProps={{type: "text"}}/>
-                    </Col>
-                </Row>
-                <Button color={"primary"} type={"submit"} disabled={!valid || loading}
-                        className={"mb-4"} icon={true} title={"Cerca"}>
-                    <span className={"rounded-icon me-2"}>
-                        <Icon icon={"it-search"}/>
-                    </span>
-                    Cerca
-                </Button>
-            </Form>
 
-            {vehiclesList.length > 0 && (
-                <Row>
-                    <Col md={1}>
-                        <strong>#</strong>
-                    </Col>
-                    <Col md={2}>
-                        <strong>Targa</strong>
-                    </Col>
-                    <Col md={3}>
-                        <strong>Marca</strong>
-                    </Col>
-                    <Col md={3}>
-                        <strong>Modello</strong>
-                    </Col>
-                    <Col md={2}>
-                        <strong>Ultimo aggiornamento</strong>
-                    </Col>
-                    <Col md={1}>
-                        <strong>Modifica</strong>
-                    </Col>
-                </Row>
-            )}
-            <hr/>
-            {vehiclesList.map((vehicleListEntry, index) => (
-                <div key={index}>
-                    <Row className={"mt-2 d-flex align-items-center"}>
-                        <Col md={1} className={""}>
-                            {vehicleListEntry.id}
-                        </Col>
-                        <Col md={2}>
-                            {vehicleListEntry.plate}
-                        </Col>
-                        <Col md={3} className={"text-wrap"}>
-                            {vehicleListEntry.brand}
-                        </Col>
-                        <Col md={3} className={"text-wrap"}>
-                            {vehicleListEntry.model}
-                        </Col>
-                        <Col md={2}>
-                            {new Date(vehicleListEntry.updatedAt).toLocaleString()}
-                        </Col>
-                        <Col md={1}>
-                            {isVehicleSelected(vehicleListEntry.id) ? (
-                                <Button onClick={() => removeVehicle(vehicleListEntry)}
-                                        color={"secondary"} icon={true} title={"Rimuovi veicolo"}>
-                                    <span className={"rounded-icon me-2"}>
-                                        <Icon icon={"it-minus"}/>
-                                    </span>
-                                    Rimuovi
-                                </Button>
-                            ) : (
-                                <Button onClick={() => addVehicle(vehicleListEntry)}
-                                        color={"primary"} icon={true} title={"Associa veicolo"}>
-                                    <span className={"rounded-icon me-2"}>
-                                        <Icon icon={"it-plus"}/>
-                                    </span>
-                                    Associa
-                                </Button>
-                            )}
-
-                        </Col>
-
-                        {/*<Col md={1}>*/}
-                        {/*    <Button onClick={() => navigate(`/vehicles/list/${vehicleListEntry.id}`)}*/}
-                        {/*            color={"secondary"} icon={true} outline title={"Modifica"}>*/}
-                        {/*        <Icon icon={"it-pencil"}/>*/}
-                        {/*    </Button>*/}
-                        {/*</Col>*/}
-                    </Row>
-                    <hr/>
-                </div>
-            ))}
-            {vehiclesList.length === 0 && (
-                <>
-                    <Row>
-                        <strong>Nessun risultato</strong>
-                    </Row>
-                    <hr/>
-                </>
-            )}
-            <AutoPager pageData={pageData} onPageChange={(page) => {
-                setPageData((prevState) => {
-                    return {...prevState, currentPage: page}
-                })
-            }}/>
 
             <LoadingSpinner loading={loading}/>
 

@@ -134,7 +134,7 @@ export function NewPermit() {
                     </Col>
                 </Row>
                 <Row>
-                    <Col md={2}>
+                    <Col md={3}>
                         <ValidatedInput name={"simultaneousPlatesAmount"} labelText={"Targhe simultanee"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -145,7 +145,7 @@ export function NewPermit() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "number"}}/>
                     </Col>
-                    <Col md={2}>
+                    <Col md={3}>
                         <ValidatedInput name={"applicationPlatesAmount"} labelText={"Targhe in domanda"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -156,7 +156,7 @@ export function NewPermit() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "number"}}/>
                     </Col>
-                    <Col md={3}>
+                    <Col md={4}>
                         <ValidatedInput name={"voucherDurationDays"} labelText={"Durata tagliando (giorni)"}
                                         validationFunc={(value) => parseInt("" + value) > 0}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}

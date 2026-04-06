@@ -16,14 +16,14 @@ export function ApplicationHistory() {
     const urlParams = useParams();
 
     useEffect(() => {
-        if (urlParams.vehicleID == null || urlParams.vehicleID == "") {
-            navigate("/vehicles/list");
+        if (urlParams.applicationID == null || urlParams.applicationID == "") {
+            navigate("/applications/list");
         }
     }, [navigate, urlParams]);
 
     useEffect(() => {
         const abort = fetchApiAsync<VehicleHistoryApiResponse>({
-            urlFromApiRoot: "/applications/history/" + urlParams.vehicleID,
+            urlFromApiRoot: "/applications/history/" + urlParams.applicationID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
@@ -82,8 +82,8 @@ export function ApplicationHistory() {
                                 <TimelinePin iconTitle="Segnaposto" label="Versione corrente" now>
                                     <Card rounded shadow="sm">
                                         <h4 className="it-card-title mb-2">
-                                            <RouterDesignLink  to={"/applications/list/" + urlParams.vehicleID}>
-                                                Vedi dettagli veicolo corrente
+                                            <RouterDesignLink  to={"/applications/list/" + urlParams.applicationID}>
+                                                Vedi dettagli domanda corrente
                                             </RouterDesignLink>
                                         </h4>
                                     </Card>

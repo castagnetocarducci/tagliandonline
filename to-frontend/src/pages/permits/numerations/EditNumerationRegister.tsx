@@ -78,7 +78,7 @@ export function EditNumerationRegister() {
                             </Col>
                         </Row>
                         <Row className={"mt-4"}>
-                            <Col md={6}>
+                            <Col md={5}>
                                 <ValidatedInput name={"description"} labelText={"Descrizione"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -89,7 +89,7 @@ export function EditNumerationRegister() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "text"}}/>
                             </Col>
-                            <Col md={2}>
+                            <Col md={3}>
                                 <ValidatedInput name={"nextNumber"} labelText={"Prossimo numero"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}

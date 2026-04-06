@@ -17,7 +17,7 @@ import {AutoPager, type PagerPageData} from "../../../components/AutoPager.tsx";
 
 export function ApplicationsList() {
     const navigate = useNavigate();
-    const [vehiclesList, setVehiclesList] = useState<VehicleListEntry[]>([]);
+    const [applicationsList, setApplicationsList] = useState<VehicleListEntry[]>([]);
     const {err, setErr, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -48,7 +48,7 @@ export function ApplicationsList() {
             },
             callback: (data) => {
                 if (data != null && data.vehiclesList != null) {
-                    setVehiclesList(data.vehiclesList);
+                    setApplicationsList(data.vehiclesList);
                 }
                 if (data != null && data.pageData != null) {
                     setPageData(data.pageData)
@@ -56,12 +56,12 @@ export function ApplicationsList() {
             }
         });
         return abort;
-    }, [setErr, setLoading, setSucc, setVehiclesList, searchParams, pageData.currentPage, setPageData]);
+    }, [setErr, setLoading, setSucc, setApplicationsList, searchParams, pageData.currentPage, setPageData]);
 
 
     return (
         <Container>
-            <h1 className={"mb-4"}>Veicoli</h1>
+            <h1 className={"mb-4"}>Domande</h1>
             <Button className={"mb-4 me-2"} onClick={() => navigate(`/applications/list/new`)}
                     color={"primary"} icon={true} title={"Aggiungi nuova domanda"}>
                         <span className={"rounded-icon me-2"}>
@@ -140,7 +140,7 @@ export function ApplicationsList() {
                 </Button>
             </Form>
 
-            {vehiclesList.length > 0 && (
+            {applicationsList.length > 0 && (
                 <Row>
                     <Col md={1}>
                         <strong>#</strong>
@@ -163,7 +163,7 @@ export function ApplicationsList() {
                 </Row>
             )}
             <hr/>
-            {vehiclesList.map((applicationListEntry, index) => (
+            {applicationsList.map((applicationListEntry, index) => (
                 <div key={index}>
                     <Row className={"mt-2 d-flex align-items-center"}>
                         <Col md={1} className={""}>
@@ -191,7 +191,7 @@ export function ApplicationsList() {
                     <hr/>
                 </div>
             ))}
-            {vehiclesList.length === 0 && (
+            {applicationsList.length === 0 && (
                 <>
                     <Row>
                         <strong>Nessun risultato</strong>

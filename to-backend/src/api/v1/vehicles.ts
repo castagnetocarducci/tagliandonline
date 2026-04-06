@@ -2,7 +2,7 @@ import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
-import {vehicles, vehiclesHistory, vouchers} from "../../db/schema.ts";
+import {vehicles, vehiclesHistory} from "../../db/schema.ts";
 import {and, desc, eq, gte, ilike, lte, or} from "drizzle-orm";
 import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";

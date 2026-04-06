@@ -1236,9 +1236,9 @@ applicationsRouter.get("/availableOptions", middlewareAuthCheck(["admin", "opera
 
             res.status(200).json({
                 message: "Tipi e Esiti domande acquisiti con successo",
-                applicationTypeList: applicationTypeList,
-                applicationOutcomeList: applicationOutcomeList,
-                permitsList: permitsList
+                applicationTypes: applicationTypeList,
+                applicationOutcomes: applicationOutcomeList,
+                permits: permitsList
             });
         } catch (e) {
             res.status(500).json({message: "Errore nel reperire permessi, tipi o esiti domande: " + e});

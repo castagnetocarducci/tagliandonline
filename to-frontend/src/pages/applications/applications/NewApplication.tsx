@@ -15,6 +15,8 @@ import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {useNavigate} from "react-router";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
+import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesList.tsx";
+import {validateEmail} from "../../../utils/CommonFunctions.ts";
 
 export function NewApplication() {
     const navigate = useNavigate();
@@ -239,7 +241,7 @@ export function NewApplication() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "date"}}/>
                     </Col>
-                    <Col md={2}>
+                    <Col md={3}>
                         <ValidatedInput name={"registerNumber"} labelText={"Numero protocollo"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -250,7 +252,7 @@ export function NewApplication() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "number"}}/>
                     </Col>
-                    <Col md={3}>
+                    <Col md={2}>
                         <ValidatedInput name={"registerDate"} labelText={"Data protocollo"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -262,7 +264,7 @@ export function NewApplication() {
                                         inputProps={{type: "date"}}/>
                     </Col>
                 </Row>
-                <Row className={"mt-4"}>
+                <Row>
                     {/*cf,
         firstname,
         lastname,
@@ -302,9 +304,10 @@ export function NewApplication() {
                                         inputProps={{type: "text"}}/>
                     </Col>
                     <Col md={5}>
-                        <ValidatedInput name={"email"} labelText={"Targa"}
-                                        validationFunc={() => true}
-                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                        <ValidatedInput name={"email"} labelText={"Email"}
+                                        validationFunc={validateEmail}
+                                        validationText={"Inserisci un indirizzo email valido"}
+                                        persistingValidationText={false}
                                         validationMark={false}
                                         defaultValue={""}
                                         isMandatory={true}
@@ -313,7 +316,7 @@ export function NewApplication() {
                                         inputProps={{type: "text"}}/>
                     </Col>
                 </Row>
-                <Row className={"mt-4"}>
+                <Row>
                     {/*
        birthDate,
         birthCity,
@@ -366,7 +369,7 @@ export function NewApplication() {
                     </Col>
 
                 </Row>
-                <Row className={"mt-4"}>
+                <Row>
                     {/*
         targetHouseLandRegistrySheet,
         targetHouseLandRegistryMap,
@@ -382,7 +385,7 @@ export function NewApplication() {
                                         isMandatory={false}
                                         errorMessage={"Compilare i campi obbligatori"}
                                         setNewValidation={setValidation}
-                                        inputProps={{type: "date"}}/>
+                                        inputProps={{type: "text"}}/>
                     </Col>
                     <Col md={3}>
                         <ValidatedInput name={"targetHouseLandRegistryMap"} labelText={"Mappale"}
@@ -419,7 +422,7 @@ export function NewApplication() {
                     </Col>
                 </Row>
                 {/*notes,*/}
-                <Row className={"mt-4"}>
+                <Row>
                     <Col md={8}>
                         <ValidatedInput name={"notes"} labelText={"Note"}
                                         validationFunc={() => true}
@@ -433,7 +436,7 @@ export function NewApplication() {
                     </Col>
                 </Row>
 
-                <Row className={"mt-4"}>
+                <Row>
                     {/*
         permitId,
         outcomeId,
@@ -472,24 +475,29 @@ export function NewApplication() {
                     </Col>
                 </Row>
 
-
-
-
-
-                <Row className={"mt-4"}>
+                <Row>
                     <Col md={4}>
                         <Button color={"primary"} type={"submit"} disabled={!valid || loading}> Salva </Button>
                     </Col>
                 </Row>
-
-
-
 
                 <LoadingSpinner loading={loading}/>
 
                 <SuccessErrorAlert err={err} succ={succ}/>
 
             </Form>
+
+            <Row className={"mt-4"}>
+                <ValidatedVehiclesList name={"vehicles"} validationFunc={() => true}
+                                       validationText={"Campo obbligatorio"} defaultValue={[]} isMandatory={true}
+                                       errorMessage={"Devi associare un numero corretto di veicoli"}
+                                       setNewValidation={setValidation}
+                                       labelText={"Veicoli associati"} amount={vehiclesAmount} exactAmount={true}/>
+
+            </Row>
+            <Row>
+                {/* TODO: scelta tagliando */}
+            </Row>
 
             {import.meta.env.DEV && (
                 <Row className={"mt-4"}>

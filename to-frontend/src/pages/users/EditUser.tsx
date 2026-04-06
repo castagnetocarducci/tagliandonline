@@ -10,6 +10,7 @@ import {SuccessErrorAlert} from "../../components/SuccessErrorAlert.tsx";
 import {ValidatedInput} from "../../components/form/ValidatedInput.tsx";
 import {useValidateFormInput} from "../../hooks/useValidateFormInput.ts";
 import {type SelectOption, ValidatedSelect} from "../../components/form/ValidatedSelect.tsx";
+import {validateEmail} from "../../utils/CommonFunctions.ts";
 
 
 export const EditUser = () => {
@@ -149,11 +150,7 @@ export const EditUser = () => {
                         </Row>
                         <Row>
                             <Col md={4}>
-                                <ValidatedInput name={"email"} validationFunc={(newValue) => {
-                                    const strValue = newValue.toString();
-                                    const regex = /^.+@.+$/;
-                                    return regex.test(strValue);
-                                }}
+                                <ValidatedInput name={"email"} validationFunc={validateEmail}
                                                 validationText={"Inserisci un indirizzo email valido"}
                                                 persistingValidationText={false}
                                                 validationMark={false} defaultValue={userDetails.email}
