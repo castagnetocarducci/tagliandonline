@@ -267,6 +267,60 @@ export type ApplicationAvailableOptionsApiResponse = {
     permits: PermitListEntry[]
 }
 
+export type ApplicationListEntry = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    requestDate: Date,
+    outcomeDate: Date | null,
+    registerNumber: number,
+    registerDate: Date,
+    cf: string,
+    firstname: string,
+    lastname: string,
+    targetHousePlace: string,
+    permit: {
+        id: number,
+        description: string,
+        disabled: boolean,
+    },
+    outcome: {
+        id: number,
+        description: string
+    },
+    type: {
+        id: number,
+        description: string
+    }
+    voucher: {
+        id: number,
+        number: number,
+        revoked: boolean,
+        validFromDate: Date,
+        validToDate: Date
+    } | null,
+    emails: {
+        id: number,
+        to: string,
+        subject: string,
+        attachmentsPresent: boolean
+    }[],
+    vehicles: {
+        id: number,
+        createdAt: Date,
+        updatedAt: Date,
+        plate: string,
+        model: string,
+        brand: string,
+    }[],
+}
+
+export type ApplicationListApiResponse = {
+    message: string,
+    applicationsList: ApplicationListEntry[],
+    pageData: PagerPageData
+}
+
 
 
 

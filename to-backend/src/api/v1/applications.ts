@@ -750,10 +750,11 @@ const checkApplicationParameters = (req: AuthRequest) => {
         req.body.vehicles == null || !Array.isArray(req.body.vehicles) || req.body.vehicles.some((elem: any) => typeof elem !== 'number')) {
         return false;
     }
+    if (req.body.requestDate != null && req.body.requestDate.trim()=== "") {req.body.requestDate = null;}
+    if (req.body.outcomeDate != null && req.body.outcomeDate.trim()=== "") {req.body.outcomeDate = null;}
+    if (req.body.birthDate != null && req.body.birthDate.trim()=== "") {req.body.birthDate = null;}
+
     if (
-        (req.body.requestDate != null && new Date(req.body.requestDate).toString() === "Invalid Date") ||
-        (req.body.outcomeDate != null && new Date(req.body.outcomeDate).toString() === "Invalid Date") ||
-        (req.body.birthDate != null && new Date(req.body.birthDate).toString() === "Invalid Date") ||
         (req.body.birthCity != null && typeof req.body.birthCity !== "string") ||
         (req.body.outcomeAuthUserId != null && isNaN(parseInt(req.body.outcomeAuthUserId))) ||
         (req.body.voucherId != null && isNaN(parseInt(req.body.voucherId))) ||
@@ -1009,7 +1010,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
     const modifiedByAuthUserId = req.user.id;
 
     if (!checkApplicationParameters(req)) {
-        res.status(400).json({message: "Parametri di aggiornamento non validi"});
+        res.status(400).json({message: "Parametri di creazione non validi"});
         return;
     }
 

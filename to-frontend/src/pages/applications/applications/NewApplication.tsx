@@ -207,7 +207,6 @@ export function NewApplication() {
 
         // outcomeAuthUserId,
 
-        TODO: ricerca veicoli
         vehicles,
 
         TODO: ricerca voucher
@@ -496,6 +495,12 @@ export function NewApplication() {
 
             </Row>
             <Row>
+                {/*
+        voucherId,
+        //EXTRA
+        createVoucher, //boolean for creating a voucher for this application
+        //updateVoucher
+                */}
                 {/* TODO: scelta tagliando */}
             </Row>
 

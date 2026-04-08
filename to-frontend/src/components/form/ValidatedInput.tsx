@@ -44,6 +44,9 @@ export function ValidatedInput(
         if (isMandatory && isEmpty) {
             return false;
         }
+        if (!isMandatory && isEmpty) {
+            return true;
+        }
         return validationFunc(value);
     }, [isMandatory, validationFunc]);
     // const isEmpty = value == null || value === "";
