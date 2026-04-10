@@ -18,14 +18,14 @@ export function EditApplication() {
     const urlParams = useParams();
 
     useEffect(() => {
-        if (urlParams.vehicleID == null || urlParams.vehicleID == "") {
-            navigate("/vehicles/list");
+        if (urlParams.applicationID == null || urlParams.applicationID == "") {
+            navigate("/applications/list");
         }
     }, [navigate, urlParams]);
 
     useEffect(() => {
         const abort = fetchApiAsync<VehicleDetailsApiResponse>({
-            urlFromApiRoot: "/applications/detail/" + urlParams.vehicleID,
+            urlFromApiRoot: "/applications/detail/" + urlParams.applicationID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
@@ -45,7 +45,7 @@ export function EditApplication() {
         }
         const formValues = getValueObject();
         fetchApiAsync<DataMessage>({
-            urlFromApiRoot: "/applications/edit/" + urlParams.vehicleID,
+            urlFromApiRoot: "/applications/edit/" + urlParams.applicationID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,

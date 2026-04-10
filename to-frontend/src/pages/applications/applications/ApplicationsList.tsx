@@ -81,7 +81,8 @@ export function ApplicationsList() {
                     setApplicationsList(data.applicationsList);
                 }
                 if (data != null && data.pageData != null) {
-                    setPageData(data.pageData)
+                    console.log(pageData);
+                    setPageData(data.pageData);
                 }
             }
         });
@@ -524,40 +525,40 @@ export function ApplicationsList() {
 
             {applicationsList.length > 0 && (
                 <Row>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>#</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Nominativo</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Tipo</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Esito</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Permesso</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Protocollo</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Veicoli</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Tagliando</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Indirizzo e Catasto</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Email</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Ultimo aggiornamento</strong>
                     </Col>
-                    <Col md={1}>
+                    <Col lg={1}>
                         <strong>Modifica</strong>
                     </Col>
                 </Row>
@@ -566,48 +567,48 @@ export function ApplicationsList() {
             {applicationsList.map((applicationListEntry, index) => (
                 <div key={index}>
                     <Row className={"mt-2 d-flex align-items-center"}>
-                        <Col md={1} className={""}>
+                        <Col lg={1} className={""}>
                             {applicationListEntry.id}
                         </Col>
-                        <Col md={1} className={"text-wrap"}>
+                        <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.firstname} {applicationListEntry.lastname}
                         </Col>
-                        <Col md={1} className={"text-wrap"}>
+                        <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.type.description}
                         </Col>
-                        <Col md={1} className={"text-wrap"}>
+                        <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.outcome.description}
                         </Col>
-                        <Col md={1} className={"text-wrap"}>
+                        <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.permit.description}
                         </Col>
-                        <Col md={1} className={"text-wrap"}>
+                        <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.registerNumber} del {new Date(applicationListEntry.registerDate).toLocaleDateString()}
                         </Col>
-                        <Col md={1} className={"text-wrap"}>
+                        <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.vehicles.map((vehicle) => vehicle.plate).join(", ")}
                         </Col>
-                        <Col md={1} className={"text-wrap"}>
+                        <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.voucher == null ? (
                                 "non presente"
                             ) : (
                                 applicationListEntry.voucher.number + " scadenza " + applicationListEntry.voucher.validToDate
                             )}
                         </Col>
-                        <Col md={1} className={"text-wrap"}>
+                        <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.targetHousePlace && applicationListEntry.targetHousePlace + " - "}
                             {applicationListEntry.targetHouseLandRegistrySheet && applicationListEntry.targetHouseLandRegistrySheet + " "}
                             {applicationListEntry.targetHouseLandRegistryMap && applicationListEntry.targetHouseLandRegistryMap + " "}
                             {applicationListEntry.targetHouseLandRegistrySubaltern && applicationListEntry.targetHouseLandRegistrySubaltern + " "}
                             {applicationListEntry.targetHouseLandRegistryCategory && applicationListEntry.targetHouseLandRegistryCategory + " "}
                         </Col>
-                        <Col md={1} className={"text-break text-truncate"}>
+                        <Col lg={1} className={"text-break text-truncate"}>
                             <Link to={"mailto:" + applicationListEntry.email}>{applicationListEntry.email}</Link>
                         </Col>
-                        <Col md={1}>
+                        <Col lg={1}>
                             {new Date(applicationListEntry.updatedAt).toLocaleString()}
                         </Col>
-                        <Col md={1}>
+                        <Col lg={1}>
                             <Button onClick={() => navigate(`/applications/list/${applicationListEntry.id}`)}
                                     color={"secondary"} icon={true} outline title={"Modifica"}>
                                 <Icon icon={"it-pencil"}/>

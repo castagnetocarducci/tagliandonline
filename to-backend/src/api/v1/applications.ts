@@ -9,7 +9,7 @@ import {
     vehicles,
     vouchers
 } from "../../db/schema.ts";
-import {and, count, eq, exists, gte, ilike, lte} from "drizzle-orm";
+import {and, count, eq, exists, gte, ilike, lte, or} from "drizzle-orm";
 import {Router} from "express";
 import {getPermit, getPermitsList} from "./permits.ts";
 import {createNewVoucher, getLastVoucherHistoryId, updateVoucherWithApplication} from "./vouchers.ts";
@@ -378,15 +378,23 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
     const emailsCountFilterSubQuery = db.select().from(applicationsEmailsHistory)
         .where(and(eq(applications.id, applicationsEmailsHistory.applicationId), ...emailsCountConditions));
 
+    const existsCountConditions = [];
+    if (vehiclesCountConditions.length > 0) {
+        existsCountConditions.push(exists(vehiclesCountFilterSubQuery));
+    }
+    if (vouchersCountConditions.length > 0) {
+        existsCountConditions.push(exists(vouchersCountFilterSubQuery));
+    }
+    if (emailsCountConditions.length > 0) {
+        existsCountConditions.push(exists(emailsCountFilterSubQuery));
+    }
+
     const totalAmount = await db.select({count: count()}).from(applications)
-        .where(and(...applicationsCountConditions,
-            exists(vehiclesCountFilterSubQuery),
-            exists(vouchersCountFilterSubQuery),
-            exists(emailsCountFilterSubQuery)
-        ));
+        .where(and(...applicationsCountConditions, ...existsCountConditions));
     if (totalAmount == null || totalAmount.length !== 1 || totalAmount[0] == null) {
         return res.status(500).json({message: "Errore nel conteggio dei risultati"});
     }
+    console.log(totalAmount[0].count);
 
     // const vehiclesArr = await db.select().from(applications)
     //     .where(and(...applicationsSearchConditions))
@@ -398,21 +406,35 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
         where: {
             AND: [
                 ...applicationsQueryConditions,
-            ]
-        },
-        with: {
+            ],
             vehicles: {
-                where: {AND: [...vehiclesQueryConditions],},
+                AND: [...vehiclesQueryConditions]
             },
+            voucher: {
+                AND: [...vouchersQueryConditions],
+            },
+            emails: {
+                AND: [...emailsQueryConditions],
+            },
+        },
+
+        with: {
+            vehicles: true,
+            // errati: così filtra i veicoli/tagliandi/email associate e non le domande
+            // vehicles: {
+            //     where: {AND: [...vehiclesQueryConditions],},
+            // },
             permit: true,
             outcome: true,
             type: true,
-            voucher: {
-                where: {AND: [...vouchersQueryConditions]},
-            },
-            emails: {
-                where: {AND: [...emailsQueryConditions]},
-            },
+            voucher: true,
+            // voucher: {
+            //     where: {AND: [...vouchersQueryConditions]},
+            // },
+            emails: true,
+            // emails: {
+            //     where: {AND: [...emailsQueryConditions]},
+            // },
         },
         orderBy: {id: "desc"},
         offset: page != null ? (page - 1) * resultsPerPage : 0,
@@ -727,7 +749,7 @@ applicationsRouter.get("/history/:applicationID", middlewareAuthCheck(["admin", 
             });
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "vehicles", {
                 description: "Veicoli",
-                value: historyElem.vehiclesHistory != null ? ("["+historyElem.vehiclesHistory.map((v) =>v.vehicleId + ": " + v.plate + ", " + v.model + ", " + v.brand).join("; ") + "]") : ""
+                value: historyElem.vehiclesHistory != null ? ("[" + historyElem.vehiclesHistory.map((v) => v.vehicleId + ": " + v.plate + ", " + v.model + ", " + v.brand).join("; ") + "]") : ""
             });
 
             vehicleHistoryRes.push({
@@ -762,9 +784,15 @@ const checkApplicationParameters = (req: AuthRequest) => {
         req.body.vehicles == null || !Array.isArray(req.body.vehicles) || req.body.vehicles.some((elem: any) => typeof elem !== 'number')) {
         return false;
     }
-    if (req.body.requestDate != null && req.body.requestDate.trim()=== "") {req.body.requestDate = null;}
-    if (req.body.outcomeDate != null && req.body.outcomeDate.trim()=== "") {req.body.outcomeDate = null;}
-    if (req.body.birthDate != null && req.body.birthDate.trim()=== "") {req.body.birthDate = null;}
+    if (req.body.requestDate != null && req.body.requestDate.trim() === "") {
+        req.body.requestDate = null;
+    }
+    if (req.body.outcomeDate != null && req.body.outcomeDate.trim() === "") {
+        req.body.outcomeDate = null;
+    }
+    if (req.body.birthDate != null && req.body.birthDate.trim() === "") {
+        req.body.birthDate = null;
+    }
 
     if (
         (req.body.birthCity != null && typeof req.body.birthCity !== "string") ||
