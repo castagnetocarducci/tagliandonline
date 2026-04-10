@@ -174,7 +174,7 @@ export const applications = toSchema.table("applications", {
     id: commonColumns.idAutoIncr(),
     createdAt: commonColumns.createdAt(),
     updatedAt: commonColumns.updatedAt(),
-    requestDate: commonColumns.createdAt(),
+    requestDate: date().defaultNow().notNull(),
     outcomeDate: date(),
     registerNumber: integer().notNull(), //numero di protocollo
     registerDate: date().notNull(), //data di protocollazione
@@ -214,7 +214,7 @@ export const applicationsHistory = toSchema.table("applicationsHistory", {
     createdAt: commonColumns.createdAt(),
     modifiedByAuthUserId: integer().notNull().references(() => authUsers.id),
 
-    requestDate: commonColumns.createdAt(),
+    requestDate: date().defaultNow().notNull(),
     outcomeDate: date(),
     registerNumber: integer().notNull(), //numero di protocollo
     registerDate: date(),

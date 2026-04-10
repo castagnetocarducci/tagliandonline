@@ -278,7 +278,12 @@ export type ApplicationListEntry = {
     cf: string,
     firstname: string,
     lastname: string,
+    email: string,
     targetHousePlace: string,
+    targetHouseLandRegistrySheet: string,
+    targetHouseLandRegistryMap: string,
+    targetHouseLandRegistrySubaltern: string,
+    targetHouseLandRegistryCategory: string,
     permit: {
         id: number,
         description: string,

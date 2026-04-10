@@ -1,11 +1,12 @@
-import {useNavigate, useSearchParams} from "react-router";
+import {Link, useNavigate, useSearchParams} from "react-router";
 import {type FormEvent, type FormEventHandler, useEffect, useState} from "react";
 import type {
-    ApplicationAvailableOptionsApiResponse, ApplicationListApiResponse, ApplicationListEntry,
+    ApplicationAvailableOptionsApiResponse,
+    ApplicationListApiResponse,
+    ApplicationListEntry,
     ApplicationOutcomeListEntry,
-    ApplicationTypeListEntry, PermitListEntry,
-    VehicleListApiResponse,
-    VehicleListEntry
+    ApplicationTypeListEntry,
+    PermitListEntry
 } from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {
@@ -15,18 +16,7 @@ import {
     fromSearchParamsToValuesMap,
     fromValuesMapToSearchParams
 } from "../../../utils/fetching.ts";
-import {
-    Accordion,
-    AccordionBody,
-    AccordionHeader,
-    AccordionItem,
-    Button,
-    Col,
-    Container,
-    Form,
-    Icon,
-    Row
-} from "design-react-kit";
+import {Button, Col, Container, Form, Icon, Row} from "design-react-kit";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
@@ -241,18 +231,17 @@ export function ApplicationsList() {
                 </Row>
 
                 <Row>
-                    {/* FIXME: Problema con le date e le date con orario*/}
-                    {/*<Col md={3}>*/}
-                    {/*    <ValidatedInput name={"requestDate"} labelText={"Data richiesta"}*/}
-                    {/*                    validationFunc={() => true}*/}
-                    {/*                    validationText={"Campo obbligatorio"} persistingValidationText={false}*/}
-                    {/*                    validationMark={false}*/}
-                    {/*                    defaultValue={searchParams.get("requestDate") ?? ""}*/}
-                    {/*                    isMandatory={false}*/}
-                    {/*                    errorMessage={"Compilare i campi obbligatori"}*/}
-                    {/*                    setNewValidation={setValidation}*/}
-                    {/*                    inputProps={{type: "date"}}/>*/}
-                    {/*</Col>*/}
+                    <Col md={3}>
+                        <ValidatedInput name={"requestDate"} labelText={"Data richiesta"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("requestDate") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "date"}}/>
+                    </Col>
                     <Col md={3}>
                         <ValidatedInput name={"outcomeDate"} labelText={"Data esito"}
                                         validationFunc={() => true}
@@ -275,7 +264,7 @@ export function ApplicationsList() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "number"}}/>
                     </Col>
-                    <Col md={2}>
+                    <Col md={3}>
                         <ValidatedInput name={"registerDate"} labelText={"Data protocollo"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -557,6 +546,15 @@ export function ApplicationsList() {
                         <strong>Veicoli</strong>
                     </Col>
                     <Col md={1}>
+                        <strong>Tagliando</strong>
+                    </Col>
+                    <Col md={1}>
+                        <strong>Indirizzo e Catasto</strong>
+                    </Col>
+                    <Col md={1}>
+                        <strong>Email</strong>
+                    </Col>
+                    <Col md={1}>
                         <strong>Ultimo aggiornamento</strong>
                     </Col>
                     <Col md={1}>
@@ -588,6 +586,23 @@ export function ApplicationsList() {
                         </Col>
                         <Col md={1} className={"text-wrap"}>
                             {applicationListEntry.vehicles.map((vehicle) => vehicle.plate).join(", ")}
+                        </Col>
+                        <Col md={1} className={"text-wrap"}>
+                            {applicationListEntry.voucher == null ? (
+                                "non presente"
+                            ) : (
+                                applicationListEntry.voucher.number + " scadenza " + applicationListEntry.voucher.validToDate
+                            )}
+                        </Col>
+                        <Col md={1} className={"text-wrap"}>
+                            {applicationListEntry.targetHousePlace && applicationListEntry.targetHousePlace + " - "}
+                            {applicationListEntry.targetHouseLandRegistrySheet && applicationListEntry.targetHouseLandRegistrySheet + " "}
+                            {applicationListEntry.targetHouseLandRegistryMap && applicationListEntry.targetHouseLandRegistryMap + " "}
+                            {applicationListEntry.targetHouseLandRegistrySubaltern && applicationListEntry.targetHouseLandRegistrySubaltern + " "}
+                            {applicationListEntry.targetHouseLandRegistryCategory && applicationListEntry.targetHouseLandRegistryCategory + " "}
+                        </Col>
+                        <Col md={1} className={"text-break text-truncate"}>
+                            <Link to={"mailto:" + applicationListEntry.email}>{applicationListEntry.email}</Link>
                         </Col>
                         <Col md={1}>
                             {new Date(applicationListEntry.updatedAt).toLocaleString()}

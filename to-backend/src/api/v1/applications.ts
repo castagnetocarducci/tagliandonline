@@ -47,7 +47,12 @@ type ApplicationListEntry = {
     cf: string,
     firstname: string,
     lastname: string,
+    email: string,
     targetHousePlace: string,
+    targetHouseLandRegistrySheet: string,
+    targetHouseLandRegistryMap: string,
+    targetHouseLandRegistrySubaltern: string,
+    targetHouseLandRegistryCategory: string,
     permit: {
         id: number,
         description: string,
@@ -246,8 +251,10 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
         applicationsQueryConditions.push({id: {lte: idTo}});
     }
 
-    //TODO: controllare requestDate (potrebbe richiedere anche l'ora che invece non verrà utilizzata)
-    //if (requestDate != null && new Date(requestDate).toString() !== "Invalid Date") { applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate))); applicationsQueryConditions.push({requestDate: new Date(requestDate)}); }
+    if (requestDate != null && new Date(requestDate).toString() !== "Invalid Date") {
+        applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate).toLocaleDateString()));
+        applicationsQueryConditions.push({requestDate: new Date(requestDate).toLocaleDateString()});
+    }
     if (outcomeDate != null && new Date(outcomeDate).toString() !== "Invalid Date") {
         applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toLocaleDateString()));
         applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toLocaleDateString()});
@@ -423,14 +430,19 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
             id: app.id,
             createdAt: app.createdAt,
             updatedAt: app.updatedAt,
-            requestDate: app.requestDate,
+            requestDate: new Date(app.requestDate),
             outcomeDate: app.outcomeDate != null ? new Date(app.outcomeDate) : null,
             registerNumber: app.registerNumber,
             registerDate: new Date(app.registerDate),
             cf: app.cf ?? "",
             firstname: app.firstname,
             lastname: app.lastname,
+            email: app.email,
             targetHousePlace: app.targetHousePlace ?? "",
+            targetHouseLandRegistrySheet: app.targetHouseLandRegistrySheet ?? "",
+            targetHouseLandRegistryMap: app.targetHouseLandRegistryMap ?? "",
+            targetHouseLandRegistrySubaltern: app.targetHouseLandRegistrySubaltern ?? "",
+            targetHouseLandRegistryCategory: app.targetHouseLandRegistryCategory ?? "",
             permit: {
                 id: app.permit.id,
                 description: app.permit.description,
@@ -519,7 +531,7 @@ applicationsRouter.get("/detail/:applicationID", middlewareAuthCheck(["admin", "
         id: application.id,
         createdAt: application.createdAt,
         updatedAt: application.updatedAt,
-        requestDate: application.requestDate,
+        requestDate: new Date(application.requestDate),
         outcomeDate: application.outcomeDate != null ? new Date(application.outcomeDate) : null,
         outcomeAuthUser: application.outcomeAuthUser != null ? {
             id: application.outcomeAuthUser.id,
@@ -626,7 +638,7 @@ applicationsRouter.get("/history/:applicationID", middlewareAuthCheck(["admin", 
 
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "requestDate", {
                 description: "Data richiesta",
-                value: historyElem.requestDate.toLocaleDateString()
+                value: historyElem.registerDate != null ? historyElem.registerDate : ""
             });
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "outcomeDate", {
                 description: "Data completamento",
