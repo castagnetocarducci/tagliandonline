@@ -183,40 +183,6 @@ export function NewApplication() {
         outcomeDate,
         registerNumber,
         registerDate,
-
-        cf,
-        firstname,
-        lastname,
-        email,
-
-        birthDate,
-        birthCity,
-        residencePlace,
-        targetHousePlace,
-
-        targetHouseLandRegistrySheet,
-        targetHouseLandRegistryMap,
-        targetHouseLandRegistrySubaltern,
-        targetHouseLandRegistryCategory,
-
-        notes,
-
-        permitId,
-        outcomeId,
-        typeId,
-
-        // outcomeAuthUserId,
-
-        vehicles,
-
-        TODO: ricerca voucher
-        voucherId,
-        //EXTRA
-        createVoucher, //boolean for creating a voucher for this application
-        //updateVoucher,
-
-
-
                     */}
                     <Col md={3}>
                         <ValidatedInput name={"requestDate"} labelText={"Data richiesta"}

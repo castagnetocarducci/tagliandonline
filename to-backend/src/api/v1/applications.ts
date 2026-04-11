@@ -394,7 +394,7 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
     if (totalAmount == null || totalAmount.length !== 1 || totalAmount[0] == null) {
         return res.status(500).json({message: "Errore nel conteggio dei risultati"});
     }
-    console.log(totalAmount[0].count);
+    // console.log(totalAmount[0].count);
 
     // const vehiclesArr = await db.select().from(applications)
     //     .where(and(...applicationsSearchConditions))
@@ -407,15 +407,15 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
             AND: [
                 ...applicationsQueryConditions,
             ],
-            vehicles: {
+            vehicles: (vehiclesQueryConditions.length === 0 ? undefined : {
                 AND: [...vehiclesQueryConditions]
-            },
-            voucher: {
+            }),
+            voucher: (vouchersQueryConditions.length === 0 ? undefined : {
                 AND: [...vouchersQueryConditions],
-            },
-            emails: {
+            }),
+            emails: (emailsQueryConditions.length === 0 ? undefined : {
                 AND: [...emailsQueryConditions],
-            },
+            }),
         },
 
         with: {
@@ -612,7 +612,7 @@ applicationsRouter.get("/detail/:applicationID", middlewareAuthCheck(["admin", "
 
     res.json({
         message: "Domanda acquisita con successo",
-        vehicle: applicationDetails
+        application: applicationDetails
     });
 });
 
@@ -653,7 +653,7 @@ applicationsRouter.get("/history/:applicationID", middlewareAuthCheck(["admin", 
             return;
         }
 
-        const vehicleHistoryRes: HistoryEvent[] = [];
+        const applicationHistoryRes: HistoryEvent[] = [];
         const currModificationEntries: HistoryModificationMap = {};
         applicationHistory.forEach((historyElem) => {
             const diffModificationEntries: HistoryModificationMap = {};
@@ -752,7 +752,7 @@ applicationsRouter.get("/history/:applicationID", middlewareAuthCheck(["admin", 
                 value: historyElem.vehiclesHistory != null ? ("[" + historyElem.vehiclesHistory.map((v) => v.vehicleId + ": " + v.plate + ", " + v.model + ", " + v.brand).join("; ") + "]") : ""
             });
 
-            vehicleHistoryRes.push({
+            applicationHistoryRes.push({
                 userId: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.id : 0,
                 username: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.username : "unknown",
                 timestamp: historyElem.createdAt,
@@ -762,7 +762,7 @@ applicationsRouter.get("/history/:applicationID", middlewareAuthCheck(["admin", 
 
         res.status(200).json({
             message: "Storico della domanda acquisito con successo",
-            vehicleHistory: vehicleHistoryRes
+            applicationHistory: applicationHistoryRes
         });
     } catch (e) {
         res.status(500).json({message: "Errore nel reperire lo storico della domanda: " + e});
@@ -955,9 +955,9 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 }
             });
 
-            if (createdVoucherId == null) {
-                await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
-            }
+            // if (createdVoucherId == null && voucherId != null && updateVoucher) {
+            //     await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
+            // }
 
             const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
             if (insertResult == null || insertResult.rowCount !== vehicles.length) {
@@ -1151,9 +1151,9 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 }
             });
 
-            //if (createdVoucherId == null) {
-            //    await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
-            //}
+            // if (createdVoucherId == null && voucherId != null && updateVoucher) {
+            //     await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
+            // }
 
             const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
             if (insertResult == null || insertResult.rowCount !== vehicles.length) {

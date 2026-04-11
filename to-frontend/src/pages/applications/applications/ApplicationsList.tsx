@@ -81,7 +81,6 @@ export function ApplicationsList() {
                     setApplicationsList(data.applicationsList);
                 }
                 if (data != null && data.pageData != null) {
-                    console.log(pageData);
                     setPageData(data.pageData);
                 }
             }

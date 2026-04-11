@@ -1,6 +1,6 @@
 import {useNavigate, useParams} from "react-router";
 import {useEffect, useState} from "react";
-import type {HistoryEvent, VehicleHistoryApiResponse} from "../../../utils/Types.ts";
+import type {ApplicationHistoryApiResponse, HistoryEvent} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {defaultGETRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
 import {Card, Col, Container, GoBack, Row, Timeline, TimelinePin} from "design-react-kit";
@@ -11,7 +11,7 @@ import "../../../styles/timeline-fix.css";
 
 export function ApplicationHistory() {
     const navigate = useNavigate();
-    const [vehicleHistoryEvent, setVehicleHistoryEvent] = useState<HistoryEvent[]>([]);
+    const [applicationHistoryEvent, setApplicationHistoryEvent] = useState<HistoryEvent[]>([]);
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const urlParams = useParams();
 
@@ -22,13 +22,13 @@ export function ApplicationHistory() {
     }, [navigate, urlParams]);
 
     useEffect(() => {
-        const abort = fetchApiAsync<VehicleHistoryApiResponse>({
+        const abort = fetchApiAsync<ApplicationHistoryApiResponse>({
             urlFromApiRoot: "/applications/history/" + urlParams.applicationID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
                 if (data != null) {
-                    setVehicleHistoryEvent(data.vehicleHistory);
+                    setApplicationHistoryEvent(data.applicationHistory);
                 }
             }
         });
@@ -43,10 +43,10 @@ export function ApplicationHistory() {
             </GoBack>
             <h2>Storico veicolo</h2>
 
-            {vehicleHistoryEvent != null && vehicleHistoryEvent.length > 0 && (
+            {applicationHistoryEvent != null && applicationHistoryEvent.length > 0 && (
                 <Timeline>
                     <Row>
-                        {vehicleHistoryEvent.map((event, index) => {
+                        {applicationHistoryEvent.map((event, index) => {
                                 const timestamp = new Date(event.timestamp);
                                 return (
                                     <Col xs="12" key={index}>
@@ -77,7 +77,7 @@ export function ApplicationHistory() {
                                 )
                             }
                         )}
-                        {vehicleHistoryEvent.length > 0 && (
+                        {applicationHistoryEvent.length > 0 && (
                             <Col xs="12">
                                 <TimelinePin iconTitle="Segnaposto" label="Versione corrente" now>
                                     <Card rounded shadow="sm">

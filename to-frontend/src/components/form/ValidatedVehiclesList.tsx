@@ -58,9 +58,12 @@ export function ValidatedVehiclesList(
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
     const [pageData, setPageData] = useState<PagerPageData>({currentPage: 1, totalPages: 0});
     const [formSearchParams, setFormSearchParams] = useState<ValidatedFormValuesMap>({});
-
+    const [defaultValueAcquired, setDefaultValueAcquired] = useState(false);
 
     useEffect(() => {
+        if (defaultValueAcquired) {
+            return;
+        }
         if (defaultValue == null ||
             !(defaultValue instanceof Array) ||
             defaultValue.length === 0) {
@@ -86,12 +89,14 @@ export function ValidatedVehiclesList(
                 if (data != null && data.vehiclesList != null) {
                     setSelectedVehiclesList(data.vehiclesList);
                     setValue(defaultValue as number[]);
+                    setDefaultValueAcquired(true);
                 }
             }
         });
 
-        return abort();
-    }, [defaultValue, selectedVehiclesList, setValue, setSelectedVehiclesList, setErr, setSucc, setLoading]);
+        return abort;
+    }, [defaultValue, setValue, setSelectedVehiclesList, setErr, setSucc, setLoading,
+        defaultValueAcquired, setDefaultValueAcquired]);
 
     const incrementedValidationFunc = useCallback((value: ValidationSupportedTypes): boolean => {
         const isEmpty = value == null || value === "" ||

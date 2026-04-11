@@ -326,9 +326,74 @@ export type ApplicationListApiResponse = {
     pageData: PagerPageData
 }
 
+export type ApplicationDetails = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    requestDate: Date,
+    outcomeDate: Date | null,
+    registerNumber: number,
+    registerDate: Date,
+    cf: string,
+    firstname: string,
+    lastname: string,
+    email: string,
+    birthDate: Date | null,
+    birthCity: string | null,
+    residencePlace: string | null,
+    targetHousePlace: string | null,
+    targetHouseLandRegistrySheet: string | null,
+    targetHouseLandRegistryMap: string | null,
+    targetHouseLandRegistrySubaltern: string | null,
+    targetHouseLandRegistryCategory: string | null,
+    notes: string,
 
+    permit: {
+        id: number,
+        description: string,
+        disabled: boolean,
+    },
+    outcome: {
+        id: number,
+        description: string
+    },
+    type: {
+        id: number,
+        description: string
+    },
+    outcomeAuthUser: {
+        id: number,
+        username: string,
+    } | null,
+    voucher: {
+        id: number,
+        number: number,
+        revoked: boolean,
+        validFromDate: Date,
+        validToDate: Date
+    } | null,
+    emails: {
+        id: number,
+        to: string,
+        subject: string,
+        attachmentsPresent: boolean
+    }[],
+    vehicles: {
+        id: number,
+        createdAt: Date,
+        updatedAt: Date,
+        plate: string,
+        model: string,
+        brand: string,
+    }[],
+}
 
+export type ApplicationDetailsApiResponse = {
+    message: string,
+    application: ApplicationDetails
+}
 
-
-
-
+export type ApplicationHistoryApiResponse = {
+    message: string,
+    applicationHistory: HistoryEvent[]
+}
