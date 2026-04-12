@@ -3,15 +3,15 @@ import {DatabaseManager} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 import {
-    applications, applicationsHistoryToVehiclesHistory,
+    applications, applicationsEmailsHistory, applicationsHistoryToVehiclesHistory,
     applicationsToVehicles, numerationRegisters,
     permits,
     vehicles,
     vehiclesHistory,
-    vouchers,
+    vouchers, vouchersEmailsHistory,
     vouchersHistory, vouchersHistoryToVehiclesHistory, vouchersToVehicles
 } from "../../db/schema.ts";
-import {and, desc, eq, gte, ilike, lte} from "drizzle-orm";
+import {and, count, desc, eq, exists, gte, ilike, lte} from "drizzle-orm";
 import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 import {date, PgAsyncTransaction, text, varchar} from "drizzle-orm/pg-core";
@@ -35,6 +35,21 @@ type VoucherListEntry = {
         description: string,
         disabled: boolean,
     },
+    vehicles: {
+        id: number,
+        plate: string,
+        model: string,
+        brand: string,
+    }[],
+    applications: {
+        id: number,
+        registerNumber: number,
+        registerDate: Date,
+        cf: string,
+        firstname: string,
+        lastname: string,
+        email: string,
+    }[]
 }
 
 type VoucherDetails = {
@@ -61,7 +76,7 @@ type VoucherDetails = {
     signedAuthorizationPath: string,
     applications: {
         id: number,
-        registerNumber: string,
+        registerNumber: number,
         registerDate: Date,
         cf: string,
         firstname: string,
@@ -135,77 +150,345 @@ type VoucherDetails = {
 // },
 //
 // */
-//
-//
-// vehiclesRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
-//     if (req.user == null) {
-//         return res.status(401).json({message: "Non autorizzato"});
-//     }
-//
-//     const {
-//         idFrom,
-//         idTo,
-//         plate,
-//         model,
-//         brand,
-//         page,
-//     } = req.body;
-//     const db = DatabaseManager.instance.db;
-//     const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
-//     // const countConditions = [], queryConditions = [];
-//     const searchConditions = [];
-//     if (idFrom != null && idFrom.trim() !== "" && !isNaN(parseInt(idFrom))) {
-//         searchConditions.push(gte(vehicles.id, parseInt(idFrom)));
-//     } // queryConditions.push({id: {gte: idFrom}}); }
-//     if (idTo != null && idTo.trim() !== "" && !isNaN(parseInt(idTo))) {
-//         searchConditions.push(lte(vehicles.id, parseInt(idTo)));
-//     } // queryConditions.push({id: {lte: idTo}}); }
-//     if (plate != null && plate.trim() !== "") {
-//         searchConditions.push(ilike(vehicles.plate, `%${plate}%`));
-//     } // queryConditions.push({plate: {ilike: `%${plate}%`}}); }
-//     if (model != null && model.trim() !== "") {
-//         searchConditions.push(ilike(vehicles.model, `%${model}%`));
-//     } // queryConditions.push({model: {ilike: `%${model}%`}}); }
-//     if (brand != null && brand.trim() !== "") {
-//         searchConditions.push(ilike(vehicles.brand, `%${brand}%`));
-//     } // queryConditions.push({brand: {ilike: `%${brand}%`}}); }
-//     const totalAmount = await db.$count(vehicles, and(...searchConditions));
-//     const vehiclesArr = await db.select().from(vehicles)
-//         .where(and(...searchConditions))
-//         .orderBy(desc(vehicles.id))
-//         .offset(page != null ? (page - 1) * resultsPerPage : 0).limit(resultsPerPage);
-//     // const vehiclesArr = await db.query.vehicles.findMany({
-//     //     where: {AND: [
-//     //         ...queryConditions,
-//     //         ]},
-//     //     orderBy: {id: "desc"},
-//     //     offset: page != null ? (page - 1) * resultsPerPage : undefined,
-//     //     limit: resultsPerPage,
-//     // });
-//     if (vehiclesArr == null) {
-//         return res.status(500).json({message: "Errore nel reperire i veicoli"});
-//     }
-//     const vehiclesList: VehicleListEntry[] = [];
-//     for (const vehicleElem of vehiclesArr) {
-//         vehiclesList.push({
-//             id: vehicleElem.id,
-//             createdAt: vehicleElem.createdAt,
-//             updatedAt: vehicleElem.updatedAt,
-//             plate: vehicleElem.plate,
-//             brand: vehicleElem.brand,
-//             model: vehicleElem.model
-//         });
-//     }
-//     res.json({
-//         message: "Veicoli acquisiti con successo",
-//         vehiclesList: vehiclesList,
-//         pageData: {
-//             currentPage: page != null ? page : 1,
-//             totalPages: Math.ceil(totalAmount / resultsPerPage),
-//         }
-//     });
-// });
-//
+
+
+
+vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        return res.status(401).json({message: "Non autorizzato"});
+    }
+    /*
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+
+    number: number,
+
+    revoked: boolean, non gestito
+
+    validFromDate: Date,
+    validToDate: Date,
+
+    notes: string, non gestito
+
+
+    permit: {
+        id: number,
+        description: string,
+        printedName: string,
+        disabled: boolean,
+        simultaneousPlatesAmount: number,
+        applicationPlatesAmount: number
+    },
+    generatedVoucherTemplatePath: string,
+    generatedAuthorizationTemplatePath: string,
+    generatedVoucherPdfPath: string,
+    generatedAuthorizationPdfPath: string,
+    signedAuthorizationPath: string,
+    applications: {
+        id: number,
+        registerNumber: string,
+        registerDate: Date,
+        cf: string,
+        firstname: string,
+        lastname: string,
+        email: string,
+        outcomeDate: Date,
+        outcomeDescription: string,
+        typeDescription: string,
+        emails: {
+            id: number,
+            to: string,
+            subject: string,
+            attachmentsPresent: boolean
+        }[],
+    }[],
+    vehicles: {
+        id: number,
+        plate: string,
+        model: string,
+        brand: string,
+    }[],
+    emails: {
+        id: number,
+        to: string,
+        subject: string,
+        attachmentsPresent: boolean,
+    }[],
+
+     */
+
+    const {
+        idFrom,
+        idTo,
+
+        numberFrom,
+        numberTo,
+
+        validityStartedFromDate,
+        validityStartedToDate,
+
+        expiresFromDate,
+        expiresToDate,
+
+        emailTo,
+        permitId,
+
+        applicationId,
+        requestDate,
+        outcomeDate,
+        registerNumber,
+        registerDate,
+        cf,
+        firstname,
+        lastname,
+        email,
+
+
+        vehicleId,
+        vehiclePlate,
+        vehicleModel,
+        vehicleBrand,
+
+        page,
+    } = req.body;
+    const db = DatabaseManager.instance.db;
+    const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
+    // const countConditions = [], queryConditions = [];
+    const vouchersCountConditions = [], vouchersQueryConditions = [];
+    const applicationsCountConditions = [], applicationsQueryConditions = [];
+    const vehiclesCountConditions = [], vehiclesQueryConditions = [];
+    const emailsCountConditions = [], emailsQueryConditions = [];
+
+    // vouchers filters
+    if (idFrom != null && !isNaN(parseInt(idFrom))) {
+        vouchersCountConditions.push(gte(vouchers.id, parseInt(idFrom)));
+        vouchersQueryConditions.push({id: {gte: idFrom}});
+    }
+    if (idTo != null && !isNaN(parseInt(idTo))) {
+        vouchersCountConditions.push(lte(vouchers.id, parseInt(idTo)));
+        vouchersQueryConditions.push({id: {lte: idTo}});
+    }
+    if (numberFrom != null && !isNaN(parseInt(numberFrom))) {
+        vouchersCountConditions.push(gte(vouchers.number, parseInt(numberFrom)));
+        vouchersQueryConditions.push({number: {gte: numberFrom}});
+    }
+    if (numberTo != null && !isNaN(parseInt(numberTo))) {
+        vouchersCountConditions.push(gte(vouchers.number, parseInt(numberTo)));
+        vouchersQueryConditions.push({number: {gte: numberTo}});
+    }
+    if (validityStartedFromDate != null && !isNaN(parseInt(validityStartedFromDate))) {
+        vouchersCountConditions.push(gte(vouchers.validFromDate, new Date(validityStartedFromDate).toISOString()));
+        vouchersQueryConditions.push({validFromDate: {gte: new Date(validityStartedFromDate).toISOString()}});
+    }
+    if (validityStartedToDate != null && !isNaN(parseInt(validityStartedToDate))) {
+        vouchersCountConditions.push(gte(vouchers.validToDate, new Date(validityStartedToDate).toISOString()));
+        vouchersQueryConditions.push({validToDate: {gte: new Date(validityStartedToDate).toISOString()}});
+    }
+    if (expiresFromDate != null && !isNaN(parseInt(expiresFromDate))) {
+        vouchersCountConditions.push(gte(vouchers.validFromDate, new Date(expiresFromDate).toISOString()));
+        vouchersQueryConditions.push({validFromDate: {gte: new Date(expiresFromDate).toISOString()}});
+    }
+    if (expiresToDate != null && !isNaN(parseInt(expiresToDate))) {
+        vouchersCountConditions.push(gte(vouchers.validToDate, new Date(expiresToDate).toISOString()));
+        vouchersQueryConditions.push({validToDate: {gte: new Date(expiresToDate).toISOString()}});
+    }
+    if (permitId != null && !isNaN(parseInt(permitId))) {
+        vouchersCountConditions.push(eq(vouchers.permitId, parseInt(permitId)));
+        vouchersQueryConditions.push({permitId: parseInt(permitId)});
+    }
+
+    //applications
+    if (applicationId != null && !isNaN(parseInt(applicationId))) {
+        applicationsCountConditions.push(eq(applications.id, parseInt(applicationId)));
+        applicationsQueryConditions.push({id: parseInt(applicationId)});
+    }
+    if (requestDate != null && new Date(requestDate).toString() !== "Invalid Date") {
+        applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate).toLocaleDateString()));
+        applicationsQueryConditions.push({requestDate: new Date(requestDate).toLocaleDateString()});
+    }
+    if (outcomeDate != null && new Date(outcomeDate).toString() !== "Invalid Date") {
+        applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toLocaleDateString()));
+        applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toLocaleDateString()});
+    }
+    if (registerNumber != null && !isNaN(parseInt(registerNumber))) {
+        applicationsCountConditions.push(eq(applications.registerNumber, parseInt(registerNumber)));
+        applicationsQueryConditions.push({registerNumber: parseInt(registerNumber)});
+    }
+    if (registerDate != null && new Date(registerDate).toString() !== "Invalid Date") {
+        applicationsCountConditions.push(eq(applications.registerDate, new Date(registerDate).toLocaleDateString()));
+        applicationsQueryConditions.push({registerDate: new Date(registerDate).toLocaleDateString()});
+    }
+    if (cf != null && cf.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.cf, `%${cf}%`));
+        applicationsQueryConditions.push({cf: {ilike: `%${cf}%`}});
+    }
+    if (firstname != null && firstname.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.firstname, `%${firstname}%`));
+        applicationsQueryConditions.push({firstname: {ilike: `%${firstname}%`}});
+    }
+    if (lastname != null && lastname.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.lastname, `%${lastname}%`));
+        applicationsQueryConditions.push({lastname: {ilike: `%${lastname}%`}});
+    }
+    if (email != null && email.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.email, `%${email}%`));
+        applicationsQueryConditions.push({email: {ilike: `%${email}%`}});
+    }
+
+    // email history
+    if (emailTo != null && emailTo.trim() !== "") {
+        emailsCountConditions.push(ilike(vouchersEmailsHistory.to, `%${emailTo}%`));
+        emailsQueryConditions.push({to: {ilike: `%${emailTo}%`}});
+        // const emailsSubQuery = db.select({id: applicationsEmailsHistory.id}).from(applicationsEmailsHistory).where(ilike(applicationsEmailsHistory.to, `%${emailTo}%`));
+        // applicationsCountConditions.push(exists(emailsSubQuery.where(eq(applications.id, applicationsEmailsHistory.applicationId))));
+    }
+
+    //vehicles
+    if (vehicleId != null && !isNaN(parseInt(vehicleId))) {
+        vehiclesCountConditions.push(eq(vehicles.id, parseInt(vehicleId)));
+        vehiclesQueryConditions.push({id: parseInt(vehicleId)});
+    }
+    if (vehiclePlate != null && vehiclePlate.trim() !== "") {
+        vehiclesCountConditions.push(ilike(vehicles.plate, `%${vehiclePlate}%`));
+        vehiclesQueryConditions.push({plate: {ilike: `%${vehiclePlate}%`}});
+    }
+    if (vehicleModel != null && vehicleModel.trim() !== "") {
+        vehiclesCountConditions.push(ilike(vehicles.model, `%${vehicleModel}%`));
+        vehiclesQueryConditions.push({model: {ilike: `%${vehicleModel}%`}});
+    }
+    if (vehicleBrand != null && vehicleBrand.trim() !== "") {
+        vehiclesCountConditions.push(ilike(vehicles.brand, `%${vehicleBrand}%`));
+        vehiclesQueryConditions.push({brand: {ilike: `%${vehicleBrand}%`}});
+    }
+
+    // if (plate != null && plate.trim() !== "") { vehiclesCountConditions.push(ilike(vehicles.plate, `%${plate}%`)); vehiclesQueryConditions.push({plate: {ilike: `%${plate}%`}}); }
+    // if (model != null && model.trim() !== "") { vehiclesCountConditions.push(ilike(vehicles.model, `%${model}%`)); vehiclesQueryConditions.push({model: {ilike: `%${model}%`}}); }
+    // if (brand != null && brand.trim() !== "") { vehiclesCountConditions.push(ilike(vehicles.brand, `%${brand}%`)); vehiclesQueryConditions.push({brand: {ilike: `%${brand}%`}}); }
+
+    //const totalAmount = await db.$count(applications, and(...applicationsCountConditions));
+
+
+    // counting section
+    const vehiclesCountFilterSubQuery = db.select().from(vouchersToVehicles)
+        .leftJoin(vehicles, eq(vouchersToVehicles.vehicleId, vehicles.id))
+        .where(and(eq(vouchers.id, vouchersToVehicles.voucherId), ...vehiclesCountConditions));
+    const applicationsCountFilterSubQuery = db.select().from(applications)
+        .where(and(eq(vouchers.id, applications.voucherId), ...applicationsCountConditions));
+    const emailsCountFilterSubQuery = db.select().from(vouchersEmailsHistory)
+        .where(and(eq(vouchers.id, vouchersEmailsHistory.voucherId), ...emailsCountConditions));
+
+    const existsCountConditions = [];
+    if (vehiclesCountConditions.length > 0) {
+        existsCountConditions.push(exists(vehiclesCountFilterSubQuery));
+    }
+    if (applicationsCountConditions.length > 0) {
+        existsCountConditions.push(exists(applicationsCountFilterSubQuery));
+    }
+    if (emailsCountConditions.length > 0) {
+        existsCountConditions.push(exists(emailsCountFilterSubQuery));
+    }
+
+    const totalAmount = await db.select({count: count()}).from(vouchers)
+        .where(and(...vouchersCountConditions, ...existsCountConditions));
+    if (totalAmount == null || totalAmount.length !== 1 || totalAmount[0] == null) {
+        return res.status(500).json({message: "Errore nel conteggio dei risultati"});
+    }
+    // console.log(totalAmount[0].count);
+
+    // const vehiclesArr = await db.select().from(applications)
+    //     .where(and(...applicationsSearchConditions))
+    //     .orderBy(desc(applications.id))
+    //     .offset(page != null ? (page - 1) * resultsPerPage : 0).limit(resultsPerPage);
+
+    // query section
+    const vouchersArr = await db.query.vouchers.findMany({
+        where: {
+            AND: [
+                ...vouchersQueryConditions,
+            ],
+            vehicles: (vehiclesQueryConditions.length === 0 ? undefined : {
+                AND: [...vehiclesQueryConditions]
+            }),
+            applications: (applicationsQueryConditions.length === 0 ? undefined : {
+                AND: [...applicationsQueryConditions],
+            }),
+            emails: (emailsQueryConditions.length === 0 ? undefined : {
+                AND: [...emailsQueryConditions],
+            }),
+        },
+
+        with: {
+            vehicles: true,
+            applications: true,
+            permit: true,
+            emails: true
+        },
+        orderBy: {id: "desc"},
+        offset: page != null ? (page - 1) * resultsPerPage : 0,
+        limit: resultsPerPage,
+    });
+    if (vouchersArr == null) {
+        return res.status(500).json({message: "Errore nel reperire i tagliandi"});
+    }
+    const vouchersList: VoucherListEntry[] = [];
+    for (const vouch of vouchersArr) {
+        if (vouch.permit == null) {
+            return res.status(500).json({message: "Errore nel reperire le associazioni di uno dei tagliandi"});
+        }
+        vouchersList.push({
+            id: vouch.id,
+            createdAt: vouch.createdAt,
+            updatedAt: vouch.updatedAt,
+
+            number: vouch.number,
+            revoked: vouch.revoked,
+            validFromDate: new Date(vouch.validFromDate),
+            validToDate: new Date(vouch.validToDate),
+
+            applications: vouch.applications.map(a => ({
+                id: a.id,
+                registerNumber: a.registerNumber,
+                registerDate: new Date(a.registerDate),
+                cf: a.cf ?? "",
+                firstname: a.firstname,
+                lastname: a.lastname,
+                email: a.email,
+            })),
+
+            permit: {
+                id: vouch.permit.id,
+                description: vouch.permit.description,
+                disabled: vouch.permit.disabled,
+            },
+
+            // emails: vouch.emails.map(e => ({
+            //     id: e.id,
+            //     to: e.to,
+            //     subject: e.subject,
+            //     attachmentsPresent: e.attachments != null && e.attachments.length > 0,
+            // })),
+            vehicles: vouch.vehicles.map(v => ({
+                id: v.id,
+                createdAt: v.createdAt,
+                updatedAt: v.updatedAt,
+                plate: v.plate,
+                model: v.model,
+                brand: v.brand,
+            })),
+        });
+    }
+    res.json({
+        message: "Tagliandi acquisiti con successo",
+        vouchersList: vouchersList,
+        pageData: {
+            currentPage: page != null ? page : 1,
+            totalPages: Math.ceil(totalAmount[0].count / resultsPerPage),
+        }
+    });
+});
+
+
 // vehiclesRouter.get("/detail/:vehicleID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
 //     if (req.user == null) {
 //         res.status(401).json({message: "Non autorizzato"});

@@ -41,7 +41,7 @@ export function ApplicationHistory() {
             <GoBack link>
                 Torna indietro
             </GoBack>
-            <h2>Storico veicolo</h2>
+            <h2>Storico domanda</h2>
 
             {applicationHistoryEvent != null && applicationHistoryEvent.length > 0 && (
                 <Timeline>
