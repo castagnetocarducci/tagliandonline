@@ -17,7 +17,7 @@ import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
-import {validateEmail} from "../../../utils/CommonFunctions.ts";
+import {dateStrToISOString, validateEmail} from "../../../utils/CommonFunctions.ts";
 import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesList.tsx";
 
 export function EditApplication() {
@@ -184,7 +184,7 @@ export function EditApplication() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.requestDate != null ? new Date(applicationDetails.requestDate).toLocaleDateString() : ""}
+                                                defaultValue={dateStrToISOString(applicationDetails.requestDate)}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -195,7 +195,7 @@ export function EditApplication() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.outcomeDate != null ? applicationDetails.outcomeDate : ""}
+                                                defaultValue={dateStrToISOString(applicationDetails.outcomeDate)}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -217,7 +217,7 @@ export function EditApplication() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.registerDate}
+                                                defaultValue={dateStrToISOString(applicationDetails.registerDate)}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -288,7 +288,7 @@ export function EditApplication() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.birthDate != null ? applicationDetails.birthDate : ""}
+                                                defaultValue={dateStrToISOString(applicationDetails.birthDate)}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}

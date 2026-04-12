@@ -54,6 +54,9 @@ export function ValidatedInput(
     const labelContent = labelText || titleCase(name);
 
     const onParameterChange = (newValue: string) => {
+        if (inputType === "date") {
+            console.log(newValue);
+        }
         setValue(newValue);
     }
 
