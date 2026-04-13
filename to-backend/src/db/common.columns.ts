@@ -10,5 +10,6 @@ export const commonColumns = {
     lastnameVarchar: () => varchar({length: 32}).notNull(),
     idAutoIncr: () => integer().primaryKey().generatedAlwaysAsIdentity(),
     path512: () => varchar({length: 512}).notNull(),
+    path512Nullable: () => varchar({length: 512}),
     notes: () => varchar({length: 512}).notNull(),
 }

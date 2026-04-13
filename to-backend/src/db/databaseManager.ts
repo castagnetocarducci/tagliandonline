@@ -5,9 +5,8 @@ import {populateDefaultData} from "./defaultData.ts";
 import {authUsers, roles} from "./schema.ts";
 import {and, eq, or} from "drizzle-orm";
 import {generatePasswordHash} from "../utils/pswHashing.ts";
-import type {NextFunction, RequestHandler, Response} from "express";
-import jwt from "jsonwebtoken";
-import type {AuthRequest, RequiredRole} from "../api/v1/auth.ts";
+import type {PgAsyncTransaction} from "drizzle-orm/pg-core";
+import type {PostgresJsQueryResultHKT} from "drizzle-orm/postgres-js";
 
 export type AuthUserCache = {
     id: number,
@@ -16,6 +15,8 @@ export type AuthUserCache = {
     disabled: boolean,
     lastPasswordResetDate: Date,
 }
+
+export type DbTransactionType = PgAsyncTransaction<PostgresJsQueryResultHKT, Record<string, never>, typeof relations>;
 
 /**
  * singleton

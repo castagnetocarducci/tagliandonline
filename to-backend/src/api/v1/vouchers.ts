@@ -1,5 +1,5 @@
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
-import {DatabaseManager} from "../../db/databaseManager.ts";
+import {DatabaseManager, type DbTransactionType} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 import {
@@ -26,6 +26,11 @@ import {
     getFileFromMulterFields,
     uploadVouchersMulter
 } from "../../files/filesStorages.ts";
+import {
+    generateVoucherDocumentFromTemplate,
+    type VoucherTemplateData
+} from "../../reportsGeneration.ts";
+import {convertPDF} from "../../pdfConversion.ts";
 
 export const vouchersRouter = Router();
 
@@ -92,11 +97,11 @@ type VoucherDetails = {
     validFromDate: Date,
     validToDate: Date,
     notes: string,
-    generatedVoucherTemplatePath: string,
-    generatedAuthorizationTemplatePath: string,
-    generatedVoucherPdfPath: string,
-    generatedAuthorizationPdfPath: string,
-    signedAuthorizationPath: string,
+    generatedVoucherTemplatePath: string | null,
+    generatedAuthorizationTemplatePath: string | null,
+    generatedVoucherPdfPath: string | null,
+    generatedAuthorizationPdfPath: string | null,
+    signedAuthorizationPath: string | null,
     permit: {
         id: number,
         description: string,
@@ -574,11 +579,11 @@ vouchersRouter.get("/detail/:voucherID", middlewareAuthCheck(["admin", "operator
         validFromDate: new Date(voucher.validFromDate),
         validToDate: new Date(voucher.validToDate),
         notes: voucher.notes,
-        generatedVoucherTemplatePath: adjustPathForDownload(voucher.generatedVoucherTemplatePath),
-        generatedAuthorizationTemplatePath: adjustPathForDownload(voucher.generatedAuthorizationTemplatePath),
-        generatedVoucherPdfPath: adjustPathForDownload(voucher.generatedVoucherPdfPath),
-        generatedAuthorizationPdfPath: adjustPathForDownload(voucher.generatedAuthorizationPdfPath),
-        signedAuthorizationPath: adjustPathForDownload(voucher.signedAuthorizationPath),
+        generatedVoucherTemplatePath: voucher.generatedVoucherTemplatePath == null ? null : adjustPathForDownload(voucher.generatedVoucherTemplatePath),
+        generatedAuthorizationTemplatePath: voucher.generatedAuthorizationTemplatePath == null ? null : adjustPathForDownload(voucher.generatedAuthorizationTemplatePath),
+        generatedVoucherPdfPath: voucher.generatedVoucherPdfPath == null ? null : adjustPathForDownload(voucher.generatedVoucherPdfPath),
+        generatedAuthorizationPdfPath: voucher.generatedAuthorizationPdfPath == null ? null : adjustPathForDownload(voucher.generatedAuthorizationPdfPath),
+        signedAuthorizationPath: voucher.signedAuthorizationPath == null ? null : adjustPathForDownload(voucher.signedAuthorizationPath),
         permit: {
             id: voucher.permit.id,
             description: voucher.permit.description,
@@ -767,27 +772,27 @@ vouchersRouter.get("/history/:voucherID", middlewareAuthCheck(["admin", "operato
 
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "generatedVoucherTemplatePath", {
                 description: "Modello tagliando generato",
-                value: historyElem.generatedVoucherTemplatePath
+                value: "" + historyElem.generatedVoucherTemplatePath
             });
 
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "generatedAuthorizationTemplatePath", {
                 description: "Modello autorizzazione generato",
-                value: historyElem.generatedAuthorizationTemplatePath
+                value: "" + historyElem.generatedAuthorizationTemplatePath
             });
 
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "generatedVoucherPdfPath", {
                 description: "PDF tagliando generato",
-                value: historyElem.generatedVoucherPdfPath
+                value: "" + historyElem.generatedVoucherPdfPath
             });
 
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "generatedAuthorizationPdfPath", {
                 description: "PDF autorizzazione generato",
-                value: historyElem.generatedAuthorizationPdfPath
+                value: "" + historyElem.generatedAuthorizationPdfPath
             });
 
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "signedAuthorizationPath", {
                 description: "Autorizzazione firmata",
-                value: historyElem.signedAuthorizationPath
+                value: "" + historyElem.signedAuthorizationPath
             });
 
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "permitHistory", {
@@ -797,7 +802,7 @@ vouchersRouter.get("/history/:voucherID", middlewareAuthCheck(["admin", "operato
 
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "vehicles", {
                 description: "Veicoli",
-                value: historyElem.vehiclesHistory != null ? ("[" + historyElem.vehiclesHistory.map((v) => v.vehicleId + ": " + v.plate + ", " + v.model + ", " + v.brand).join("; ") + "]") : ""
+                value: "" + historyElem.vehiclesHistory != null ? ("[" + historyElem.vehiclesHistory.map((v) => v.vehicleId + ": " + v.plate + ", " + v.model + ", " + v.brand).join("; ") + "]") : ""
             });
 
             historyElem.applicationsHistory.forEach((applicationHistoryElem) => {
@@ -857,12 +862,167 @@ vouchersRouter.get("/history/:voucherID", middlewareAuthCheck(["admin", "operato
     }
 });
 
+vouchersRouter.get("/generate/:voucherID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+    if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
+        res.status(400).json({message: "Tagliando non trovato"});
+        return;
+    }
+    const voucherID = parseInt(req.params.voucherID as string);
+    if (isNaN(voucherID)) {
+        res.status(400).json({message: "ID tagliando non valido"});
+        return;
+    }
+
+    try {
+        const db = DatabaseManager.instance.db;
+        const updatedVoucherId = await db.transaction(async (tx) => {
+            const newModelsPaths = await generateTemplates(tx, voucherID);
+
+            //TODO: aggiorna tagliando e storico
+
+
+
+            // return updatedVoucher.id;
+        });
+        if (updatedVoucherId == null) {
+            res.status(500).json({message: "Errore durante l'aggiornamento del tagliando"});
+
+            return;
+        }
+
+
+        res.status(200).json({
+            message: "Modelli generati con successo",
+            // voucherHistory: voucherHistoryRes    // forse aggiungi voucherDetails per risparmiare una call
+        });
+    } catch (e) {
+        res.status(500).json({message: "Errore nella generazione dei modelli: " + e});
+        return;
+    }
+});
+
+
+const generateTemplates = async (tx: DbTransactionType, voucherId: number): Promise<{
+    generatedVoucherTemplate: string,
+    generatedAuthorizationTemplate: string
+}> => {
+    const voucher = await tx.query.vouchers.findFirst({
+        where: {
+            id: voucherId,
+        },
+        with: {
+            vehicles: true,
+            applications: {
+                with: {
+                    vehicles: true,
+                    outcome: true,
+                    type: true,
+                    outcomeAuthUser: true
+                },
+                orderBy: {outcomeDate: "desc", id: "desc"}, // choose application with most recent outcomeDate or ID
+            },
+            permit: {
+                with: {
+                    voucherDocTemplate: true,
+                    authorizationDocTemplate: true
+                },
+            },
+            emails: true
+        },
+    });
+
+    if (voucher == null || voucher.permit == null || voucher.applications == null) {
+        throw new Error("Errore nel reperire il tagliando o le sue associazioni");
+    }
+    if (voucher.applications.length === 0) {
+        throw new Error("Il tagliando non ha domande associate");
+    }
+    if (voucher.permit.voucherDocTemplate == null || voucher.permit.authorizationDocTemplate == null) {
+        throw new Error("Errore nel reperire i modelli di tagliando e autorizzazione");
+    }
+    const voucherBaseTemplatePath = voucher.permit.voucherDocTemplate.path;
+    const authorizationBaseTemplatePath = voucher.permit.authorizationDocTemplate.path;
+
+    const targetApplication = voucher.applications[0];
+    if (targetApplication == null) {
+        throw new Error("Errore nel reperire la domanda associata al tagliando");
+    }
+
+    const voucherTemplateData: VoucherTemplateData = {
+        numeroTagliandoStr: "" + voucher.number,
+        descrizionePermessoStr: voucher.permit.printedName,
+        tipologiaDomanda: targetApplication.type == null ? "N/A" : targetApplication.type.description,
+        dataProtocolloStr: targetApplication.registerDate,
+        numeroProtocolloStr: "" + targetApplication.registerNumber,
+        dataCompletamentoStr: targetApplication.outcomeDate ?? voucher.validFromDate,
+        dataInizioValiditaStr: voucher.validFromDate,
+        dataFineValiditaStr: voucher.validToDate,
+        cognomeIstruttoreStr: targetApplication.outcomeAuthUser == null ? "N/A" : targetApplication.outcomeAuthUser.lastname,
+        nomeIstruttoreStr: targetApplication.outcomeAuthUser == null ? "N/A" : targetApplication.outcomeAuthUser.firstname,
+        cognomeRichiedenteStr: targetApplication.lastname,
+        nomeRichiedenteStr: targetApplication.firstname,
+        comuneNascitaRichiedenteStr: targetApplication.birthCity == null ? "N/A" : targetApplication.birthCity,
+        dataNascitaRichiedenteStr: targetApplication.birthDate == null ? "N/A" : targetApplication.birthDate,
+        codiceFiscaleRichiedenteStr: targetApplication.cf == null ? "N/A" : targetApplication.cf,
+        comuneResidenzaRichiedenteStr: "N/A", //TODO: aggiungere?    targetApplication.residencePlace == null ? "N/A" : targetApplication.residencePlace,
+        indirizzoResidenzaRichiedenteStr: targetApplication.residencePlace == null ? "N/A" : targetApplication.residencePlace,
+        indirizzoAbitazioneDesignataStr: targetApplication.targetHousePlace == null ? "N/A" : targetApplication.targetHousePlace,
+        catastoFoglioAbitazioneDesignataStr: targetApplication.targetHouseLandRegistrySheet == null ? "N/A" : targetApplication.targetHouseLandRegistrySheet,
+        catastoMappaleAbitazioneDesignataStr: targetApplication.targetHouseLandRegistryMap == null ? "N/A" : targetApplication.targetHouseLandRegistryMap,
+        catastoSubalternoAbitazioneDesignataStr: targetApplication.targetHouseLandRegistrySubaltern == null ? "N/A" : targetApplication.targetHouseLandRegistrySubaltern,
+        catastoCategoriaAbitazioneDesignataStr: targetApplication.targetHouseLandRegistryCategory == null ? "N/A" : targetApplication.targetHouseLandRegistryCategory,
+        targheArr: voucher.vehicles == null ? [] : voucher.vehicles.map(v => {
+            return {
+                marcaStr: v.brand,
+                modelloStr: v.model,
+                targaStr: v.plate,
+            }
+        }),
+        verificationUrl: ConfigProvider.instance.configs.baseUrl + "/vouchers/check/" + voucher.id,
+    }
+
+    const resVoucher = await generateVoucherDocumentFromTemplate(voucherBaseTemplatePath, "tagliando", voucher.id, voucherTemplateData);
+    if (!resVoucher.success) {
+        throw new Error(resVoucher.err)
+    }
+    const resAuthorization = await generateVoucherDocumentFromTemplate(authorizationBaseTemplatePath, "autorizzazione", voucher.id, voucherTemplateData);
+    if (!resAuthorization.success) {
+        throw new Error(resAuthorization.err)
+    }
+    return {
+        generatedVoucherTemplate: resVoucher.path,
+        generatedAuthorizationTemplate: resAuthorization.path
+    };
+}
+
+const convertVoucherPDF = async (generatedVoucherTemplate: string, generatedAuthorizationTemplate: string): Promise<{
+    generatedVoucherPdfPath: string,
+    generatedAuthorizationPdfPath: string
+}> => {
+    const voucherPdfPath = await convertPDF(generatedVoucherTemplate);
+    if (voucherPdfPath == null) {
+        throw new Error("Errore durante la conversione del modello del tagliando in PDF");
+    }
+    const authorizationPdfPath = await convertPDF(generatedAuthorizationTemplate);
+    if (authorizationPdfPath == null) {
+        throw new Error("Errore durante la conversione del modello dell'autorizzazione in PDF");
+    }
+    return {
+        generatedVoucherPdfPath: voucherPdfPath,
+        generatedAuthorizationPdfPath: authorizationPdfPath
+    }
+}
+
+
 export const middlewareVoucherUpdateParamsCheck = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
         return;
     }
-    const modifiedByAuthUserId = req.user.id;
 
     if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
         res.status(400).json({message: "Tagliando non trovato"});
@@ -976,16 +1136,9 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
             res.status(200).json({message: "Nessuna modifica effettuata"});
             return;
         }
-        const generatedVoucherTemplate =  getFileFromMulterFields(reqFilesFields, "generatedVoucherTemplate");
-        const generatedAuthorizationTemplate =  getFileFromMulterFields(reqFilesFields, "generatedAuthorizationTemplate");
-        const signedAuthorization =  getFileFromMulterFields(reqFilesFields, "signedAuthorization");
-        //TODO: provare subito a generare i file così se fallisce non interroghiamo neanche il DB
-        if (generatedVoucherTemplate != null) {
-
-        }
-        if (generatedAuthorizationTemplate != null) {
-
-        }
+        const generatedVoucherTemplate = getFileFromMulterFields(reqFilesFields, "generatedVoucherTemplate");
+        const generatedAuthorizationTemplate = getFileFromMulterFields(reqFilesFields, "generatedAuthorizationTemplate");
+        const signedAuthorization = getFileFromMulterFields(reqFilesFields, "signedAuthorization");
 
 
         const db = DatabaseManager.instance.db;
@@ -1002,10 +1155,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
                     return;
                 }
 
-                //TODO: rigenerare i PDF se necessario
-                // NOTA: se la generazione non va a buon fine bisogna rollbackare e il file precedente deve tornare disponibile
-
-                const updatedVoucher = await tx.update(vouchers).set({
+                const updatedVoucherResult = await tx.update(vouchers).set({
                     validFromDate: validFromDate,
                     validToDate: validToDate,
                     revoked: revoked,
@@ -1015,13 +1165,14 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
                     ...(generatedAuthorizationTemplate !== null && {generatedAuthorizationTemplatePath: generatedAuthorizationTemplate.path}),
                     ...(signedAuthorization !== null && {signedAuthorizationPath: signedAuthorization.path}),
                     //TODO: add pdf if necessary
-                }).where(eq(vouchers.id, voucherID)).returning();
-                if (updatedVoucher == null || updatedVoucher.length !== 1 || updatedVoucher[0] == null) {
+                }).where(eq(vouchers.id, voucherID));
+                if (updatedVoucherResult == null || updatedVoucherResult.rowCount !== 1) {
                     console.log("Errore durante l'aggiornamento del tagliando");
                     deleteFilesFields(reqFilesFields);
                     tx.rollback();
                     return null;
                 }
+
 
                 const deleteResult = await tx.delete(vouchersToVehicles).where(eq(vouchersToVehicles.voucherId, voucherID));
                 const vehiclesToInsertVoucher = (vehicles as number[]).map((vehicleId) => {
@@ -1039,23 +1190,37 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
                     return null;
                 }
 
+
+                ///////TODO: generate pdf
+                //TODO: provare subito a generare i file così se fallisce non interroghiamo neanche il DB
+                if (generatedVoucherTemplate != null) {
+
+                }
+                if (generatedAuthorizationTemplate != null) {
+
+                }
+                //TODO: rigenerare i PDF se necessario
+                // NOTA: se la generazione non va a buon fine bisogna rollbackare e il file precedente deve tornare disponibile
+                // NOTA2: se la generazione invece va a buon fine aggiorno prima updatedvoucher history e poi updated voucher
+
+
                 // const voucherHistoryId = await getLastVoucherHistoryId(tx, voucherID);
 
                 const updatedVoucherHistory = await tx.insert(vouchersHistory).values({
                     voucherId: voucherID,
                     modifiedByAuthUserId: modifiedByAuthUserId,
 
-                    number: updatedVoucher[0].number,
-                    revoked: updatedVoucher[0].revoked,
-                    validFromDate: updatedVoucher[0].validFromDate,
-                    validToDate: updatedVoucher[0].validToDate,
-                    notes: updatedVoucher[0].notes,
+                    number: updatedVoucher.number,
+                    revoked: updatedVoucher.revoked,
+                    validFromDate: updatedVoucher.validFromDate,
+                    validToDate: updatedVoucher.validToDate,
+                    notes: updatedVoucher.notes,
                     permitHistoryId: permit.lastPermitHistoryId as number,
-                    generatedVoucherTemplatePath: updatedVoucher[0].generatedVoucherTemplatePath,
-                    generatedAuthorizationTemplatePath: updatedVoucher[0].generatedAuthorizationTemplatePath,
-                    generatedVoucherPdfPath: updatedVoucher[0].generatedVoucherPdfPath,
-                    generatedAuthorizationPdfPath: updatedVoucher[0].generatedAuthorizationPdfPath,
-                    signedAuthorizationPath: updatedVoucher[0].signedAuthorizationPath,
+                    generatedVoucherTemplatePath: updatedVoucher.generatedVoucherTemplatePath,
+                    generatedAuthorizationTemplatePath: updatedVoucher.generatedAuthorizationTemplatePath,
+                    // generatedVoucherPdfPath: updatedVoucher[0].generatedVoucherPdfPath,
+                    // generatedAuthorizationPdfPath: updatedVoucher[0].generatedAuthorizationPdfPath,
+                    signedAuthorizationPath: updatedVoucher.signedAuthorizationPath,
                 }).returning();
                 if (updatedVoucherHistory == null || updatedVoucherHistory.length !== 1 || updatedVoucherHistory[0] == null) {
                     console.log("Errore durante l'aggiornamento dello storico del tagliando");
@@ -1066,7 +1231,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
                 const updatedVoucherHistoryId = updatedVoucherHistory[0].id;
                 const updateResult = await tx.update(vouchers)
                     .set({lastVoucherHistoryId: updatedVoucherHistoryId})
-                    .where(eq(vouchers.id, updatedVoucher[0].id));
+                    .where(eq(vouchers.id, updatedVoucher.id));
                 const vehiclesToInsertVoucherHistory: {
                     voucherHistoryId: number,
                     vehicleHistoryId: number
@@ -1093,7 +1258,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
                     tx.rollback();
                     return null;
                 }
-                return updatedVoucher[0].id;
+                return updatedVoucher.id;
             });
             if (updatedVoucherId == null) {
                 res.status(500).json({message: "Errore durante l'aggiornamento del tagliando"});
@@ -1236,11 +1401,11 @@ export const createNewVoucher = async (tx: PgAsyncTransaction<any>, creationData
         validToDate: expiryDateT.toDateString(),
         notes: "",
         permitId: creationData.permitId,
-        generatedVoucherTemplatePath: "",
-        generatedAuthorizationTemplatePath: "",
-        generatedVoucherPdfPath: "",
-        generatedAuthorizationPdfPath: "",
-        signedAuthorizationPath: "",
+        generatedVoucherTemplatePath: null,
+        generatedAuthorizationTemplatePath: null,
+        generatedVoucherPdfPath: null,
+        generatedAuthorizationPdfPath: null,
+        signedAuthorizationPath: null,
     }).returning();
     if (createdVoucher == null || createdVoucher.length !== 1 || createdVoucher[0] == null) {
         throw new Error("Creazione tagliando fallita: " + JSON.stringify(createdVoucher));
