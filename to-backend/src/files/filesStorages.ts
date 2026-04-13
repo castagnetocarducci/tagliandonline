@@ -25,13 +25,41 @@ export const modelsStorage = multer.diskStorage({
     filename: (req, file, cb) => {
         cb(null, getSuffixedFilename(file));
     }
-})
+});
 
 export const uploadModelsMulter = multer({
     storage: modelsStorage,
     limits: {
         fileSize: 2 * 1024 * 1024, //2MB
         files: 1
+    }
+});
+
+// const getVoucherPrefixedSuffixedFilename = (voucherID: number, file: Express.Multer.File): string => {
+//     const suffixedFilename =  getSuffixedFilename(file);
+// }
+
+export const vouchersStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        if (req.params.voucherID == null || typeof req.params.voucherID !== "string" ||
+            req.params.voucherID.trim() == "" || isNaN(parseInt(req.params.voucherID))) {
+            cb(new Error("Tagliando non trovato"), "/dev/null");
+        } else {
+            const voucherID = parseInt(req.params.voucherID as string);
+            cb(null, ConfigProvider.instance.prepareVoucherFolderPath(voucherID));
+        }
+    },
+    filename: (req, file, cb) => {
+        cb(null, getSuffixedFilename(file));
+    }
+});
+
+export const uploadVouchersMulter = multer({
+    storage: vouchersStorage,
+    limits: {
+        fieldNameSize: 200,
+        fileSize: 2 * 1024 * 1024, //2MB
+        files: 3
     }
 });
 
@@ -51,3 +79,27 @@ export const deleteFile = (file?: Express.Multer.File) => {
     }
 }
 
+export type FileFieldsType = { [fieldname: string]: Express.Multer.File[]; }
+
+export const deleteFilesFields = (reqFilesFields:  { [fieldname: string]: Express.Multer.File[]; }) => {
+    Object.values(reqFilesFields).forEach(function(value) {
+        if (value != null && value.length > 0) {
+            value.forEach(file => {
+                if (file != null) {
+                    deleteFileByPath(file.path);
+                }
+            })
+        }
+    });
+}
+
+export const getFileFromMulterFields = (reqFilesFields: FileFieldsType, fieldName: string): Express.Multer.File | null => {
+    if (reqFilesFields[fieldName] == null || reqFilesFields[fieldName].length <= 0) {
+        return null;
+    }
+    const file = reqFilesFields[fieldName][0];
+    if (file == null) {
+        return null;
+    }
+    return file;
+}

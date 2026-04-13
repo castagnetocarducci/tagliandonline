@@ -908,6 +908,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                     permitId: permitId,
                     permitHistoryId: permitHistoryId,
                     validFromDate: outcomeDate,
+                    validToDate: null,
                     notes: "",
                     permitApplicationPlatesAmount: permit.applicationPlatesAmount,
                     modifiedByAuthUserId: modifiedByAuthUserId,
@@ -1103,6 +1104,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                     permitId: permitId,
                     permitHistoryId: permitHistoryId,
                     validFromDate: outcomeDate,
+                    validToDate: null,
                     notes: "",
                     permitApplicationPlatesAmount: permit.applicationPlatesAmount,
                     modifiedByAuthUserId: modifiedByAuthUserId,
@@ -1239,7 +1241,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
 });
 
 
-applicationsRouter.get("/availableOptions", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+applicationsRouter.get("/availableOptions", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
         if (req.user == null) {
             return res.status(401).json({message: "Non autorizzato"});
         }

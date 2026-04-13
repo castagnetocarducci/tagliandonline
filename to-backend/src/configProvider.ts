@@ -93,6 +93,16 @@ export class ConfigProvider {
         return `postgres://${this.configs.dbUser}:${this.configs.dbPassword}@${this.configs.dbHost}:${this.configs.dbPort}/${this.configs.dbName}`;
     }
 
+    private getVoucherFolderPath(voucherID: number): string {
+        return join(this.configs.vouchersPath, "" + voucherID);
+    }
+
+    public prepareVoucherFolderPath(voucherID: number): string {
+        const voucherFolderPath = this.getVoucherFolderPath(voucherID);
+        mkdirSync(voucherFolderPath, {recursive: true});
+        return voucherFolderPath;
+    }
+
     private static loadNumber(value: string | undefined, defaultValue: number): number {
         if (value != null) {
             const converted = parseInt(value);
