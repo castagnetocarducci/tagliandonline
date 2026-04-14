@@ -2,6 +2,16 @@ import type {PagerPageData} from "../components/AutoPager.tsx";
 
 export type Role = "admin" | "operatore" | "vigile";
 
+export type DataMessage = {
+    message: string
+}
+
+export type AddedElementMessageApiResponse = {
+    message: string,
+    id: number
+}
+
+// region Users
 export type UserData = {
     id: number,
     username: string,
@@ -61,11 +71,9 @@ export type UserDataContextType = {
     userData: UserData | null,
     setUserData: (userData: UserData | null) => void
 }
+// endregion
 
-export type DataMessage = {
-    message: string
-}
-
+// region History
 export type ModificationEntry = {
     description: string,
     value: string
@@ -81,12 +89,9 @@ export type HistoryEvent = {
     timestamp: string,
     modificationsMap: HistoryModificationMap
 }
+// endregion
 
-export type AddedElementMessageApiResponse = {
-    message: string,
-    id: number
-}
-
+// region DocTemplates
 export type DocTemplateListEntry = {
     id: number,
     createdAt: string,
@@ -105,9 +110,9 @@ export type DocTemplateDetailApiResponse = {
     message: string,
     docTemplate: DocTemplateListEntry
 }
+//endregion
 
-
-
+//region EmailTemplates
 export type EmailTemplateListEntry = {
     id: number,
     createdAt: string,
@@ -131,13 +136,13 @@ export type EmailTemplateListApiResponse = {
     emailTemplatesList: EmailTemplateListEntry[]
 }
 
-
 export type EmailTemplateDetailApiResponse = {
     message: string,
     emailTemplate: EmailTemplateDetail
 }
+//endregion
 
-
+// region NumerationRegisters
 export type NumerationRegisterListEntry = {
     id: number,
     createdAt: string,
@@ -156,8 +161,9 @@ export type NumerationRegisterApiResponse = {
     message: string,
     numerationRegister: NumerationRegisterListEntry
 }
+//endregion
 
-
+// region Permits
 export type PermitListEntry = {
     id: number,
     createdAt: Date,
@@ -210,9 +216,9 @@ export type PermitHistoryApiResponse = {
     message: string,
     permitHistory: HistoryEvent[]
 }
+//endregion
 
-
-
+//region Vehicles
 export type VehicleListEntry = {
     id: number,
     createdAt: Date,
@@ -248,7 +254,9 @@ export type VehicleHistoryApiResponse = {
     message: string,
     vehicleHistory: HistoryEvent[]
 }
+//endregion
 
+//region Applications
 export type ApplicationTypeListEntry = {
     id: number,
     description: string,
@@ -398,3 +406,150 @@ export type ApplicationHistoryApiResponse = {
     message: string,
     applicationHistory: HistoryEvent[]
 }
+//endregion
+
+//region Vouchers
+export type VoucherPublicCheck = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    number: number,
+    revoked: boolean,
+    currentState: string,
+    validFromDate: Date,
+    validToDate: Date,
+    permit: {
+        id: number,
+        description: string,
+        disabled: boolean,
+        simultaneousPlatesAmount: number,
+        applicationPlatesAmount: number,
+        voucherDurationDays: number
+    },
+    vehicles: {
+        id: number,
+        plate: string,
+        model: string,
+        brand: string,
+    }[]
+}
+
+export type VoucherListEntry = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    number: number,
+    revoked: boolean,
+    currentState: string,
+    validFromDate: Date,
+    validToDate: Date,
+    permit: {
+        id: number,
+        description: string,
+        disabled: boolean
+    },
+    vehicles: {
+        id: number,
+        plate: string,
+        model: string,
+        brand: string,
+    }[],
+    applications: {
+        id: number,
+        registerNumber: number,
+        registerDate: Date,
+        cf: string,
+        firstname: string,
+        lastname: string,
+        email: string,
+        targetHousePlace: string | null,
+        targetHouseLandRegistrySheet: string | null,
+        targetHouseLandRegistryMap: string | null,
+        targetHouseLandRegistrySubaltern: string | null,
+        targetHouseLandRegistryCategory: string | null,
+    }[]
+}
+
+export type VoucherDetails = {
+    id: number,
+    createdAt: Date,
+    updatedAt: Date,
+    number: number,
+    revoked: boolean,
+    currentState: string,
+    validFromDate: Date,
+    validToDate: Date,
+    notes: string,
+    generatedVoucherTemplatePath: string | null,
+    generatedAuthorizationTemplatePath: string | null,
+    generatedVoucherPdfPath: string | null,
+    generatedAuthorizationPdfPath: string | null,
+    signedAuthorizationPath: string | null,
+    permit: {
+        id: number,
+        description: string,
+        printedName: string,
+        disabled: boolean,
+        simultaneousPlatesAmount: number,
+        applicationPlatesAmount: number,
+        voucherDurationDays: number
+    },
+    applications: {
+        id: number,
+        registerNumber: number,
+        registerDate: Date,
+        cf: string,
+        firstname: string,
+        lastname: string,
+        email: string,
+        outcomeDate: Date | null,
+        outcomeDescription: string,
+        typeDescription: string,
+        vehicles: {
+            id: number,
+            createdAt: Date,
+            updatedAt: Date,
+            plate: string,
+            model: string,
+            brand: string,
+        }[],
+    }[],
+    vehicles: {
+        id: number,
+        createdAt: Date,
+        updatedAt: Date,
+        plate: string,
+        model: string,
+        brand: string,
+    }[],
+    emails: {
+        id: number,
+        to: string,
+        subject: string,
+        attachmentsPresent: boolean,
+    }[],
+}
+
+export type VoucherAvailableOptionsApiResponse = {
+    message: string,
+    permits: PermitListEntry[]
+}
+
+export type VoucherHistoryApiResponse = {
+    message: string,
+    voucherHistory: HistoryEvent[]
+}
+
+export type VoucherListApiResponse = {
+    message: string,
+    vouchersList: VoucherListEntry[],
+    pageData: PagerPageData
+}
+
+export type VoucherPublicCheckApiResponse = {
+    message: string,
+    voucherPublicCheck: VoucherPublicCheck
+}
+
+//endregion
+

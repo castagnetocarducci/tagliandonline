@@ -3,7 +3,6 @@ import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager, type DbTransactionType} from "../../db/databaseManager.ts";
 import {numerationRegisters, permits} from "../../db/schema.ts";
 import {eq} from "drizzle-orm";
-import {PgAsyncTransaction} from "drizzle-orm/pg-core";
 
 export const numerationsRouter = Router();
 

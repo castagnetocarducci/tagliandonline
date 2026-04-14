@@ -13,7 +13,7 @@ import {
     vouchersToVehicles
 } from "../../db/schema.ts";
 import {and, count, desc, eq, exists, gte, ilike, lte} from "drizzle-orm";
-import {type NextFunction, type Response, Router} from "express";
+import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 import {getVoucherNumerationNewData} from "./numerations.ts";
 import {getLastVehicleHistoryId} from "./vehicles.ts";
@@ -37,6 +37,7 @@ type VoucherPublicCheck = {
     updatedAt: Date,
     number: number,
     revoked: boolean,
+    currentState: string,
     validFromDate: Date,
     validToDate: Date,
     permit: {
@@ -61,6 +62,7 @@ type VoucherListEntry = {
     updatedAt: Date,
     number: number,
     revoked: boolean,
+    currentState: string,
     validFromDate: Date,
     validToDate: Date,
     permit: {
@@ -91,6 +93,7 @@ type VoucherDetails = {
     updatedAt: Date,
     number: number,
     revoked: boolean,
+    currentState: string,
     validFromDate: Date,
     validToDate: Date,
     notes: string,
@@ -189,6 +192,17 @@ type VoucherDetails = {
 //
 // */
 
+const getVoucherCurrentState = (revoked: boolean, validFromDate: string, validToDate: string) => {
+    if (revoked) {
+        return "Revocato";
+    } else if (new Date() > new Date(validToDate)) {
+        return "Scaduto";
+    } else if (new Date() < new Date(validFromDate)) {
+        return "Non ancora valido";
+    } else {
+        return "Valido";
+    }
+}
 
 vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
@@ -280,7 +294,11 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
         firstname,
         lastname,
         email,
-
+        targetHousePlace,
+        targetHouseLandRegistrySheet,
+        targetHouseLandRegistryMap,
+        targetHouseLandRegistrySubaltern,
+        targetHouseLandRegistryCategory,
 
         vehicleId,
         vehiclePlate,
@@ -371,6 +389,26 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
     if (email != null && email.trim() !== "") {
         applicationsCountConditions.push(ilike(applications.email, `%${email}%`));
         applicationsQueryConditions.push({email: {ilike: `%${email}%`}});
+    }
+    if (targetHousePlace != null && targetHousePlace.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHousePlace, `%${targetHousePlace}%`));
+        applicationsQueryConditions.push({targetHousePlace: {ilike: `%${targetHousePlace}%`}});
+    }
+    if (targetHouseLandRegistrySheet != null && targetHouseLandRegistrySheet.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySheet, `%${targetHouseLandRegistrySheet}%`));
+        applicationsQueryConditions.push({targetHouseLandRegistrySheet: {ilike: `%${targetHouseLandRegistrySheet}%`}});
+    }
+    if (targetHouseLandRegistryMap != null && targetHouseLandRegistryMap.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryMap, `%${targetHouseLandRegistryMap}%`));
+        applicationsQueryConditions.push({targetHouseLandRegistryMap: {ilike: `%${targetHouseLandRegistryMap}%`}});
+    }
+    if (targetHouseLandRegistrySubaltern != null && targetHouseLandRegistrySubaltern.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySubaltern, `%${targetHouseLandRegistrySubaltern}%`));
+        applicationsQueryConditions.push({targetHouseLandRegistrySubaltern: {ilike: `%${targetHouseLandRegistrySubaltern}%`}});
+    }
+    if (targetHouseLandRegistryCategory != null && targetHouseLandRegistryCategory.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryCategory, `%${targetHouseLandRegistryCategory}%`));
+        applicationsQueryConditions.push({targetHouseLandRegistryCategory: {ilike: `%${targetHouseLandRegistryCategory}%`}});
     }
 
     // email history
@@ -473,6 +511,7 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
         if (vouch.permit == null) {
             return res.status(500).json({message: "Errore nel reperire le associazioni di uno dei tagliandi"});
         }
+        const currentState = getVoucherCurrentState(vouch.revoked, vouch.validFromDate, vouch.validToDate);
         vouchersList.push({
             id: vouch.id,
             createdAt: vouch.createdAt,
@@ -480,6 +519,7 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
 
             number: vouch.number,
             revoked: vouch.revoked,
+            currentState: currentState,
             validFromDate: new Date(vouch.validFromDate),
             validToDate: new Date(vouch.validToDate),
 
@@ -573,13 +613,14 @@ const getVoucherDetails = async (voucher: DetailedVoucherQueryResult) => {
     if (voucher.permit == null) {
         throw new Error("Errore nel reperire le associazioni del tagliando");
     }
-
+    const currentState = getVoucherCurrentState(voucher.revoked, voucher.validFromDate, voucher.validToDate);
     const voucherDetails: VoucherDetails = {
         id: voucher.id,
         createdAt: voucher.createdAt,
         updatedAt: voucher.updatedAt,
         number: voucher.number,
         revoked: voucher.revoked,
+        currentState: currentState,
         validFromDate: new Date(voucher.validFromDate),
         validToDate: new Date(voucher.validToDate),
         notes: voucher.notes,
@@ -755,12 +796,16 @@ vouchersRouter.get("/check/:voucherID", async (req, res) => {
         res.status(500).json({message: "Errore nel reperire le associazioni del tagliando"});
         return;
     }
+
+    const currentState = getVoucherCurrentState(voucher.revoked, voucher.validFromDate, voucher.validToDate);
+
     const voucherPublicCheck: VoucherPublicCheck = {
         id: voucher.id,
         createdAt: voucher.createdAt,
         updatedAt: voucher.updatedAt,
         number: voucher.number,
         revoked: voucher.revoked,
+        currentState: currentState,
         validFromDate: new Date(voucher.validFromDate),
         validToDate: new Date(voucher.validToDate),
         permit: {
@@ -783,7 +828,7 @@ vouchersRouter.get("/check/:voucherID", async (req, res) => {
 
     res.json({
         message: "Tagliando acquisito con successo",
-        voucher: voucherPublicCheck
+        voucherPublicCheck: voucherPublicCheck
     });
 });
 
@@ -1216,7 +1261,7 @@ const generateTemplates = async (voucher: DetailedVoucherQueryResult): Promise<{
                 targaStr: v.plate,
             }
         }),
-        verificationUrl: ConfigProvider.instance.configs.baseUrl + "/vouchers/check/" + voucher.id,
+        verificationUrl: ConfigProvider.instance.configs.baseUrl + "/check-voucher/" + voucher.id,
     }
 
     const resVoucher = await generateVoucherDocumentFromTemplate(voucherBaseTemplatePath, "tagliando", voucher.id, voucherTemplateData);
@@ -1499,13 +1544,12 @@ export const createNewVoucher = async (tx: DbTransactionType, creationData: Vouc
         throw new Error("Errore durante la creazione del tagliando: data esito non valida");
     }
     const {number, durationDays} = await getVoucherNumerationNewData(tx, creationData.permitId);
-    const expiryDateT: Date = new Date(validFromDateT);
+    let  expiryDateT: Date = new Date(validFromDateT);
     if (creationData.validToDate != null && creationData.validToDate.trim() !== "" && new Date(creationData.validToDate).toString() != "Invalid Date") {
-        expiryDateT.setDate(new Date(creationData.validToDate).getDate());
+        expiryDateT = new Date(creationData.validToDate);
     } else {
         expiryDateT.setDate(validFromDateT.getDate() + durationDays);
     }
-    expiryDateT.setDate(expiryDateT.getDate() + durationDays);
     const createdVoucher = await tx.insert(vouchers).values({
         number: number,
         revoked: false,

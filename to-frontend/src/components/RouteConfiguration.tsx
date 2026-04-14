@@ -3,7 +3,7 @@ import {Home} from "../pages/Home.tsx";
 import {NotFound} from "../pages/NotFound.tsx";
 import {Inspections} from "../pages/Inspections.tsx";
 import {Users} from "../pages/users/Users.tsx";
-import {Vouchers} from "../pages/Vouchers.tsx";
+import {CheckVoucher, Vouchers} from "../pages/vouchers/vouchers/CheckVoucher.tsx";
 import {Profile} from "../pages/profile/Profile.tsx";
 import {PermitsManagement} from "../pages/permits/PermitsManagement.tsx";
 import {Login} from "../pages/profile/Login.tsx";
@@ -14,6 +14,7 @@ import {EditUser} from "../pages/users/EditUser.tsx";
 import {NewUser} from "../pages/users/NewUser.tsx";
 import {VehiclesManagement} from "../pages/vehicles/VehiclesManagement.tsx";
 import {ApplicationsManagement} from "../pages/applications/ApplicationsManagement.tsx";
+import {VouchersManagement} from "../pages/vouchers/VouchersManagement.tsx";
 
 export const RouteConfiguration = () => {
     const userDataCtx = useUserDataContext()
@@ -42,22 +43,18 @@ export const RouteConfiguration = () => {
                 <>
                     <Route path="/applications/*" element={<Login/>}/>
                     <Route path="/inspections/*" element={<Login/>}/>
-                    <Route path="/vouchers/*" element={<Login/>}/>
+                    <Route path="/vouchers/*" element={<VouchersManagement/>}/>
                     <Route path="/permits/*" element={<Login/>}/>
                     <Route path="/users/*" element={<Login/>}/>
                 </>
             )}
+            <Route path="/check-voucher/:voucherID" element={<CheckVoucher/>}/>
+
             <Route path="/profile/*" element={<Profile/>}/>
             <Route path="/login/*" element={<Login/>}/>
             <Route path="/password-reset/:token" element={<PasswordResetExecute/>}/>
             <Route path="/password-reset/" element={<PasswordResetExecute/>}/>
             <Route path="/password-reset-request" element={<PasswordResetRequest/>}/>
-            {/*{userData.role >= 2 &&*/}
-            {/*    <Route path="/positions" element={<MapPos/>}/>*/}
-            {/*}*/}
-            {/*{userData.role >= 5 &&*/}
-            {/*    <Route path="/users" element={<Users/>}/>*/}
-            {/*}*/}
         </Routes>
     )
 }

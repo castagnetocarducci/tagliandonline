@@ -4,7 +4,7 @@ import type {
     ApplicationAvailableOptionsApiResponse,
     ApplicationOutcomeListEntry,
     ApplicationTypeListEntry,
-    PermitListEntry
+    PermitListEntry, VoucherAvailableOptionsApiResponse
 } from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput, type ValidationSupportedTypes} from "../../../hooks/useValidateFormInput.ts";
@@ -18,30 +18,26 @@ import {type SelectOption, ValidatedSelect} from "../../../components/form/Valid
 import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesList.tsx";
 import {validateEmail} from "../../../utils/CommonFunctions.ts";
 
-export function NewApplication() {
+export function NewVoucher() {
     const navigate = useNavigate();
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
-    const [applicationTypeList, setApplicationTypeList] = useState<ApplicationTypeListEntry[]>([]);
-    const [applicationOutcomeList, setApplicationOutcomeList] = useState<ApplicationOutcomeListEntry[]>([]);
     const [permitsList, setPermitsList] = useState<PermitListEntry[]>([]);
     const [vehiclesAmount, setVehiclesAmount] = useState<number>(2);
 
     useEffect(() => {
-        const abort = fetchApiAsync<ApplicationAvailableOptionsApiResponse>({
-            urlFromApiRoot: "/applications/availableOptions",
+        const abort = fetchApiAsync<VoucherAvailableOptionsApiResponse>({
+            urlFromApiRoot: "/vouchers/availableOptions",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
                 if (data != null) {
-                    setApplicationTypeList(data.applicationTypes);
-                    setApplicationOutcomeList(data.applicationOutcomes);
                     setPermitsList(data.permits);
                 }
             }
         });
         return abort;
-    }, [setErr, setLoading, setSucc, setApplicationTypeList, setApplicationOutcomeList, setPermitsList]);
+    }, [setErr, setLoading, setSucc, setPermitsList]);
 
     const onFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
         e.preventDefault();
@@ -51,7 +47,7 @@ export function NewApplication() {
         }
         const formValues = getValueObject();
         fetchApiAsync<AddedElementMessageApiResponse>({
-            urlFromApiRoot: "/applications/new",
+            urlFromApiRoot: "/vouchers/new",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,
@@ -59,92 +55,10 @@ export function NewApplication() {
             },
             callback: (data) => {
                 if (data != null && data.id != null) {
-                    navigate("/applications/list/" + data.id);
+                    navigate("/vouchers/list/" + data.id);
                 }
             }
         });
-    }
-
-    //TODO: redo
-    const createFakeVehicles = () => {
-        for (let i = 0; i < 100; i++) {
-            fetchApiAsync<AddedElementMessageApiResponse>({
-                urlFromApiRoot: "/applications/new",
-                errSuccLoading: {setErr, setSucc, setLoading},
-                requestInit: {
-                    ...defaultPOSTRequestInit,
-                    body: JSON.stringify({
-                        plate: "AB" + i,
-                        brand: "Marca " + i,
-                        model: "Modello " + i
-                    })
-                },
-                callback: (data) => {
-                    console.log(data);
-                }
-            });
-        }
-        for (let i = 0; i < 100; i++) {
-            fetchApiAsync<AddedElementMessageApiResponse>({
-                urlFromApiRoot: "/applications/new",
-                errSuccLoading: {setErr, setSucc, setLoading},
-                requestInit: {
-                    ...defaultPOSTRequestInit,
-                    body: JSON.stringify({
-                        plate: i + "CD",
-                        brand: "Marca " + i,
-                        model: "Modello " + i
-                    })
-                },
-                callback: (data) => {
-                    console.log(data);
-                }
-            });
-        }
-        for (let i = 0; i < 100; i++) {
-            fetchApiAsync<AddedElementMessageApiResponse>({
-                urlFromApiRoot: "/applications/new",
-                errSuccLoading: {setErr, setSucc, setLoading},
-                requestInit: {
-                    ...defaultPOSTRequestInit,
-                    body: JSON.stringify({
-                        plate: "EF" + i + "HG",
-                        brand: "Marca " + i,
-                        model: "Modello " + i
-                    })
-                },
-                callback: (data) => {
-                    console.log(data);
-                }
-            });
-        }
-    }
-
-
-    const selectableApplicationTypes: SelectOption[] = [{label: "seleziona", value: ""}];
-    if (applicationTypeList.length > 0) {
-        for (const applicationTypeListEntry of applicationTypeList) {
-            if (applicationTypeListEntry.disabled) {
-                continue;
-            }
-            selectableApplicationTypes.push({
-                label: applicationTypeListEntry.description,
-                value: "" + applicationTypeListEntry.id
-            })
-        }
-    }
-
-    const selectableApplicationOutcomes: SelectOption[] = [{label: "seleziona", value: ""}];
-    if (applicationOutcomeList.length > 0) {
-        for (const applicationOutcomeListEntry of applicationOutcomeList) {
-            if (applicationOutcomeListEntry.disabled) {
-                continue;
-            }
-            selectableApplicationOutcomes.push({
-                label: applicationOutcomeListEntry.description,
-                value: "" + applicationOutcomeListEntry.id
-            })
-        }
     }
 
     const selectablePermits: SelectOption[] = [{label: "seleziona", value: ""}];
@@ -173,7 +87,7 @@ export function NewApplication() {
             <GoBack link>
                 Torna indietro
             </GoBack>
-            <h2>Nuova domanda</h2>
+            <h2>Nuovo tagliando</h2>
 
             <Form onSubmit={onFormSubmit} className={"mt-4"}>
 
@@ -430,26 +344,6 @@ export function NewApplication() {
                                          valueChangedCallback={selectedPermitChanged}
                                          options={selectablePermits}/>
                     </Col>
-                    <Col md={4}>
-                        <ValidatedSelect name={"typeId"} validationFunc={() => true}
-                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                         defaultValue={""}
-                                         isMandatory={true}
-                                         errorMessage={"Compilare i campi obbligatori"}
-                                         setNewValidation={setValidation}
-                                         labelText={"Tipo"}
-                                         options={selectableApplicationTypes}/>
-                    </Col>
-                    <Col md={4}>
-                        <ValidatedSelect name={"outcomeId"} validationFunc={() => true}
-                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                         defaultValue={""}
-                                         isMandatory={true}
-                                         errorMessage={"Compilare i campi obbligatori"}
-                                         setNewValidation={setValidation}
-                                         labelText={"Esito"}
-                                         options={selectableApplicationOutcomes}/>
-                    </Col>
                 </Row>
 
                 <Row>
@@ -482,14 +376,14 @@ export function NewApplication() {
                 {/* TODO: scelta tagliando */}
             </Row>
 
-            {import.meta.env.DEV && (
-                <Row className={"mt-4"}>
-                    <Col md={4}>
-                        <Button color={"primary"} onClick={() => createFakeVehicles()} outline> Crea veicoli
-                            fittizi </Button>
-                    </Col>
-                </Row>
-            )}
+            {/*{import.meta.env.DEV && (*/}
+            {/*    <Row className={"mt-4"}>*/}
+            {/*        <Col md={4}>*/}
+            {/*            <Button color={"primary"} onClick={() => createFakeVehicles()} outline> Crea veicoli*/}
+            {/*                fittizi </Button>*/}
+            {/*        </Col>*/}
+            {/*    </Row>*/}
+            {/*)}*/}
 
         </Container>
     );

@@ -20,7 +20,7 @@ import {type SelectOption, ValidatedSelect} from "../../../components/form/Valid
 import {dateStrToISOString, validateEmail} from "../../../utils/CommonFunctions.ts";
 import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesList.tsx";
 
-export function EditApplication() {
+export function EditVoucher() {
     const navigate = useNavigate();
     const [applicationDetails, setApplicationDetails] = useState<ApplicationDetails | null>(null);
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
@@ -33,7 +33,7 @@ export function EditApplication() {
 
     useEffect(() => {
         const abort = fetchApiAsync<ApplicationAvailableOptionsApiResponse>({
-            urlFromApiRoot: "/applications/availableOptions",
+            urlFromApiRoot: "/vouchers/availableOptions",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
@@ -45,17 +45,17 @@ export function EditApplication() {
             }
         });
         return abort;
-    }, [setErr, setLoading, setSucc, setApplicationTypeList, setApplicationOutcomeList, setPermitsList]);
+    }, [setErr, setLoading, setSucc, setApplicationTypeList, setApplicationOutcomeList]);
 
     useEffect(() => {
         if (urlParams.applicationID == null || urlParams.applicationID == "") {
-            navigate("/applications/list");
+            navigate("/vouchers/list");
         }
     }, [navigate, urlParams]);
 
     useEffect(() => {
         const abort = fetchApiAsync<ApplicationDetailsApiResponse>({
-            urlFromApiRoot: "/applications/detail/" + urlParams.applicationID,
+            urlFromApiRoot: "/vouchers/detail/" + urlParams.applicationID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
@@ -75,7 +75,7 @@ export function EditApplication() {
         }
         const formValues = getValueObject();
         fetchApiAsync<DataMessage>({
-            urlFromApiRoot: "/applications/edit/" + urlParams.applicationID,
+            urlFromApiRoot: "/vouchers/edit/" + urlParams.applicationID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,
