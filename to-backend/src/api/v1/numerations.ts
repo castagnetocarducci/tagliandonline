@@ -1,6 +1,6 @@
 import {Router} from "express";
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
-import {DatabaseManager} from "../../db/databaseManager.ts";
+import {DatabaseManager, type DbTransactionType} from "../../db/databaseManager.ts";
 import {numerationRegisters, permits} from "../../db/schema.ts";
 import {eq} from "drizzle-orm";
 import {PgAsyncTransaction} from "drizzle-orm/pg-core";
@@ -159,7 +159,7 @@ numerationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asyn
     }
 );
 
-export const getVoucherNumerationNewData = async (tx: PgAsyncTransaction<any>, permitID: number): Promise<{number: number, durationDays: number}> => {
+export const getVoucherNumerationNewData = async (tx: DbTransactionType, permitID: number): Promise<{number: number, durationDays: number}> => {
     const numerationRes =
         await tx.select().from(permits).where(eq(permits.id, permitID)).leftJoin(numerationRegisters, eq(permits.numerationRegisterId, numerationRegisters.id));
     if (numerationRes == null || numerationRes.length !== 1 || numerationRes[0] == null ||

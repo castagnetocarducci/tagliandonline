@@ -1,6 +1,6 @@
 import {Router} from "express";
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
-import {DatabaseManager} from "../../db/databaseManager.ts";
+import {DatabaseManager, type DbTransactionType} from "../../db/databaseManager.ts";
 import {permits, permitsHistory} from "../../db/schema.ts";
 import {eq} from "drizzle-orm";
 import {type NumerationListEntry} from "./numerations.ts";
@@ -505,7 +505,7 @@ permitsRouter.get("/availableTemplates", middlewareAuthCheck(["admin", "operator
     }
 );
 
-export const getLastPermitHistoryId = async (tx: PgAsyncTransaction<any>, permitId: number): Promise<number> => {
+export const getLastPermitHistoryId = async (tx: DbTransactionType, permitId: number): Promise<number> => {
     const foundPermits = await tx.select().from(permits).where(eq(permits.id, permitId));
     if (foundPermits == null || foundPermits.length !== 1 || foundPermits[0] == null || foundPermits[0].lastPermitHistoryId == null) {
         throw new Error("Errore permesso non trovato");
@@ -513,7 +513,7 @@ export const getLastPermitHistoryId = async (tx: PgAsyncTransaction<any>, permit
     return foundPermits[0].lastPermitHistoryId;
 }
 
-export const getPermit = async (tx: PgAsyncTransaction<any>, permitId: number) => {
+export const getPermit = async (tx: DbTransactionType, permitId: number) => {
     const foundPermits = await tx.select().from(permits).where(eq(permits.id, permitId));
     if (foundPermits == null || foundPermits.length !== 1 || foundPermits[0] == null || foundPermits[0].lastPermitHistoryId == null) {
         throw new Error("Errore permesso non trovato");
