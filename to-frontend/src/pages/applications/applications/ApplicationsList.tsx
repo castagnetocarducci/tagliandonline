@@ -155,6 +155,7 @@ export function ApplicationsList() {
         email,
         birthDate,
         birthCity,
+        residenceCity,
         residencePlace,
         targetHousePlace,
         targetHouseLandRegistrySheet,
@@ -340,7 +341,7 @@ export function ApplicationsList() {
                     </Col>
                 </Row>
                 <Row>
-                    <Col md={3}>
+                    <Col md={2}>
                         <ValidatedInput name={"birthDate"} labelText={"Data di nascita"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -351,12 +352,23 @@ export function ApplicationsList() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "date"}}/>
                     </Col>
-                    <Col md={3}>
+                    <Col md={2}>
                         <ValidatedInput name={"birthCity"} labelText={"Luogo di nascita"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
                                         validationMark={false}
                                         defaultValue={searchParams.get("birthCity") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={2}>
+                        <ValidatedInput name={"residenceCity"} labelText={"Comune di residenza"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("residenceCity") ?? ""}
                                         isMandatory={false}
                                         errorMessage={"Compilare i campi obbligatori"}
                                         setNewValidation={setValidation}

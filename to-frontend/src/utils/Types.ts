@@ -340,6 +340,7 @@ export type ApplicationDetails = {
     email: string,
     birthDate: Date | null,
     birthCity: string | null,
+    residenceCity: string | null,
     residencePlace: string | null,
     targetHousePlace: string | null,
     targetHouseLandRegistrySheet: string | null,

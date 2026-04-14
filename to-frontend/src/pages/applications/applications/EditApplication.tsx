@@ -280,10 +280,11 @@ export function EditApplication() {
                             {/*
        birthDate,
         birthCity,
+        residenceCity,
         residencePlace,
         targetHousePlace,*/}
 
-                            <Col md={3}>
+                            <Col md={2}>
                                 <ValidatedInput name={"birthDate"} labelText={"Data di nascita"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -294,12 +295,23 @@ export function EditApplication() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "date"}}/>
                             </Col>
-                            <Col md={3}>
+                            <Col md={2}>
                                 <ValidatedInput name={"birthCity"} labelText={"Luogo di nascita"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
                                                 defaultValue={applicationDetails.birthCity != null ? applicationDetails.birthCity : ""}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "text"}}/>
+                            </Col>
+                            <Col md={2}>
+                                <ValidatedInput name={"residenceCity"} labelText={"Comune di residenza"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={applicationDetails.residenceCity != null ? applicationDetails.residenceCity : ""}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}

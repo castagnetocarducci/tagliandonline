@@ -103,6 +103,7 @@ type ApplicationDetails = {
     email: string,
     birthDate: Date | null,
     birthCity: string | null,
+    residenceCity: string | null,
     residencePlace: string | null,
     targetHousePlace: string | null,
     targetHouseLandRegistrySheet: string | null,
@@ -217,6 +218,7 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
         email,
         birthDate,
         birthCity,
+        residenceCity,
         residencePlace,
         targetHousePlace,
         targetHouseLandRegistrySheet,
@@ -290,6 +292,10 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
     if (birthCity != null && birthCity.trim() !== "") {
         applicationsCountConditions.push(ilike(applications.birthCity, `%${birthCity}%`));
         applicationsQueryConditions.push({birthCity: {ilike: `%${birthCity}%`}});
+    }
+    if (residenceCity != null && residenceCity.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.residenceCity, `%${residenceCity}%`));
+        applicationsQueryConditions.push({residenceCity: {ilike: `%${residenceCity}%`}});
     }
     if (residencePlace != null && residencePlace.trim() !== "") {
         applicationsCountConditions.push(ilike(applications.residencePlace, `%${residencePlace}%`));
@@ -567,6 +573,7 @@ applicationsRouter.get("/detail/:applicationID", middlewareAuthCheck(["admin", "
         email: application.email,
         birthDate: application.birthDate != null ? new Date(application.birthDate) : null,
         birthCity: application.birthCity,
+        residenceCity: application.residenceCity,
         residencePlace: application.residencePlace,
         targetHousePlace: application.targetHousePlace,
         targetHouseLandRegistrySheet: application.targetHouseLandRegistrySheet,
@@ -703,6 +710,10 @@ applicationsRouter.get("/history/:applicationID", middlewareAuthCheck(["admin", 
                 description: "Luogo di nascita",
                 value: historyElem.birthCity != null ? historyElem.birthCity : ""
             });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "residenceCity", {
+                description: "Luogo di residenza",
+                value: historyElem.residenceCity != null ? historyElem.residenceCity : ""
+            });
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "residencePlace", {
                 description: "Luogo di residenza",
                 value: historyElem.residencePlace != null ? historyElem.residencePlace : ""
@@ -833,6 +844,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
         email,
         birthDate,
         birthCity,
+        residenceCity,
         residencePlace,
         targetHousePlace,
         targetHouseLandRegistrySheet,
@@ -872,6 +884,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             email === toUpdateApplication.email &&
             birthDate === toUpdateApplication.birthDate &&
             birthCity === toUpdateApplication.birthCity &&
+            residenceCity === toUpdateApplication.residenceCity &&
             residencePlace === toUpdateApplication.residencePlace &&
             targetHousePlace === toUpdateApplication.targetHousePlace &&
             targetHouseLandRegistrySheet === toUpdateApplication.targetHouseLandRegistrySheet &&
@@ -929,6 +942,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 email: email,
                 birthDate: birthDate,
                 birthCity: birthCity,
+                residenceCity: residenceCity,
                 residencePlace: residencePlace,
                 targetHousePlace: targetHousePlace,
                 targetHouseLandRegistrySheet: targetHouseLandRegistrySheet,
@@ -986,6 +1000,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 email: updatedApplication[0].email,
                 birthDate: updatedApplication[0].birthDate,
                 birthCity: updatedApplication[0].birthCity,
+                residenceCity: updatedApplication[0].residenceCity,
                 residencePlace: updatedApplication[0].residencePlace,
                 targetHousePlace: updatedApplication[0].targetHousePlace,
                 targetHouseLandRegistrySheet: updatedApplication[0].targetHouseLandRegistrySheet,
@@ -1066,6 +1081,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
         email,
         birthDate,
         birthCity,
+        residenceCity,
         residencePlace,
         targetHousePlace,
         targetHouseLandRegistrySheet,
@@ -1125,6 +1141,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 email: email,
                 birthDate: birthDate,
                 birthCity: birthCity,
+                residenceCity: residenceCity,
                 residencePlace: residencePlace,
                 targetHousePlace: targetHousePlace,
                 targetHouseLandRegistrySheet: targetHouseLandRegistrySheet,
@@ -1183,6 +1200,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 email: createdApplication[0].email,
                 birthDate: createdApplication[0].birthDate,
                 birthCity: createdApplication[0].birthCity,
+                residenceCity: createdApplication[0].residenceCity,
                 residencePlace: createdApplication[0].residencePlace,
                 targetHousePlace: createdApplication[0].targetHousePlace,
                 targetHouseLandRegistrySheet: createdApplication[0].targetHouseLandRegistrySheet,

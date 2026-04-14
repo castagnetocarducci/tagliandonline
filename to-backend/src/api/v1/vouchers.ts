@@ -1089,7 +1089,6 @@ vouchersRouter.post("/upload/:voucherID", middlewareAuthCheck(["admin", "operato
         }
 
 
-
     });
 
 
@@ -1203,7 +1202,7 @@ const generateTemplates = async (voucher: DetailedVoucherQueryResult): Promise<{
         comuneNascitaRichiedenteStr: targetApplication.birthCity == null ? "N/A" : targetApplication.birthCity,
         dataNascitaRichiedenteStr: targetApplication.birthDate == null ? "N/A" : targetApplication.birthDate,
         codiceFiscaleRichiedenteStr: targetApplication.cf == null ? "N/A" : targetApplication.cf,
-        comuneResidenzaRichiedenteStr: "N/A", //TODO: aggiungere?    targetApplication.residencePlace == null ? "N/A" : targetApplication.residencePlace,
+        comuneResidenzaRichiedenteStr: targetApplication.residenceCity == null ? "N/A" : targetApplication.residenceCity,
         indirizzoResidenzaRichiedenteStr: targetApplication.residencePlace == null ? "N/A" : targetApplication.residencePlace,
         indirizzoAbitazioneDesignataStr: targetApplication.targetHousePlace == null ? "N/A" : targetApplication.targetHousePlace,
         catastoFoglioAbitazioneDesignataStr: targetApplication.targetHouseLandRegistrySheet == null ? "N/A" : targetApplication.targetHouseLandRegistrySheet,
@@ -1252,18 +1251,36 @@ const convertVoucherPDF = async (generatedVoucherTemplate: string, generatedAuth
     }
 }
 
+// const middlewareUploadVouchersMulter = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+//     if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
+//         res.status(400).json({message: "Tagliando non trovato"});
+//         return;
+//     }
+//     const voucherID = parseInt(req.params.voucherID as string);
+//
+//     const multerRequestHandler = uploadVouchersMulterFactory(voucherID).fields([
+//         {name: "generatedVoucherTemplate", maxCount: 1},
+//         {name: "generatedAuthorizationTemplate", maxCount: 1},
+//         {name: "signedAuthorizationPath", maxCount: 1}
+//     ]);
+//
+//     multerRequestHandler(req, res, next);
+// }
 
-export const middlewareVoucherUpdateParamsCheck = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+
+vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
         return;
     }
+    const modifiedByAuthUserId = req.user.id;
 
     if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
         res.status(400).json({message: "Tagliando non trovato"});
         return;
     }
     const voucherID = parseInt(req.params.voucherID as string);
+
     if (req.body.validFromDate == null || new Date(req.body.validFromDate).toString() === "Invalid Date" ||
         req.body.validToDate == null || new Date(req.body.validToDate).toString() === "Invalid Date" ||
         req.body.revoked == null || typeof req.body.revoked !== "boolean" ||
@@ -1285,6 +1302,7 @@ export const middlewareVoucherUpdateParamsCheck = async (req: AuthRequest, res: 
 
     const db = DatabaseManager.instance.db;
     try {
+
         const toUpdateVoucher = await db.query.vouchers.findFirst({
             where: {id: voucherID},
             with: {vehicles: true},
@@ -1295,7 +1313,7 @@ export const middlewareVoucherUpdateParamsCheck = async (req: AuthRequest, res: 
         }
 
         // controllare che non ci siano campi da aggiornare
-        req.body.parametersNeedUpdate = true;
+        let parametersNeedUpdate = true;
         if (validFromDate === toUpdateVoucher.validFromDate &&
             validToDate === toUpdateVoucher.validToDate &&
             revoked === toUpdateVoucher.revoked &&
@@ -1303,59 +1321,8 @@ export const middlewareVoucherUpdateParamsCheck = async (req: AuthRequest, res: 
             permitId === toUpdateVoucher.permitId &&
             toUpdateVoucher.vehicles.length === vehicles.length &&
             toUpdateVoucher.vehicles.map((vehicle) => vehicle.id).every((id) => vehicles.includes(id))) {
-            req.body.parametersNeedUpdate = false;
+            parametersNeedUpdate = false;
         }
-
-        next();
-    } catch (e) {
-        res.status(500).json({message: "Errore durante l'aggiornamento della domanda: " + e});
-        return;
-    }
-}
-
-// const middlewareUploadVouchersMulter = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-//     if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
-//         res.status(400).json({message: "Tagliando non trovato"});
-//         return;
-//     }
-//     const voucherID = parseInt(req.params.voucherID as string);
-//
-//     const multerRequestHandler = uploadVouchersMulterFactory(voucherID).fields([
-//         {name: "generatedVoucherTemplate", maxCount: 1},
-//         {name: "generatedAuthorizationTemplate", maxCount: 1},
-//         {name: "signedAuthorizationPath", maxCount: 1}
-//     ]);
-//
-//     multerRequestHandler(req, res, next);
-// }
-
-
-
-vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore"]),
-    middlewareVoucherUpdateParamsCheck,
-    async (req: AuthRequest, res) => {
-        if (req.user == null) {
-            res.status(401).json({message: "Non autorizzato"});
-            return;
-        }
-        const modifiedByAuthUserId = req.user.id;
-
-        if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
-            res.status(400).json({message: "Tagliando non trovato"});
-            return;
-        }
-        const voucherID = parseInt(req.params.voucherID as string);
-
-        const {
-            validFromDate,
-            validToDate,
-            revoked,
-            notes,
-            permitId,
-            vehicles,
-        } = req.body;
-
-        const parametersNeedUpdate = req.body.parametersNeedUpdate as boolean; //from update params check middleware
 
         // se non ci sono parametri da aggiornare e non ci sono nuovi file caricati esco subito
         if (!parametersNeedUpdate) {
@@ -1366,64 +1333,62 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
             return;
         }
 
-        const db = DatabaseManager.instance.db;
-        try {
-            const updatedVoucherId = await db.transaction(async (tx) => {
-                const permit = await getPermit(tx, permitId);
-                const permitHistoryId = permit.lastPermitHistoryId as number;
+        const updatedVoucherId = await db.transaction(async (tx) => {
+            const permit = await getPermit(tx, permitId);
+            const permitHistoryId = permit.lastPermitHistoryId as number;
 
-                if (permit.applicationPlatesAmount != vehicles.length) {
-                    res.status(400).json({message: "Numero di veicoli non valido"});
-                    tx.rollback();
-                    return;
-                }
-
-                const updatedVoucher = await tx.update(vouchers).set({
-                    validFromDate: validFromDate,
-                    validToDate: validToDate,
-                    revoked: revoked,
-                    notes: notes,
-                    permitId: permitId
-                }).where(eq(vouchers.id, voucherID)).returning();
-                if (updatedVoucher == null || updatedVoucher.length !== 1 || updatedVoucher[0] == null) {
-                    console.log("Errore durante l'aggiornamento del tagliando");
-                    tx.rollback();
-                    return null;
-                }
-
-                const deleteResult = await tx.delete(vouchersToVehicles).where(eq(vouchersToVehicles.voucherId, voucherID));
-                const vehiclesToInsertVoucher = (vehicles as number[]).map((vehicleId) => {
-                    return {
-                        voucherId: voucherID,
-                        vehicleId: vehicleId as number,
-                    }
-                });
-                const insertResult = await tx.insert(vouchersToVehicles).values(vehiclesToInsertVoucher);
-                if (insertResult == null || insertResult.rowCount !== vehicles.length) {
-                    console.log("Errore durante l'aggiornamento delle associazioni tra tagliando e veicoli");
-                    tx.rollback();
-                    return null;
-                }
-
-                const updatedVoucherHistoryId = await updateVoucherHistory(tx,
-                    updatedVoucher[0], vehicles,
-                    modifiedByAuthUserId, permitHistoryId);
-                return updatedVoucher[0].id;
-            });
-            if (updatedVoucherId == null) {
-                res.status(500).json({message: "Errore durante l'aggiornamento del tagliando"});
+            if (permit.applicationPlatesAmount != vehicles.length) {
+                res.status(400).json({message: "Numero di veicoli non valido"});
+                tx.rollback();
                 return;
             }
-            res.status(200).json({
-                message: "Tagliando aggiornato con successo",
-                needTemplateGeneration: true
+
+            const updatedVoucher = await tx.update(vouchers).set({
+                validFromDate: validFromDate,
+                validToDate: validToDate,
+                revoked: revoked,
+                notes: notes,
+                permitId: permitId
+            }).where(eq(vouchers.id, voucherID)).returning();
+            if (updatedVoucher == null || updatedVoucher.length !== 1 || updatedVoucher[0] == null) {
+                console.log("Errore durante l'aggiornamento del tagliando");
+                tx.rollback();
+                return null;
+            }
+
+            const deleteResult = await tx.delete(vouchersToVehicles).where(eq(vouchersToVehicles.voucherId, voucherID));
+            const vehiclesToInsertVoucher = (vehicles as number[]).map((vehicleId) => {
+                return {
+                    voucherId: voucherID,
+                    vehicleId: vehicleId as number,
+                }
             });
-            return;
-        } catch (e) {
-            res.status(500).json({message: "Errore durante l'aggiornamento del tagliando: " + e});
+            const insertResult = await tx.insert(vouchersToVehicles).values(vehiclesToInsertVoucher);
+            if (insertResult == null || insertResult.rowCount !== vehicles.length) {
+                console.log("Errore durante l'aggiornamento delle associazioni tra tagliando e veicoli");
+                tx.rollback();
+                return null;
+            }
+
+            const updatedVoucherHistoryId = await updateVoucherHistory(tx,
+                updatedVoucher[0], vehicles,
+                modifiedByAuthUserId, permitHistoryId);
+            return updatedVoucher[0].id;
+        });
+        if (updatedVoucherId == null) {
+            res.status(500).json({message: "Errore durante l'aggiornamento del tagliando"});
             return;
         }
-    });
+        res.status(200).json({
+            message: "Tagliando aggiornato con successo",
+            needTemplateGeneration: true
+        });
+        return;
+    } catch (e) {
+        res.status(500).json({message: "Errore durante l'aggiornamento del tagliando: " + e});
+        return;
+    }
+});
 
 
 vouchersRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
@@ -1474,10 +1439,6 @@ vouchersRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (
                 modifiedByAuthUserId: modifiedByAuthUserId,
                 vehicles: vehicles,
             });
-
-            // TODO: generazione documenti
-            // await generateDocumentFromTemplate()
-
             return newVoucherId;
         });
         if (createdVoucherId == null) {
