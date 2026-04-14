@@ -3,7 +3,7 @@ import {Home} from "../pages/Home.tsx";
 import {NotFound} from "../pages/NotFound.tsx";
 import {Inspections} from "../pages/Inspections.tsx";
 import {Users} from "../pages/users/Users.tsx";
-import {CheckVoucher, Vouchers} from "../pages/vouchers/vouchers/CheckVoucher.tsx";
+import {CheckVoucher} from "../pages/vouchers/vouchers/CheckVoucher.tsx";
 import {Profile} from "../pages/profile/Profile.tsx";
 import {PermitsManagement} from "../pages/permits/PermitsManagement.tsx";
 import {Login} from "../pages/profile/Login.tsx";
@@ -27,7 +27,7 @@ export const RouteConfiguration = () => {
                 <>
                     <Route path="/applications/*" element={<ApplicationsManagement/>}/>
                     <Route path="/inspections/*" element={<Inspections/>}/>
-                    <Route path="/vouchers/*" element={<Vouchers/>}/>
+                    <Route path="/vouchers/*" element={<VouchersManagement/>}/>
                     <Route path="/permits/*" element={<PermitsManagement/>}/>
                     <Route path="/vehicles/*" element={<VehiclesManagement/>}/>
                 </>
@@ -43,13 +43,12 @@ export const RouteConfiguration = () => {
                 <>
                     <Route path="/applications/*" element={<Login/>}/>
                     <Route path="/inspections/*" element={<Login/>}/>
-                    <Route path="/vouchers/*" element={<VouchersManagement/>}/>
+                    <Route path="/vouchers/*" element={<Login/>}/>
                     <Route path="/permits/*" element={<Login/>}/>
                     <Route path="/users/*" element={<Login/>}/>
                 </>
             )}
             <Route path="/check-voucher/:voucherID" element={<CheckVoucher/>}/>
-
             <Route path="/profile/*" element={<Profile/>}/>
             <Route path="/login/*" element={<Login/>}/>
             <Route path="/password-reset/:token" element={<PasswordResetExecute/>}/>

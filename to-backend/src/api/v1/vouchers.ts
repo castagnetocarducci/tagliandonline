@@ -1335,6 +1335,10 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
         res.status(400).json({message: "Parametri di creazione non validi"});
         return;
     }
+    if (new Date(req.body.validToDate) < new Date(req.body.validFromDate)) {
+        res.status(400).json({message: "Data di scadenza antecedente alla data di inizio validità"});
+        return;
+    }
 
     const {
         validFromDate,
@@ -1450,8 +1454,13 @@ vouchersRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (
         res.status(400).json({message: "Parametri di creazione non validi"});
         return;
     }
+    //validToDate can be null: in that case it will be generated from permit
     if (req.body.validToDate != null && (req.body.validToDate.trim() === "" || new Date(req.body.validToDate).toString() === "Invalid Date")) {
         req.body.validToDate = null;
+    }
+    if (req.body.validToDate != null && new Date(req.body.validToDate) < new Date(req.body.validFromDate)) {
+        res.status(400).json({message: "Data di scadenza antecedente alla data di inizio validità"});
+        return;
     }
 
     const {
@@ -1544,7 +1553,7 @@ export const createNewVoucher = async (tx: DbTransactionType, creationData: Vouc
         throw new Error("Errore durante la creazione del tagliando: data esito non valida");
     }
     const {number, durationDays} = await getVoucherNumerationNewData(tx, creationData.permitId);
-    let  expiryDateT: Date = new Date(validFromDateT);
+    let expiryDateT: Date = new Date(validFromDateT);
     if (creationData.validToDate != null && creationData.validToDate.trim() !== "" && new Date(creationData.validToDate).toString() != "Invalid Date") {
         expiryDateT = new Date(creationData.validToDate);
     } else {
