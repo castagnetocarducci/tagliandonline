@@ -597,7 +597,7 @@ const getDetailedVoucher = async (tx: DbTransactionType, voucherID: number) => {
 
 type DetailedVoucherQueryResult = Awaited<ReturnType<typeof getDetailedVoucher>>;
 
-const getVoucher = async (tx: DbTransactionType, voucherID: number) => {
+export const getVoucher = async (tx: DbTransactionType, voucherID: number) => {
     const voucher = await tx.query.vouchers.findFirst({
         where: {
             id: voucherID,
@@ -1438,7 +1438,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
 
         const toUpdateVoucher = await db.query.vouchers.findFirst({
             where: {id: voucherID},
-            with: {vehicles: true},
+            with: {vehicles: true, applications: true},
         });
         if (toUpdateVoucher == null) {
             res.status(500).json({message: "Tagliando non trovato"});
@@ -1471,9 +1471,21 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
             const permitHistoryId = permit.lastPermitHistoryId as number;
 
             if (permit.applicationPlatesAmount != vehicles.length) {
-                res.status(400).json({message: "Numero di veicoli non valido"});
+                //TODO: correggere interno delle transazioni per trasmettere indietro l'errore all'utente
+                console.log("Numero di veicoli non valido");
                 tx.rollback();
                 return;
+            }
+
+            if (permitId !== toUpdateVoucher.permitId) {
+                const applicationsUpdateResult = await tx.update(applications).set({
+                    permitId: permitId
+                }).where(eq(applications.voucherId, voucherID));
+                if (applicationsUpdateResult.rowCount !== toUpdateVoucher.applications.length) {
+                    console.log("Errore durante l'aggiornamento delle domande");
+                    tx.rollback();
+                    return;
+                }
             }
 
             const updatedVoucher = await tx.update(vouchers).set({

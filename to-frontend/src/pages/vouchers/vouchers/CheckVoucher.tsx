@@ -81,7 +81,7 @@ export function CheckVoucher() {
                             {voucherPublicCheck.currentState}
                         </h4>
                         <h5>
-                            Valido dal
+                            Valido dal{' '}
                             {new Date(voucherPublicCheck.validFromDate).toLocaleDateString()}
                             al{' '}
                             {new Date(voucherPublicCheck.validToDate).toLocaleDateString()}

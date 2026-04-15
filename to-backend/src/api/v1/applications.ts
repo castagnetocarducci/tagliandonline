@@ -12,7 +12,7 @@ import {
 import {and, count, eq, exists, gte, ilike, lte, or} from "drizzle-orm";
 import {Router} from "express";
 import {getPermit, getPermitsList} from "./permits.ts";
-import {createNewVoucher, getLastVoucherHistoryId, updateVoucherWithApplication} from "./vouchers.ts";
+import {createNewVoucher, getLastVoucherHistoryId, getVoucher, updateVoucherWithApplication} from "./vouchers.ts";
 import {getLastVehicleHistoryId} from "./vehicles.ts";
 import {ConfigProvider} from "../../configProvider.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
@@ -931,6 +931,20 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 createdVoucherHistoryId = newVoucherHistoryId;
             }
 
+            if (createdVoucherId == null && voucherId != null) {
+                const voucherToAssociate = await getVoucher(tx, voucherId);
+                if (voucherToAssociate == null) {
+                    res.status(400).json({message: "Tagliando non trovato"});
+                    tx.rollback();
+                    return null;
+                }
+                if (voucherToAssociate.permitId !== permitId) {
+                    res.status(400).json({message: "Permesso di tagliando e domanda non corrispondono"});
+                    tx.rollback();
+                    return null;
+                }
+            }
+
             const updatedApplication = await tx.update(applications).set({
                 requestDate: requestDate,
                 outcomeDate: outcomeDate,
@@ -1128,6 +1142,20 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 });
                 createdVoucherId = newVoucherId;
                 createdVoucherHistoryId = newVoucherHistoryId;
+            }
+
+            if (createdVoucherId == null && voucherId != null) {
+                const voucherToAssociate = await getVoucher(tx, voucherId);
+                if (voucherToAssociate == null) {
+                    res.status(400).json({message: "Tagliando non trovato"});
+                    tx.rollback();
+                    return null;
+                }
+                if (voucherToAssociate.permitId !== permitId) {
+                    res.status(400).json({message: "Permesso di tagliando e domanda non corrispondono"});
+                    tx.rollback();
+                    return null;
+                }
             }
 
             const createdApplication = await tx.insert(applications).values({
