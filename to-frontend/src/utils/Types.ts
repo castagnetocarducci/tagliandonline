@@ -551,5 +551,15 @@ export type VoucherPublicCheckApiResponse = {
     voucherPublicCheck: VoucherPublicCheck
 }
 
+export type VoucherDetailsApiResponse = {
+    message: string,
+    voucher: VoucherDetails
+}
+
+export type VoucherByIDApiResponse = {
+    message: string,
+    voucher: VoucherListEntry
+}
+
 //endregion
 

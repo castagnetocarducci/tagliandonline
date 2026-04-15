@@ -54,6 +54,9 @@ export const ValidatedUploadDragNdropSingle = (
         if (isMandatory && isEmpty) {
             return false;
         }
+        if (!isMandatory && isEmpty) {
+            return true;
+        }
         if (!isEmpty && (value instanceof Array)) { //testo per Array perché non posso testare direttamente File[]
             if (!(value[0] instanceof File)) {
                 return false;

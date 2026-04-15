@@ -495,7 +495,9 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
 
         with: {
             vehicles: true,
-            applications: true,
+            applications: {
+                orderBy: {outcomeDate: "desc", id: "desc"}, // choose application with most recent outcomeDate or ID
+            },
             permit: true,
             emails: true
         },
@@ -735,6 +737,88 @@ const updateVoucherHistory = async (tx: DbTransactionType, voucher: VoucherQuery
     }
     return updatedVoucherHistoryId;
 }
+
+vouchersRouter.get("/byID/:voucherID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+    if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
+        res.status(400).json({message: "Tagliando non trovato"});
+        return;
+    }
+    const voucherID = parseInt(req.params.voucherID as string);
+    if (isNaN(voucherID)) {
+        res.status(400).json({message: "ID tagliando non valido"});
+        return;
+    }
+
+    const db = DatabaseManager.instance.db;
+    const voucher = await db.query.vouchers.findFirst({
+        where: {
+            id: voucherID
+        },
+        with: {
+            vehicles: true,
+            applications: {
+                orderBy: {outcomeDate: "desc", id: "desc"}, // choose application with most recent outcomeDate or ID
+            },
+            permit: true,
+            emails: true
+        }
+    });
+    if (voucher == null || voucher.permit == null) {
+        return res.status(500).json({message: "Errore nel reperire il tagliando"});
+    }
+    const currentState = getVoucherCurrentState(voucher.revoked, voucher.validFromDate, voucher.validToDate);
+    const voucherEntry: VoucherListEntry = {
+        id: voucher.id,
+        createdAt: voucher.createdAt,
+        updatedAt: voucher.updatedAt,
+
+        number: voucher.number,
+        revoked: voucher.revoked,
+        currentState: currentState,
+        validFromDate: new Date(voucher.validFromDate),
+        validToDate: new Date(voucher.validToDate),
+
+        applications: voucher.applications.map(a => ({
+            id: a.id,
+            registerNumber: a.registerNumber,
+            registerDate: new Date(a.registerDate),
+            cf: a.cf ?? "",
+            firstname: a.firstname,
+            lastname: a.lastname,
+            email: a.email,
+        })),
+
+        permit: {
+            id: voucher.permit.id,
+            description: voucher.permit.description,
+            disabled: voucher.permit.disabled,
+        },
+        // emails: voucher.emails.map(e => ({
+        //     id: e.id,
+        //     to: e.to,
+        //     subject: e.subject,
+        //     attachmentsPresent: e.attachments != null && e.attachments.length > 0,
+        // })),
+        vehicles: voucher.vehicles.map(v => ({
+            id: v.id,
+            createdAt: v.createdAt,
+            updatedAt: v.updatedAt,
+            plate: v.plate,
+            model: v.model,
+            brand: v.brand,
+        })),
+    };
+
+
+    res.json({
+        message: "Tagliando acquisito con successo",
+        voucher: voucherEntry
+    });
+});
 
 vouchersRouter.get("/detail/:voucherID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
     if (req.user == null) {

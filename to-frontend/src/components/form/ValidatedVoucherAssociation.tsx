@@ -8,10 +8,10 @@ import {
 import {type FormEvent, type FormEventHandler, useCallback, useEffect, useState} from "react";
 import {titleCase} from "../../utils/StringUtils.ts";
 import {Button, Col, Container, Form, Icon, List, ListItem, Row} from "design-react-kit";
-import type {VehicleListApiResponse, VehicleListEntry} from "../../utils/Types.ts";
+import type {VoucherByIDApiResponse, VoucherListApiResponse, VoucherListEntry} from "../../utils/Types.ts";
 import {useErrSuccLoad} from "../../hooks/useErrSuccLoad.ts";
 import {AutoPager, type PagerPageData} from "../AutoPager.tsx";
-import {defaultPOSTRequestInit, fetchApiAsync} from "../../utils/fetching.ts";
+import {defaultGETRequestInit, defaultPOSTRequestInit, fetchApiAsync} from "../../utils/fetching.ts";
 import {ValidatedInput} from "./ValidatedInput.tsx";
 import {LoadingSpinner} from "../LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../SuccessErrorAlert.tsx";
@@ -19,39 +19,37 @@ import {SuccessErrorAlert} from "../SuccessErrorAlert.tsx";
 
 type ValidatedVehiclesListProps = {
     name: string,
+    createName: string,
+    updateName: string,
     validationFunc: ValidationFunc,
     validationText: string,
-    // persistingValidationText: boolean,
     defaultValue: ValidationSupportedTypes,
     isMandatory: boolean,
     errorMessage: string,
     setNewValidation: SetValidationFunc,
     labelText: string,
-    amount: number,
-    exactAmount: boolean,
     valueChangedCallback?: (newValue: ValidationSupportedTypes) => void,
 }
 
-export function ValidatedVehiclesList(
+export function ValidatedVoucherAssociation(
     {
         name,
+        createName,
+        updateName,
         validationFunc,
         validationText,
-        // persistingValidationText,
         defaultValue,
         isMandatory,
         errorMessage,
         setNewValidation,
         labelText,
-        amount,
-        exactAmount,
         valueChangedCallback,
     }: ValidatedVehiclesListProps) {
 
-    const [value, setValue] = useState<number[]>([]);
-    const [selectedVehiclesList, setSelectedVehiclesList] = useState<VehicleListEntry[]>([]);
+    const [value, setValue] = useState<number | null>(null);
+    const [selectedVoucher, setSelectedVoucher] = useState<VoucherListEntry | null>(null);
 
-    const [vehiclesList, setVehiclesList] = useState<VehicleListEntry[]>([]);
+    const [vouchersList, setVouchersList] = useState<VoucherListEntry[]>([]);
     const {err, setErr, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
     const [pageData, setPageData] = useState<PagerPageData>({currentPage: 1, totalPages: 0});
@@ -62,41 +60,28 @@ export function ValidatedVehiclesList(
         if (defaultValueAcquired) {
             return;
         }
-        if (defaultValue == null ||
-            !(defaultValue instanceof Array) ||
-            defaultValue.length === 0) {
+        if (defaultValue == null || typeof defaultValue !== "number") {
             return;
         }
-        for (const v of defaultValue) {
-            if (typeof v !== "number") {
-                return;
-            }
-        }
 
-        const valuesMap = {
-            idArr: defaultValue,
-        };
-        const abort = fetchApiAsync<VehicleListApiResponse>({
-            urlFromApiRoot: "/vehicles/byArr",
+        const abort = fetchApiAsync<VoucherByIDApiResponse>({
+            urlFromApiRoot: "/vouchers/byID/" + defaultValue,
             errSuccLoading: {setErr, setSucc, setLoading},
-            requestInit: {
-                ...defaultPOSTRequestInit,
-                body: JSON.stringify(valuesMap)
-            },
+            requestInit: {...defaultGETRequestInit},
             callback: (data) => {
-                if (data != null && data.vehiclesList != null) {
-                    setSelectedVehiclesList(data.vehiclesList);
-                    setValue(defaultValue as number[]);
+                if (data != null && data.voucher != null) {
+                    setSelectedVoucher(data.voucher);
+                    setValue(data.voucher.id);
                     setDefaultValueAcquired(true);
                 }
             }
         });
 
         return abort;
-    }, [defaultValue, setValue, setSelectedVehiclesList, setErr, setSucc, setLoading,
+    }, [defaultValue, setValue, setSelectedVoucher, setErr, setSucc, setLoading,
         defaultValueAcquired, setDefaultValueAcquired]);
 
-    const incrementedValidationFunc = useCallback((value: ValidationSupportedTypes): boolean => {
+    const incrementedValidationFunc = useCallback((value: ValidationSupportedTypes | null): boolean => {
         const isEmpty = value == null || value === "" ||
             (value instanceof Array ? value.length === 0 : false); //testo per Array perché non posso testare direttamente number[], in questo caso Array vuoto significa campo non impostato
         if (isMandatory && isEmpty) {
@@ -105,59 +90,32 @@ export function ValidatedVehiclesList(
         if (!isMandatory && isEmpty) {
             return true;
         }
-        if (!isEmpty && (value instanceof Array)) { //testo per Array perché non posso testare direttamente number[]
-            if (value.length > amount) {
-                return false;
-            }
-            if (exactAmount && value.length !== amount) {
-                return false;
-            }
-            for (const v of value) {
-                if (typeof v !== "number") {
-                    return false;
-                }
-            }
-        }
         return validationFunc(value);
-    }, [isMandatory, amount, exactAmount, validationFunc]);
+    }, [isMandatory, validationFunc]);
 
     const isValid = incrementedValidationFunc(value);
     const labelContent = labelText || titleCase(name);
 
 
-    const isVehicleSelected = (vehicleId: number) => {
-        return value.includes(vehicleId);
+    const isVoucherSelected = (vehicleId: number) => {
+        return value === vehicleId;
     }
 
-    const addVehicle = (vehicle: VehicleListEntry) => {
-        if (value.includes(vehicle.id)) {
+    const addVoucher = (voucher: VoucherListEntry) => {
+        if (value === voucher.id) {
             return;
         }
-        const newValue = [...value];
-        newValue.push(vehicle.id);
+        const newValue = voucher.id;
         setValue(newValue);
-        const newVehiclesList = [...selectedVehiclesList];
-        newVehiclesList.push(vehicle);
-        setSelectedVehiclesList(newVehiclesList);
+        setSelectedVoucher(voucher);
     }
 
-    const removeVehicle = (vehicle: VehicleListEntry) => {
-        if (!value.includes(vehicle.id)) {
+    const removeVoucher = (voucher: VoucherListEntry) => {
+        if (value !== voucher.id) {
             return;
         }
-        const newValue = [...value];
-        const valueIndexToRemove = newValue.indexOf(vehicle.id);
-        newValue.splice(valueIndexToRemove, 1);
-        setValue(newValue);
-        const newVehiclesList = [...selectedVehiclesList];
-        for (const currVehicle of newVehiclesList) {
-            if (currVehicle.id === vehicle.id) {
-                const vehicleIndexToRemove = newVehiclesList.indexOf(currVehicle);
-                newVehiclesList.splice(vehicleIndexToRemove, 1);
-                setSelectedVehiclesList(newVehiclesList);
-                break;
-            }
-        }
+        setValue(null);
+        setSelectedVoucher(null);
     }
 
     // const onParameterChange = (newValue: string) => {
@@ -189,16 +147,16 @@ export function ValidatedVehiclesList(
     useEffect(() => {
         const valuesMap = {...formSearchParams};
         valuesMap["page"] = pageData.currentPage;
-        const abort = fetchApiAsync<VehicleListApiResponse>({
-            urlFromApiRoot: "/vehicles/list",
+        const abort = fetchApiAsync<VoucherListApiResponse>({
+            urlFromApiRoot: "/vouchers/list",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,
                 body: JSON.stringify(valuesMap)
             },
             callback: (data) => {
-                if (data != null && data.vehiclesList != null) {
-                    setVehiclesList(data.vehiclesList);
+                if (data != null && data.vouchersList != null) {
+                    setVouchersList(data.vouchersList);
                 }
                 if (data != null && data.pageData != null) {
                     setPageData(data.pageData)
@@ -206,7 +164,7 @@ export function ValidatedVehiclesList(
             }
         });
         return abort;
-    }, [setErr, setLoading, setSucc, setVehiclesList, formSearchParams, pageData.currentPage, setPageData]);
+    }, [setErr, setLoading, setSucc, setVouchersList, formSearchParams, pageData.currentPage, setPageData]);
 
 
     return (
@@ -220,39 +178,58 @@ export function ValidatedVehiclesList(
                             <br/>
                         </span>
                     )}
-
-                    {exactAmount ? (
-                        <span>Sono richiesti esattamente {amount} veicoli</span>
-                    ) : (
-                        <span>Sono ammessi {isMandatory ? "da 1 a" : "al più"} {amount} veicoli</span>
-                    )}
                     <br/>
 
-                    {selectedVehiclesList.length > 0 ? (
+                    {selectedVoucher != null ? (
 
-                        <List>
-                            {selectedVehiclesList.map((vehicleListEntry, index) => (
-                                <ListItem key={index}>
-                                    <span>
-                                        <Button onClick={() => removeVehicle(vehicleListEntry)}
-                                                color={"secondary"} icon={true} size={"xs"} title={"Rimuovi veicolo"}>
+                        <Row>
+                            <Col md={6}>
+                                <Button onClick={() => removeVoucher(selectedVoucher)}
+                                        color={"secondary"} icon={true} size={"xs"} title={"Rimuovi tagliando"}>
                                             <span className={"rounded-icon me-2"}>
                                                 <Icon icon={"it-minus"}/>
                                             </span>
-                                            Rimuovi
-                                        </Button>
-                                        <span className={"ms-3"}>
-                                            {vehicleListEntry.id}{": "}
-                                            <strong>{vehicleListEntry.plate}</strong>{" - "}
-                                            {vehicleListEntry.brand} {vehicleListEntry.model}
-                                        </span>
-                                    </span>
-                                </ListItem>
-                            ))}
-                        </List>
+                                    Rimuovi
+                                </Button>
+                                <span className={"mt-2"}>
+                                    ID univoco: {selectedVoucher.id}{": "}
+                                    <strong>Numero {selectedVoucher.number}</strong>
+                                    <br/>
+                                    <strong>Numero {selectedVoucher.currentState}</strong>
+                                </span>
+
+                                <p>
+                                    Valido dal
+                                    {new Date(selectedVoucher.validFromDate).toLocaleDateString()}
+                                    al{' '}
+                                    {new Date(selectedVoucher.validToDate).toLocaleDateString()}
+                                </p>
+                                <p>
+                                    Veicoli: <br/>
+                                    {selectedVoucher.vehicles.map((vehicle, index) => (
+                                        <h5 key={index}>
+                                            <strong>{vehicle.plate}</strong>: {vehicle.brand} {vehicle.model}
+                                        </h5>
+                                    ))}
+                                </p>
+                            </Col>
+                            <Col md={6}>
+                                <p>
+                                    Permesso <small className="text-muted">{selectedVoucher.permit.id}</small> per {selectedVoucher.permit.description}
+                                </p>
+                                <p>
+                                    {selectedVoucher.permit.disabled && "Decaduto"}
+                                    Veicoli utilizzabili
+                                    contemporaneamente: {selectedVoucher.permit.simultaneousPlatesAmount}
+                                    Numero targhe autorizzabili: {selectedVoucher.permit.applicationPlatesAmount}
+                                </p>
+                            </Col>
+
+                        </Row>
+
 
                     ) : (
-                        <strong>Nessun veicolo associato</strong>
+                        <strong>Nessun tagliando associato</strong>
                     )}
                 </Col>
                 <Col md={7} className={"border border-secondary rounded"}>
@@ -328,7 +305,7 @@ export function ValidatedVehiclesList(
                         </Button>
                     </Form>
 
-                    {vehiclesList.length > 0 && (
+                    {vouchersList.length > 0 && (
                         <Row>
                     <span className={"ms-3"}>
                         {"ID: "}
@@ -354,65 +331,34 @@ export function ValidatedVehiclesList(
                         </Row>
                     )}
                     <hr/>
-                    {vehiclesList.map((vehicleListEntry, index) => (
+                    {vouchersList.map((voucherListEntry, index) => (
                         <div key={index}>
                             <Row className={"mt-2 d-flex align-items-center"}>
-                        <span>
-                                        {isVehicleSelected(vehicleListEntry.id) ? (
-                                            <Button onClick={() => removeVehicle(vehicleListEntry)}
-                                                    color={"secondary"} icon={true} title={"Rimuovi veicolo"} size={"xs"}>
-                                    <span className={"rounded-icon me-2"}>
-                                        <Icon icon={"it-minus"}/>
+                                <span>
+                                    {isVoucherSelected(voucherListEntry.id) ? (
+                                        <Button onClick={() => removeVoucher(voucherListEntry)}
+                                                color={"secondary"} icon={true} title={"Rimuovi tagliando"} size={"xs"}>
+                                            <span className={"rounded-icon me-2"}>
+                                                <Icon icon={"it-minus"}/>
+                                            </span>
+                                            Rimuovi
+                                        </Button>
+                                    ) : (
+                                        <Button onClick={() => addVoucher(voucherListEntry)}
+                                                color={"primary"} icon={true} title={"Associa tagliando"} size={"xs"}>
+                                            <span className={"rounded-icon me-2"}>
+                                                <Icon icon={"it-plus"}/>
+                                            </span>
+                                            Associa
+                                        </Button>
+                                    )}
+                                    <span className={"ms-3"}>
+                                        {voucherListEntry.id}{": "}
+                                        <strong>{voucherListEntry.plate}</strong>{" - "}
+                                        {voucherListEntry.brand} {voucherListEntry.model}{" - "}
+                                        {new Date(voucherListEntry.updatedAt).toLocaleString()}
                                     </span>
-                                                Rimuovi
-                                            </Button>
-                                        ) : (
-                                            <Button onClick={() => addVehicle(vehicleListEntry)}
-                                                    color={"primary"} icon={true} title={"Associa veicolo"} size={"xs"}>
-                                    <span className={"rounded-icon me-2"}>
-                                        <Icon icon={"it-plus"}/>
-                                    </span>
-                                                Associa
-                                            </Button>
-                                        )}
-                            <span className={"ms-3"}>
-                                            {vehicleListEntry.id}{": "}
-                                <strong>{vehicleListEntry.plate}</strong>{" - "}
-                                {vehicleListEntry.brand} {vehicleListEntry.model}{" - "}
-                                {new Date(vehicleListEntry.updatedAt).toLocaleString()}
-                                        </span>
-                                    </span>
-                                {/*<Col md={1} className={""}>*/}
-                                {/*    {vehicleListEntry.id}*/}
-                                {/*</Col>*/}
-                                {/*<Col md={2}>*/}
-                                {/*    {vehicleListEntry.plate}*/}
-                                {/*</Col>*/}
-                                {/*<Col md={2} className={"text-wrap"}>*/}
-                                {/*    {vehicleListEntry.brand}*/}
-                                {/*</Col>*/}
-                                {/*<Col md={3} className={"text-wrap"}>*/}
-                                {/*    {vehicleListEntry.model}*/}
-                                {/*</Col>*/}
-                                {/*<Col md={2}>*/}
-                                {/*    {isVehicleSelected(vehicleListEntry.id) ? (*/}
-                                {/*        <Button onClick={() => removeVehicle(vehicleListEntry)}*/}
-                                {/*                color={"secondary"} icon={true} title={"Rimuovi veicolo"}>*/}
-                                {/*            <span className={"rounded-icon me-2"}>*/}
-                                {/*                <Icon icon={"it-minus"}/>*/}
-                                {/*            </span>*/}
-                                {/*            Rimuovi*/}
-                                {/*        </Button>*/}
-                                {/*    ) : (*/}
-                                {/*        <Button onClick={() => addVehicle(vehicleListEntry)}*/}
-                                {/*                color={"primary"} icon={true} title={"Associa veicolo"}>*/}
-                                {/*            <span className={"rounded-icon me-2"}>*/}
-                                {/*                <Icon icon={"it-plus"}/>*/}
-                                {/*            </span>*/}
-                                {/*            Associa*/}
-                                {/*        </Button>*/}
-                                {/*    )}*/}
-                                {/*</Col>*/}
+                                </span>
 
                                 {/*<Col md={1}>*/}
                                 {/*    <Button onClick={() => navigate(`/vehicles/list/${vehicleListEntry.id}`)}*/}
@@ -424,7 +370,7 @@ export function ValidatedVehiclesList(
                             <hr/>
                         </div>
                     ))}
-                    {vehiclesList.length === 0 && (
+                    {vouchersList.length === 0 && (
                         <>
                             <Row>
                                 <strong>Nessun risultato</strong>
@@ -439,15 +385,6 @@ export function ValidatedVehiclesList(
                     }}/>
                 </Col>
             </Row>
-
-            {/*<Button className={"mb-4 me-2"} onClick={() => navigate(`/vehicles/list/new`)}*/}
-            {/*        color={"primary"} icon={true} title={"Aggiungi nuovo veicolo"}>*/}
-            {/*            <span className={"rounded-icon me-2"}>*/}
-            {/*                <Icon icon={"it-plus"}/>*/}
-            {/*            </span>*/}
-            {/*    Nuovo*/}
-            {/*</Button>*/}
-
 
 
             <LoadingSpinner loading={loading}/>
