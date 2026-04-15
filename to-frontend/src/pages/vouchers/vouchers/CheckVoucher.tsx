@@ -74,7 +74,7 @@ export function CheckVoucher() {
                         <h3>
                             Tagliando numero {voucherPublicCheck.number}{'  '}
                             <small className="text-muted">
-                                ID univoco: {voucherPublicCheck.number} (ultimo aggiornamento: {new Date(voucherPublicCheck.updatedAt).toLocaleString()})
+                                ID univoco: {voucherPublicCheck.id} (ultimo aggiornamento: {new Date(voucherPublicCheck.updatedAt).toLocaleString()})
                             </small>
                         </h3>
                         <h4>
