@@ -5,6 +5,7 @@ import {useCallback, useEffect, useState} from "react";
 
 type ValidatedInputProps = {
     name: string,
+    namePrefix?: string,
     validationFunc: ValidationFunc,
     validationText: string,
     persistingValidationText: boolean,
@@ -21,6 +22,7 @@ type ValidatedInputProps = {
 export function ValidatedInput(
     {
         name,
+        namePrefix,
         validationFunc,
         validationText,
         persistingValidationText,
@@ -73,18 +75,18 @@ export function ValidatedInput(
         <>
             {inputType === "checkbox" &&
                 <div className={"form-check"}>
-                    <Input id={name} name={name}
+                    <Input id={(namePrefix ?? "") + name} name={(namePrefix ?? "") + name}
                            label={undefined}
                            validationText={persistingValidationText ? validationText : ( isValid ? "" : validationText)}
                            valid={validationMark ? isValid : (isValid ? undefined : isValid)}
                            checked={value === "true"} onChange={(e) => onParameterChange(e.target.checked.toString())}
                            {...inputPropsNN}
                     />
-                    <Label for={name}>{labelContent}</Label>
+                    <Label for={(namePrefix ?? "") + name}>{labelContent}</Label>
                 </div>
             }
             {inputType !== "checkbox" &&
-                <Input id={name} name={name}
+                <Input id={(namePrefix ?? "") + name} name={(namePrefix ?? "") + name}
                        label={labelContent}
                        placeholder={inputType === "number" ? labelContent : undefined}
                        validationText={persistingValidationText ? validationText : (isValid ? "" : validationText)}

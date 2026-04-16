@@ -230,7 +230,7 @@ export function ValidatedVehiclesList(
 
                     {selectedVehiclesList.length > 0 ? (
 
-                        <List>
+                        <List className={"border border-secondary rounded me-1"}>
                             {selectedVehiclesList.map((vehicleListEntry, index) => (
                                 <ListItem key={index}>
                                     <span>
@@ -262,7 +262,8 @@ export function ValidatedVehiclesList(
                     <Form onSubmit={onFormSubmit} className={"mt-4"}>
                         <Row>
                             <Col md={4}>
-                                <ValidatedInput name={"idFrom"} labelText={"ID (da)"}
+                                <ValidatedInput name={"idFrom"} namePrefix={"vehicleSelectSearch_"}
+                                                labelText={"ID (da)"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
@@ -273,7 +274,7 @@ export function ValidatedVehiclesList(
                                                 inputProps={{type: "number"}}/>
                             </Col>
                             <Col md={4}>
-                                <ValidatedInput name={"idTo"} labelText={"ID (a)"}
+                                <ValidatedInput name={"idTo"} namePrefix={"vehicleSelectSearch_"} labelText={"ID (a)"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
@@ -284,7 +285,7 @@ export function ValidatedVehiclesList(
                                                 inputProps={{type: "number"}}/>
                             </Col>
                             <Col md={4}>
-                                <ValidatedInput name={"plate"} labelText={"Targa"}
+                                <ValidatedInput name={"plate"} namePrefix={"vehicleSelectSearch_"} labelText={"Targa"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
@@ -297,7 +298,7 @@ export function ValidatedVehiclesList(
                         </Row>
                         <Row>
                             <Col md={6}>
-                                <ValidatedInput name={"brand"} labelText={"Marca"}
+                                <ValidatedInput name={"brand"} namePrefix={"vehicleSelectSearch_"} labelText={"Marca"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
@@ -308,7 +309,7 @@ export function ValidatedVehiclesList(
                                                 inputProps={{type: "text"}}/>
                             </Col>
                             <Col md={6}>
-                                <ValidatedInput name={"model"} labelText={"Modello"}
+                                <ValidatedInput name={"model"} namePrefix={"vehicleSelectSearch_"} labelText={"Modello"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
@@ -330,37 +331,42 @@ export function ValidatedVehiclesList(
 
                     {vehiclesList.length > 0 && (
                         <Row>
-                    <span className={"ms-3"}>
-                        {"ID: "}
-                        <strong>Targa</strong>{" - "}
-                        Marca Modello{" - "}
-                        Ultima modifica
-                    </span>
-                            {/*<Col md={1}>*/}
-                            {/*    <strong>#</strong>*/}
-                            {/*</Col>*/}
-                            {/*<Col md={2}>*/}
-                            {/*    <strong>Targa</strong>*/}
-                            {/*</Col>*/}
-                            {/*<Col md={2}>*/}
-                            {/*    <strong>Marca</strong>*/}
-                            {/*</Col>*/}
-                            {/*<Col md={3}>*/}
-                            {/*    <strong>Modello</strong>*/}
-                            {/*</Col>*/}
-                            {/*<Col md={2}>*/}
-                            {/*    <strong>Modifica</strong>*/}
-                            {/*</Col>*/}
+                            <Col md={3}></Col>
+                            <Col md={9}>
+                                <span>
+                                    {"ID: "}
+                                    <strong>Targa</strong>{" - "}
+                                    Marca Modello{" - "}
+                                    Ultima modifica
+                                </span>
+                                {/*<Col md={1}>*/}
+                                {/*    <strong>#</strong>*/}
+                                {/*</Col>*/}
+                                {/*<Col md={2}>*/}
+                                {/*    <strong>Targa</strong>*/}
+                                {/*</Col>*/}
+                                {/*<Col md={2}>*/}
+                                {/*    <strong>Marca</strong>*/}
+                                {/*</Col>*/}
+                                {/*<Col md={3}>*/}
+                                {/*    <strong>Modello</strong>*/}
+                                {/*</Col>*/}
+                                {/*<Col md={2}>*/}
+                                {/*    <strong>Modifica</strong>*/}
+                                {/*</Col>*/}
+                            </Col>
                         </Row>
                     )}
                     <hr/>
                     {vehiclesList.map((vehicleListEntry, index) => (
                         <div key={index}>
                             <Row className={"mt-2 d-flex align-items-center"}>
-                        <span>
+                                <Col md={3}>
+
                                         {isVehicleSelected(vehicleListEntry.id) ? (
                                             <Button onClick={() => removeVehicle(vehicleListEntry)}
-                                                    color={"secondary"} icon={true} title={"Rimuovi veicolo"} size={"xs"}>
+                                                    color={"secondary"} icon={true} title={"Rimuovi veicolo"}
+                                                    size={"xs"}>
                                     <span className={"rounded-icon me-2"}>
                                         <Icon icon={"it-minus"}/>
                                     </span>
@@ -375,13 +381,15 @@ export function ValidatedVehiclesList(
                                                 Associa
                                             </Button>
                                         )}
-                            <span className={"ms-3"}>
+                                </Col>
+                                <Col md={9}>
+                            <span>
                                             {vehicleListEntry.id}{": "}
                                 <strong>{vehicleListEntry.plate}</strong>{" - "}
                                 {vehicleListEntry.brand} {vehicleListEntry.model}{" - "}
                                 {new Date(vehicleListEntry.updatedAt).toLocaleString()}
                                         </span>
-                                    </span>
+                                </Col>
                                 {/*<Col md={1} className={""}>*/}
                                 {/*    {vehicleListEntry.id}*/}
                                 {/*</Col>*/}
@@ -447,7 +455,6 @@ export function ValidatedVehiclesList(
             {/*            </span>*/}
             {/*    Nuovo*/}
             {/*</Button>*/}
-
 
 
             <LoadingSpinner loading={loading}/>

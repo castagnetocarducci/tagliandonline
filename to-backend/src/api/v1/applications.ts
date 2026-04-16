@@ -804,12 +804,52 @@ const checkApplicationParameters = (req: AuthRequest) => {
     if (req.body.birthDate != null && req.body.birthDate.trim() === "") {
         req.body.birthDate = null;
     }
+    if (req.body.birthCity != null && req.body.birthCity.trim() === "") {
+        req.body.birthCity = null;
+    }
+    if (req.body.residenceCity != null && req.body.residenceCity.trim() === "") {
+        req.body.residenceCity = null;
+    }
+    if (req.body.residencePlace != null && req.body.residencePlace.trim() === "") {
+        req.body.residencePlace = null;
+    }
+    if (req.body.targetHouseCity != null && req.body.targetHouseCity.trim() === "") {
+        req.body.targetHouseCity = null;
+    }
+    if (req.body.targetHousePlace != null && req.body.targetHousePlace.trim() === "") {
+        req.body.targetHousePlace = null;
+    }
+    if (req.body.targetHouseLandRegistrySheet != null && req.body.targetHouseLandRegistrySheet.trim() === "") {
+        req.body.targetHouseLandRegistrySheet = null;
+    }
+    if (req.body.targetHouseLandRegistryMap != null && req.body.targetHouseLandRegistryMap.trim() === "") {
+        req.body.targetHouseLandRegistryMap = null;
+    }
+    if (req.body.targetHouseLandRegistrySubaltern != null && req.body.targetHouseLandRegistrySubaltern.trim() === "") {
+        req.body.targetHouseLandRegistrySubaltern = null;
+    }
+    if (req.body.targetHouseLandRegistryCategory != null && req.body.targetHouseLandRegistryCategory.trim() === "") {
+        req.body.targetHouseLandRegistryCategory = null;
+    }
+    if (req.body.createVoucher != null && typeof req.body.createVoucher === "string") {
+        req.body.createVoucher = req.body.createVoucher === true;
+    }
+    if (req.body.updateVoucher != null && typeof req.body.updateVoucher === "string") {
+        req.body.updateVoucher = req.body.updateVoucher === true;
+    }
 
     if (
+        (req.body.birthDate != null && new Date(req.body.birthDate).toString() === "Invalid Date") ||
         (req.body.birthCity != null && typeof req.body.birthCity !== "string") ||
+        (req.body.residenceCity != null && typeof req.body.residenceCity !== "string") ||
+        (req.body.residencePlace != null && typeof req.body.residencePlace !== "string") ||
+        (req.body.targetHouseCity != null && typeof req.body.targetHouseCity !== "string") ||
+        (req.body.targetHousePlace != null && typeof req.body.targetHousePlace !== "string") ||
+        (req.body.targetHouseLandRegistrySheet != null && typeof req.body.targetHouseLandRegistrySheet !== "string") ||
+        (req.body.targetHouseLandRegistryMap != null && typeof req.body.targetHouseLandRegistryMap !== "string") ||
+        (req.body.targetHouseLandRegistrySubaltern != null && typeof req.body.targetHouseLandRegistrySubaltern !== "string") ||
         (req.body.outcomeAuthUserId != null && isNaN(parseInt(req.body.outcomeAuthUserId))) ||
-        (req.body.voucherId != null && isNaN(parseInt(req.body.voucherId))) ||
-        (req.body.createVoucher != null && typeof req.body.createVoucher !== "boolean")
+        (req.body.voucherId != null && isNaN(parseInt(req.body.voucherId)))
     ) {
         return false;
     }
@@ -860,7 +900,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
         vehicles,
         //EXTRA
         createVoucher, //boolean for creating a voucher for this application
-        //updateVoucher,
+        updateVoucher, //boolean for updating a voucher for this application
     } = req.body;
 
     const db = DatabaseManager.instance.db;
@@ -899,7 +939,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             voucherId === toUpdateApplication.voucherId &&
             toUpdateApplication.vehicles.length === vehicles.length &&
             toUpdateApplication.vehicles.map((vehicle) => vehicle.id).every((id) => vehicles.includes(id)) &&
-            createVoucher === false) {
+            createVoucher === false && updateVoucher === false) {
             res.status(200).json({message: "Nessuna modifica effettuata"});
             return;
         }
@@ -984,9 +1024,9 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 }
             });
 
-            // if (createdVoucherId == null && voucherId != null && updateVoucher) {
-            //     await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
-            // }
+            if (createdVoucherId == null && voucherId != null && updateVoucher) {
+                await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
+            }
 
             const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
             if (insertResult == null || insertResult.rowCount !== vehicles.length) {
@@ -1111,7 +1151,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
         vehicles,
         //EXTRA
         createVoucher, //boolean for creating a voucher for this application
-        //updateVoucher,
+        updateVoucher, //boolean for updating a voucher for this application
     } = req.body;
 
     const db = DatabaseManager.instance.db;
@@ -1198,9 +1238,9 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 }
             });
 
-            // if (createdVoucherId == null && voucherId != null && updateVoucher) {
-            //     await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
-            // }
+            if (createdVoucherId == null && voucherId != null && updateVoucher) {
+                await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
+            }
 
             const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
             if (insertResult == null || insertResult.rowCount !== vehicles.length) {

@@ -1412,12 +1412,15 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
 
     if (req.body.validFromDate == null || new Date(req.body.validFromDate).toString() === "Invalid Date" ||
         req.body.validToDate == null || new Date(req.body.validToDate).toString() === "Invalid Date" ||
-        req.body.revoked == null || typeof req.body.revoked !== "boolean" ||
+        req.body.revoked == null || ("" + req.body.revoked).trim() === "" ||
         req.body.notes == null || typeof req.body.notes !== "string" ||
         req.body.permitId == null || isNaN(parseInt(req.body.permitId)) ||
         req.body.vehicles == null || !Array.isArray(req.body.vehicles) || req.body.vehicles.some((elem: any) => typeof elem !== 'number')) {
         res.status(400).json({message: "Parametri di creazione non validi"});
         return;
+    }
+    if (req.body.revoked != null && typeof req.body.revoked === "string") {
+        req.body.revoked = req.body.revoked === true;
     }
     if (new Date(req.body.validToDate) < new Date(req.body.validFromDate)) {
         res.status(400).json({message: "Data di scadenza antecedente alla data di inizio validità"});

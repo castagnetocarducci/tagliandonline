@@ -19,6 +19,7 @@ import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
 import {dateStrToISOString, validateEmail} from "../../../utils/CommonFunctions.ts";
 import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesList.tsx";
+import {ValidatedVoucherAssociation} from "../../../components/form/ValidatedVoucherAssociation.tsx";
 
 export function EditApplication() {
     const navigate = useNavigate();
@@ -30,6 +31,7 @@ export function EditApplication() {
     const [permitsList, setPermitsList] = useState<PermitListEntry[]>([]);
     const [vehiclesAmount, setVehiclesAmount] = useState<number>(2);
     const urlParams = useParams();
+    const [selectedPermitListEntry, setSelectedPermitListEntry] = useState<PermitListEntry | null>(null);
 
     useEffect(() => {
         const abort = fetchApiAsync<ApplicationAvailableOptionsApiResponse>({
@@ -127,13 +129,14 @@ export function EditApplication() {
         for (const permit of permitsList) {
             if ("" + permit.id === newValue) {
                 setVehiclesAmount(permit.applicationPlatesAmount);
+                setSelectedPermitListEntry(permit);
             }
         }
     }
 
     return (
         <Container>
-            <GoBack link>
+            <GoBack link className={""}>
                 Torna indietro
             </GoBack>
             <h2>Modifica domanda</h2>
@@ -212,7 +215,7 @@ export function EditApplication() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "number"}}/>
                             </Col>
-                            <Col md={2}>
+                            <Col md={3}>
                                 <ValidatedInput name={"registerDate"} labelText={"Data protocollo"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -284,7 +287,7 @@ export function EditApplication() {
         residencePlace,
         targetHousePlace,*/}
 
-                            <Col md={2}>
+                            <Col md={3}>
                                 <ValidatedInput name={"birthDate"} labelText={"Data di nascita"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -295,7 +298,7 @@ export function EditApplication() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "date"}}/>
                             </Col>
-                            <Col md={2}>
+                            <Col md={3}>
                                 <ValidatedInput name={"birthCity"} labelText={"Luogo di nascita"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -306,7 +309,7 @@ export function EditApplication() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "text"}}/>
                             </Col>
-                            <Col md={2}>
+                            <Col md={3}>
                                 <ValidatedInput name={"residenceCity"} labelText={"Comune di residenza"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -328,7 +331,15 @@ export function EditApplication() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "text"}}/>
                             </Col>
-                            <Col md={3}>
+                        </Row>
+                        <Row>
+                            {/*
+        targetHouseLandRegistrySheet,
+        targetHouseLandRegistryMap,
+        targetHouseLandRegistrySubaltern,
+        targetHouseLandRegistryCategory,*/}
+
+                            <Col md={4}>
                                 <ValidatedInput name={"targetHousePlace"} labelText={"Indirizzo immobile"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -340,15 +351,7 @@ export function EditApplication() {
                                                 inputProps={{type: "text"}}/>
                             </Col>
 
-                        </Row>
-                        <Row>
-                            {/*
-        targetHouseLandRegistrySheet,
-        targetHouseLandRegistryMap,
-        targetHouseLandRegistrySubaltern,
-        targetHouseLandRegistryCategory,*/}
-
-                            <Col md={3}>
+                            <Col md={2}>
                                 <ValidatedInput name={"targetHouseLandRegistrySheet"} labelText={"Foglio"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -359,7 +362,7 @@ export function EditApplication() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "text"}}/>
                             </Col>
-                            <Col md={3}>
+                            <Col md={2}>
                                 <ValidatedInput name={"targetHouseLandRegistryMap"} labelText={"Mappale"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -370,7 +373,7 @@ export function EditApplication() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "text"}}/>
                             </Col>
-                            <Col md={3}>
+                            <Col md={2}>
                                 <ValidatedInput name={"targetHouseLandRegistrySubaltern"} labelText={"Subalterno"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -381,7 +384,7 @@ export function EditApplication() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "text"}}/>
                             </Col>
-                            <Col md={3}>
+                            <Col md={2}>
                                 <ValidatedInput name={"targetHouseLandRegistryCategory"} labelText={"Categoria"}
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -439,7 +442,7 @@ export function EditApplication() {
                                 <ValidatedSelect name={"outcomeId"} validationFunc={() => true}
                                                  validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                  defaultValue={applicationDetails.outcome.id}
-                                                 isMandatory={true}
+                                                 isMandatory={false}
                                                  errorMessage={"Compilare i campi obbligatori"}
                                                  setNewValidation={setValidation}
                                                  labelText={"Esito"}
@@ -447,7 +450,7 @@ export function EditApplication() {
                             </Col>
                         </Row>
 
-                        <Row className={"mt-4"}>
+                        <Row>
                             <Col md={4}>
                                 <Button color={"primary"} type={"submit"} disabled={!valid || loading}> Salva </Button>
                             </Col>
@@ -480,7 +483,14 @@ export function EditApplication() {
         createVoucher, //boolean for creating a voucher for this application
         //updateVoucher
                 */}
-                        {/* TODO: scelta tagliando */}
+                        <ValidatedVoucherAssociation name={"voucherId"} createName={"createVoucher"}
+                                                     updateName={"updateVoucher"} permitFilter={selectedPermitListEntry}
+                                                     validationFunc={() => true}
+                                                     validationText={"Campo obbligatorio"}
+                                                     defaultValue={applicationDetails.voucher == null ? null : applicationDetails.voucher.id} isMandatory={false}
+                                                     errorMessage={"Devi associare un tagliando"}
+                                                     setNewValidation={setValidation}
+                                                     labelText={"Tagliando associato"}/>
                     </Row>
                 </>
             )}

@@ -21,13 +21,14 @@ import {ValidatedInput} from "./ValidatedInput.tsx";
 import {LoadingSpinner} from "../LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../SuccessErrorAlert.tsx";
 import {validateEmail} from "../../utils/CommonFunctions.ts";
+import {Link} from "react-router";
 
 
 type ValidatedVehiclesListProps = {
     name: string,
     createName: string,
     updateName: string,
-    permitFilter: PermitListEntry,
+    permitFilter: PermitListEntry | null,
     validationFunc: ValidationFunc,
     validationText: string,
     defaultValue: ValidationSupportedTypes,
@@ -71,12 +72,14 @@ export function ValidatedVoucherAssociation(
         if (defaultValue == null || typeof defaultValue !== "number") {
             return;
         }
+        console.log(defaultValue);
 
         const abort = fetchApiAsync<VoucherByIDApiResponse>({
             urlFromApiRoot: "/vouchers/byID/" + defaultValue,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
+                console.log(data);
                 if (data != null && data.voucher != null) {
                     setSelectedVoucher(data.voucher);
                     setValue(data.voucher.id);
@@ -190,8 +193,18 @@ export function ValidatedVoucherAssociation(
 
                     {selectedVoucher != null ? (
 
-                        <Row>
-                            <Col md={6}>
+                        <Row className={"border border-secondary rounded me-1 pt-2"}>
+                            <Col md={12}>
+                                <ValidatedInput name={updateName} validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false} defaultValue={false}
+                                                isMandatory={true}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setNewValidation}
+                                                labelText={"Aggiorna tagliando con dati domanda"}
+                                                inputProps={{type: "checkbox", className: "form-check-input"}}
+                                />
+
                                 <Button onClick={() => removeVoucher(selectedVoucher)}
                                         color={"secondary"} icon={true} size={"xs"} title={"Rimuovi tagliando"}>
                                             <span className={"rounded-icon me-2"}>
@@ -200,50 +213,81 @@ export function ValidatedVoucherAssociation(
                                     Rimuovi
                                 </Button>
                                 <p className={"mt-2"}>
-                                    ID univoco: {selectedVoucher.id}{": "}
-                                    <strong>Numero {selectedVoucher.number}</strong>{" - "}
-                                    <strong>{selectedVoucher.currentState}</strong>
-                                </p>
-
-                                <p>
+                                    <Link to={"/vouchers/list/" + selectedVoucher.id} target={"_blank"}>
+                                        ID univoco: {selectedVoucher.id}{": "}
+                                        <strong>Numero {selectedVoucher.number}</strong>{" - "}
+                                        <strong>{selectedVoucher.currentState}</strong>
+                                    </Link>
+                                    <br/>
                                     Valido dal{' '}
                                     {new Date(selectedVoucher.validFromDate).toLocaleDateString()}
-                                    al{' '}
+                                    {' '}al{' '}
                                     {new Date(selectedVoucher.validToDate).toLocaleDateString()}
-                                </p>
-                                <p>
-                                    Veicoli:
-                                    {selectedVoucher.vehicles.map((vehicle, index) => (
-                                        <span key={index}>
-                                            <strong>{vehicle.plate}</strong>: {vehicle.brand} {vehicle.model}
-                                        </span>
-                                    ))}
-                                </p>
-                                {/*</Col>*/}
-                                {/*<Col md={6}>*/}
-                                <p>
-                                    Permesso <i>({selectedVoucher.permit.id})</i>: {selectedVoucher.permit.description}{" "}
-                                    <strong><i>{selectedVoucher.permit.disabled && "Decaduto"}</i></strong>
-                                </p>
-                                {selectedVoucher.applications.length === 0 ? (
-                                    <p>
+                                    <br/>
+
+                                    {selectedVoucher.vehicles == null || selectedVoucher.vehicles.length == 0 ? (
+                                        <span>Nessun veicolo associato</span>
+                                    ) : (
+                                        <>
+                                            Veicoli:{" "}<br/>
+                                            {selectedVoucher.vehicles.map((vehicle, index) => (
+                                                <span key={index}>
+                                                    {" - "}
+                                                    <Link to={"/vehicles/list/" + vehicle.id} target={"_blank"}>
+                                                        <strong>{vehicle.plate}</strong> {vehicle.brand} {vehicle.model}
+                                                    </Link>
+                                                    <br/>
+                                                </span>
+                                            ))}
+                                        </>
+                                    )}
+
+
+                                    {/*</Col>*/}
+                                    {/*<Col md={6}>*/}
+                                    {/*        <p>*/}
+                                    {/*    Permesso <i>({selectedVoucher.permit.id})</i>: {selectedVoucher.permit.description}{" "}*/}
+                                    {/*            <strong><i>{selectedVoucher.permit.disabled && "Decaduto"}</i></strong>*/}
+                                    {/*</p>*/}
+                                    Permesso ({selectedVoucher.permit.id}): {selectedVoucher.permit.description}{" "}
+                                    <strong>{selectedVoucher.permit.disabled && "Decaduto"}</strong><br/>
+                                    {selectedVoucher.applications.length === 0 ? (
+                                        <span>
                                         Nessuna domanda associata
-                                    </p>
-                                ) : (
-                                    <p>
-                                        Ultima domanda associata: <strong>{selectedVoucher.applications[0].id}
-                                        {selectedVoucher.applications[0].cf}</strong><br/>
-                                        {selectedVoucher.applications[0].firstname} {selectedVoucher.applications[0].lastname}<br/>
-                                        {selectedVoucher.applications[0].email}<br/>
+                                    </span>
+                                    ) : (
+                                        <span>
+                                        Ultima domanda associata: <strong>{selectedVoucher.applications[0].id}</strong><br/>
+                                            <strong>{selectedVoucher.applications[0].cf}</strong> {selectedVoucher.applications[0].firstname} {selectedVoucher.applications[0].lastname}<br/>
+                                            {selectedVoucher.applications[0].email}<br/>
                                         Protocollo: {selectedVoucher.applications[0].registerNumber} del {new Date(selectedVoucher.applications[0].registerDate).toLocaleDateString()}<br/>
                                         Riferita all'immobile: {selectedVoucher.applications[0].targetHousePlace}{" - "}
-                                        {selectedVoucher.applications[0].targetHouseLandRegistrySheet}/{selectedVoucher.applications[0].targetHouseLandRegistryMap}/{selectedVoucher.applications[0].targetHouseLandRegistrySubaltern}/{selectedVoucher.applications[0].targetHouseLandRegistryCategory}
-                                    </p>
-                                )}
+                                            {selectedVoucher.applications[0].targetHouseLandRegistrySheet}/{selectedVoucher.applications[0].targetHouseLandRegistryMap}/{selectedVoucher.applications[0].targetHouseLandRegistrySubaltern}/{selectedVoucher.applications[0].targetHouseLandRegistryCategory}
+                                            <br/>
+                                    </span>
+                                    )}
+                                    Ultima modifica: {new Date(selectedVoucher.updatedAt).toLocaleString()}
+                                </p>
+
+
                             </Col>
                         </Row>
                     ) : (
-                        <strong>Nessun tagliando associato</strong>
+                        <Row className={"border border-secondary rounded me-1 pt-2"}>
+                            <Col md={12}>
+                                <p>
+                                    <strong>Nessun tagliando associato</strong>
+                                </p>
+                                <ValidatedInput name={createName} validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false} defaultValue={false}
+                                                isMandatory={true}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setNewValidation}
+                                                labelText={"Crea nuovo tagliando"}
+                                                inputProps={{type: "checkbox", className: "form-check-input"}}/>
+                            </Col>
+                        </Row>
                     )}
                 </Col>
                 <Col md={7} className={"border border-secondary rounded"}>
@@ -278,61 +322,78 @@ export function ValidatedVoucherAssociation(
                         {/*</Row>*/}
 
                         <Row>
-                            <Col md={2}>
-                                <ValidatedInput name={"idFrom"} labelText={"ID (da)"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "number"}}/>
+                            <Col xl={6}>
+                                <Row>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"idFrom"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"ID (da)"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "number"}}/>
+                                    </Col>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"idTo"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"ID (a)"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "number"}}/>
+                                    </Col>
+                                </Row>
                             </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"idTo"} labelText={"ID (a)"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "number"}}/>
+                            <Col xl={6}>
+                                <Row>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"numberFrom"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Numero (da)"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "number"}}/>
+                                    </Col>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"numberTo"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Numero (a)"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "number"}}/>
+                                    </Col>
+                                </Row>
                             </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"numberFrom"} labelText={"Numero (da)"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "number"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"numberTo"} labelText={"Numero (a)"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "number"}}/>
-                            </Col>
-                            <Col md={2} className={"d-none d-md-block"}>
-                                <ValidatedInput name={"permitId"} labelText={"Permesso"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={"" + permitFilter.id}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
+                        </Row>
+
+                        <Row className={"d-none"}>
+                            <ValidatedInput name={"permitId"} namePrefix={"voucherSelectSearch_"} labelText={"Permesso"}
+                                            validationFunc={() => true}
+                                            validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                            validationMark={false}
+                                            defaultValue={"" + (permitFilter == null ? "" : permitFilter.id)}
+                                            isMandatory={false}
+                                            errorMessage={"Compilare i campi obbligatori"}
+                                            setNewValidation={setValidation}
+                                            inputProps={{type: "text", className: "d-none"}}/>
                         </Row>
 
                         {/*
@@ -343,49 +404,69 @@ export function ValidatedVoucherAssociation(
         expiresToDate,
         */}
                         <Row>
-                            <Col md={3}>
-                                <ValidatedInput name={"validityStartedFromDate"} labelText={"Inizio validità (da)"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "date"}}/>
+                            <Col xl={6}>
+                                <Row>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"validityStartedFromDate"}
+                                                        namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Inizio validità (da)"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "date"}}/>
+                                    </Col>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"validityStartedToDate"}
+                                                        namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Inizio validità (a)"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "date"}}/>
+                                    </Col>
+                                </Row>
                             </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"validityStartedToDate"} labelText={"Inizio validità (a)"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "date"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"expiresFromDate"} labelText={"Scadenza (da)"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "date"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"expiresToDate"} labelText={"Scadenza (a)"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "date"}}/>
+                            <Col xl={6}>
+                                <Row>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"expiresFromDate"}
+                                                        namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Scadenza (da)"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "date"}}/>
+                                    </Col>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"expiresToDate"}
+                                                        namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Scadenza (a)"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "date"}}/>
+                                    </Col>
+                                </Row>
                             </Col>
                         </Row>
 
@@ -397,41 +478,51 @@ export function ValidatedVoucherAssociation(
         */}
                         <p className={"mb-4"}><strong>Filtra per dati intestatario</strong></p>
                         <Row>
-                            <Col md={3}>
-                                <ValidatedInput name={"cf"} labelText={"Codice fiscale"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
+                            <Col xl={7}>
+                                <Row>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"cf"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Codice fiscale"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                    <Col md={3}>
+                                        <ValidatedInput name={"firstname"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Nome"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                    <Col md={3}>
+                                        <ValidatedInput name={"lastname"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Cognome"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                </Row>
                             </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"firstname"} labelText={"Nome"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"lastname"} labelText={"Cognome"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={5}>
-                                <ValidatedInput name={"email"} labelText={"Email"}
+                            <Col xl={5}>
+                                <ValidatedInput name={"email"} namePrefix={"voucherSelectSearch_"} labelText={"Email"}
                                                 validationFunc={validateEmail}
                                                 validationText={"Inserisci un indirizzo email valido"}
                                                 persistingValidationText={false}
@@ -453,60 +544,82 @@ export function ValidatedVoucherAssociation(
         */}
                         <p className={"mb-4"}><strong>Filtra per immobile di riferimento</strong></p>
                         <Row>
-                            <Col md={4}>
-                                <ValidatedInput name={"targetHousePlace"} labelText={"Indirizzo immobile"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
+                            <Col xl={4}>
+                                <Row>
+                                    <Col md={12}>
+                                        <ValidatedInput name={"targetHousePlace"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Indirizzo immobile"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                </Row>
                             </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"targetHouseLandRegistrySheet"} labelText={"Foglio"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"targetHouseLandRegistryMap"} labelText={"Mappale"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"targetHouseLandRegistrySubaltern"} labelText={"Subalterno"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"targetHouseLandRegistryCategory"} labelText={"Categoria"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
+                            <Col xl={8}>
+                                <Row>
+                                    <Col md={3}>
+                                        <ValidatedInput name={"targetHouseLandRegistrySheet"}
+                                                        namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Foglio"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                    <Col md={3}>
+                                        <ValidatedInput name={"targetHouseLandRegistryMap"}
+                                                        namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Mappale"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                    <Col md={3}>
+                                        <ValidatedInput name={"targetHouseLandRegistrySubaltern"}
+                                                        namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Subalterno"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                    <Col md={3}>
+                                        <ValidatedInput name={"targetHouseLandRegistryCategory"}
+                                                        namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Categoria"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                </Row>
                             </Col>
                         </Row>
 
@@ -518,53 +631,65 @@ export function ValidatedVoucherAssociation(
         */}
                         <p className={"mb-4"}><strong>Filtra per veicolo associato</strong></p>
                         <Row>
-                            <Col md={2}>
-                                <ValidatedInput name={"vehicleId"} labelText={"ID veicolo"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"}
-                                                persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "number"}}/>
+                            <Col xl={6}>
+                                <Row>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"vehicleId"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"ID veicolo"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "number"}}/>
+                                    </Col>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"vehiclePlate"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Targa"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                </Row>
                             </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"vehiclePlate"} labelText={"Targa"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"}
-                                                persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"vehicleBrand"} labelText={"Marca"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"}
-                                                persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"vehicleModel"} labelText={"Modello"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"}
-                                                persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
+                            <Col xl={6}>
+                                <Row>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"vehicleBrand"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Marca"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                    <Col md={6}>
+                                        <ValidatedInput name={"vehicleModel"} namePrefix={"voucherSelectSearch_"}
+                                                        labelText={"Modello"}
+                                                        validationFunc={() => true}
+                                                        validationText={"Campo obbligatorio"}
+                                                        persistingValidationText={false}
+                                                        validationMark={false}
+                                                        defaultValue={""}
+                                                        isMandatory={false}
+                                                        errorMessage={"Compilare i campi obbligatori"}
+                                                        setNewValidation={setValidation}
+                                                        inputProps={{type: "text"}}/>
+                                    </Col>
+                                </Row>
                             </Col>
                         </Row>
                         <Button color={"primary"} type={"submit"} disabled={!valid || loading}
@@ -576,36 +701,12 @@ export function ValidatedVoucherAssociation(
                         </Button>
                     </Form>
 
-                    {vouchersList.length > 0 && (
-                        <Row>
-                    <span className={"ms-3"}>
-                        {"ID: "}
-                        <strong>Targa</strong>{" - "}
-                        Marca Modello{" - "}
-                        Ultima modifica
-                    </span>
-                            {/*<Col md={1}>*/}
-                            {/*    <strong>#</strong>*/}
-                            {/*</Col>*/}
-                            {/*<Col md={2}>*/}
-                            {/*    <strong>Targa</strong>*/}
-                            {/*</Col>*/}
-                            {/*<Col md={2}>*/}
-                            {/*    <strong>Marca</strong>*/}
-                            {/*</Col>*/}
-                            {/*<Col md={3}>*/}
-                            {/*    <strong>Modello</strong>*/}
-                            {/*</Col>*/}
-                            {/*<Col md={2}>*/}
-                            {/*    <strong>Modifica</strong>*/}
-                            {/*</Col>*/}
-                        </Row>
-                    )}
+
                     <hr/>
                     {vouchersList.map((voucherListEntry, index) => (
                         <div key={index}>
-                            <Row className={"mt-2 d-flex align-items-center"}>
-                                <span>
+                            <Row className={"d-flex align-items-center"}>
+                                <Col md={3}>
                                     {isVoucherSelected(voucherListEntry.id) ? (
                                         <Button onClick={() => removeVoucher(voucherListEntry)}
                                                 color={"secondary"} icon={true} title={"Rimuovi tagliando"} size={"xs"}>
@@ -623,14 +724,62 @@ export function ValidatedVoucherAssociation(
                                             Associa
                                         </Button>
                                     )}
-                                    <span className={"ms-3"}>
-                                        {voucherListEntry.id}{": "}
-                                        {/*<strong>{voucherListEntry.plate}</strong>{" - "}*/}
-                                        {/*{voucherListEntry.brand} {voucherListEntry.model}{" - "}*/}
-                                        {new Date(voucherListEntry.updatedAt).toLocaleString()}
-                                    </span>
-                                </span>
+                                </Col>
+                                <Col md={9}>
 
+                                    <p className={"mt-2"}>
+                                        <Link to={"/vouchers/list/" + voucherListEntry.id} target={"_blank"}>
+                                            ID univoco: {voucherListEntry.id}{": "}
+                                            <strong>Numero {voucherListEntry.number}</strong>{" - "}
+                                            <strong>{voucherListEntry.currentState}</strong>
+                                        </Link>
+                                        <br/>
+                                        Valido dal{' '}
+                                        {new Date(voucherListEntry.validFromDate).toLocaleDateString()}
+                                        {' '}al{' '}
+                                        {new Date(voucherListEntry.validToDate).toLocaleDateString()}
+                                        <br/>
+                                        {voucherListEntry.vehicles == null || voucherListEntry.vehicles.length == 0 ? (
+                                            <span>Nessun veicolo associato</span>
+                                        ) : (
+                                            voucherListEntry.vehicles.map((vehicle, index) => (
+                                                <span key={index}>
+                                                    <Link to={"/vehicles/list/" + vehicle.id} target={"_blank"}>
+                                                        <strong>{vehicle.plate}</strong> {vehicle.brand} {vehicle.model}
+                                                    </Link>
+                                                    {index < voucherListEntry.vehicles.length - 1 && (",")}{' '}
+                                                </span>
+                                            ))
+                                        )}
+
+
+                                        {/*</Col>*/}
+                                        {/*<Col md={6}>*/}
+                                        {/*        <p>*/}
+                                        {/*    Permesso <i>({voucherListEntry.permit.id})</i>: {voucherListEntry.permit.description}{" "}*/}
+                                        {/*            <strong><i>{voucherListEntry.permit.disabled && "Decaduto"}</i></strong>*/}
+                                        {/*</p>*/}
+                                        {voucherListEntry.applications.length === 0 ? (
+                                            <>
+                                                Nessuna domanda associata
+                                            </>
+                                        ) : (
+                                            <>
+                                                <strong>{voucherListEntry.applications[0].cf}</strong> {voucherListEntry.applications[0].firstname} {voucherListEntry.applications[0].lastname}<br/>
+                                                {voucherListEntry.applications[0].email}<br/>
+                                                Protocollo: {voucherListEntry.applications[0].registerNumber} del {new Date(voucherListEntry.applications[0].registerDate).toLocaleDateString()}<br/>
+                                                {voucherListEntry.applications[0].targetHousePlace != null && voucherListEntry.applications[0].targetHousePlace.trim() !== "" &&
+                                                    <>Riferita
+                                                        all'immobile: {voucherListEntry.applications[0].targetHousePlace}{" - "} {voucherListEntry.applications[0].targetHouseLandRegistrySheet}/{voucherListEntry.applications[0].targetHouseLandRegistryMap}/{voucherListEntry.applications[0].targetHouseLandRegistrySubaltern}/{voucherListEntry.applications[0].targetHouseLandRegistryCategory}</>
+                                                }
+
+                                            </>
+                                        )}
+                                        Ultima modifica: {new Date(voucherListEntry.updatedAt).toLocaleString()}
+                                    </p>
+
+
+                                </Col>
                                 {/*<Col md={1}>*/}
                                 {/*    <Button onClick={() => navigate(`/vehicles/list/${vehicleListEntry.id}`)}*/}
                                 {/*            color={"secondary"} icon={true} outline title={"Modifica"}>*/}

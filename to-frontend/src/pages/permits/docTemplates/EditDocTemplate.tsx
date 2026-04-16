@@ -51,7 +51,7 @@ export function EditDocTemplate() {
         for (const [key, value] of Object.entries(formValues)) {
             // FormData accetta solo Blob o string
             if (value instanceof Array) {
-                if (value.length > 0) {
+                if (value.length > 0 && (value[0] instanceof Blob || typeof value[0] === "string")) {
                     formData.set(key, value[0]);
                 }
             } else {

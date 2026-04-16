@@ -603,7 +603,7 @@ export function ApplicationsList() {
                             {applicationListEntry.voucher == null ? (
                                 "non presente"
                             ) : (
-                                applicationListEntry.voucher.number + " scadenza " + applicationListEntry.voucher.validToDate
+                                applicationListEntry.voucher.number + " scadenza " + new Date(applicationListEntry.voucher.validToDate).toLocaleDateString()
                             )}
                         </Col>
                         <Col lg={1} className={"text-wrap"}>
