@@ -7,7 +7,9 @@ import type {
     ApplicationOutcomeListEntry,
     ApplicationTypeListEntry,
     DataMessage,
-    PermitListEntry, VoucherAvailableOptionsApiResponse, VoucherDetails, VoucherDetailsApiResponse
+    PermitListEntry, VoucherAvailableOptionsApiResponse,
+    VoucherConvertPdfApiResponse, VoucherDetails, VoucherDetailsApiResponse,
+    VoucherEditApiResponse, VoucherUploadApiResponse
 } from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput, type ValidationSupportedTypes} from "../../../hooks/useValidateFormInput.ts";
@@ -28,6 +30,8 @@ export function EditVoucher() {
     const [permitsList, setPermitsList] = useState<PermitListEntry[]>([]);
     const [vehiclesAmount, setVehiclesAmount] = useState<number>(2);
     const urlParams = useParams();
+    const [needTemplateGeneration, setNeedTemplateGeneration] = useState<boolean>(false);
+    const [needPdfConversion, setNeedPdfConversion] = useState<boolean>(false);
 
     useEffect(() => {
         const abort = fetchApiAsync<VoucherAvailableOptionsApiResponse>({
@@ -63,52 +67,73 @@ export function EditVoucher() {
         return abort;
     }, [setErr, setLoading, setSucc, urlParams]);
 
-    const onFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
+    const onEditFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
         e.preventDefault();
         if (!valid) {
             executeValidation(true);
             return;
         }
         const formValues = getValueObject();
-        fetchApiAsync<DataMessage>({
-            urlFromApiRoot: "/vouchers/edit/" + urlParams.applicationID,
+        fetchApiAsync<VoucherEditApiResponse>({
+            urlFromApiRoot: "/vouchers/edit/" + urlParams.voucherID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,
                 body: JSON.stringify(formValues)
             },
             callback: (data) => {
-                if (data != null) {
-                    setVoucherDetails(data.voucher);
+                if (data != null && data.needTemplateGeneration != null) {
+                    setNeedTemplateGeneration(data.needTemplateGeneration);
                 }
             }
         });
     }
 
-    const selectableApplicationTypes: SelectOption[] = [{label: "seleziona", value: ""}];
-    if (applicationTypeList.length > 0) {
-        for (const applicationTypeListEntry of applicationTypeList) {
-            if (applicationTypeListEntry.disabled) {
-                continue;
+    const onUploadFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
+        e.preventDefault();
+        //TODO: check if needed
+        // if (!valid) {
+        //     executeValidation(true);
+        //     return;
+        // }
+        const formValues = getValueObject();
+        fetchApiAsync<VoucherUploadApiResponse>({
+            urlFromApiRoot: "/vouchers/upload/" + urlParams.voucherID,
+            errSuccLoading: {setErr, setSucc, setLoading},
+            requestInit: {
+                ...defaultPOSTRequestInit,
+                body: JSON.stringify(formValues)
+            },
+            callback: (data) => {
+                if (data != null && data.voucher != null && data.needPdfConversion != null) {
+                    setVoucherDetails(data.voucher);
+                    setNeedPdfConversion(data.needPdfConversion);
+                }
             }
-            selectableApplicationTypes.push({
-                label: applicationTypeListEntry.description,
-                value: "" + applicationTypeListEntry.id
-            })
-        }
+        });
     }
 
-    const selectableApplicationOutcomes: SelectOption[] = [{label: "seleziona", value: ""}];
-    if (applicationOutcomeList.length > 0) {
-        for (const applicationOutcomeListEntry of applicationOutcomeList) {
-            if (applicationOutcomeListEntry.disabled) {
-                continue;
+    const onConvertPdfFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
+        e.preventDefault();
+        //TODO: check if needed
+        // if (!valid) {
+        //     executeValidation(true);
+        //     return;
+        // }
+        const formValues = getValueObject();
+        fetchApiAsync<VoucherConvertPdfApiResponse>({
+            urlFromApiRoot: "/vouchers/convertPDFs/" + urlParams.voucherID,
+            errSuccLoading: {setErr, setSucc, setLoading},
+            requestInit: {
+                ...defaultPOSTRequestInit,
+                body: JSON.stringify(formValues)
+            },
+            callback: (data) => {
+                if (data != null && data.voucher != null) {
+                    setVoucherDetails(data.voucher);
+                }
             }
-            selectableApplicationOutcomes.push({
-                label: applicationOutcomeListEntry.description,
-                value: "" + applicationOutcomeListEntry.id
-            })
-        }
+        });
     }
 
     const selectablePermits: SelectOption[] = [{label: "seleziona", value: ""}];
@@ -138,7 +163,7 @@ export function EditVoucher() {
                 Torna indietro
             </GoBack>
             <h2>Modifica domanda</h2>
-            <Form onSubmit={onFormSubmit} className={"mt-4"}>
+            <Form onSubmit={onEditFormSubmit} className={"mt-4"}>
                 {voucherDetails != null && (
                     <>
                         <Row>
@@ -474,15 +499,7 @@ export function EditVoucher() {
                                                exactAmount={true}/>
 
                     </Row>
-                    <Row>
-                        {/*
-        voucherId,
-        //EXTRA
-        createVoucher, //boolean for creating a voucher for this application
-        //updateVoucher
-                */}
-                        {/* TODO: scelta tagliando */}
-                    </Row>
+
                 </>
             )}
         </Container>

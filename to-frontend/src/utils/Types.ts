@@ -561,5 +561,21 @@ export type VoucherByIDApiResponse = {
     voucher: VoucherListEntry
 }
 
+export type VoucherEditApiResponse = {
+    message: string,
+    needTemplateGeneration: boolean
+}
+
+export type VoucherUploadApiResponse = {
+    message: string,
+    voucher: VoucherDetails,
+    needPdfConversion: boolean
+}
+
+export type VoucherConvertPdfApiResponse = {
+    message: string,
+    voucher: VoucherDetails
+}
+
 //endregion
 
