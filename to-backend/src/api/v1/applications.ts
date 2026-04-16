@@ -956,9 +956,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 const permitHistoryId = permit.lastPermitHistoryId as number;
 
                 if (permit.applicationPlatesAmount != vehicles.length) {
-                    res.status(400).json({message: "Numero di veicoli non valido"});
-                    tx.rollback();
-                    return;
+                    throw new Error("Numero di veicoli non valido");
                 }
 
                 let createdVoucherId: number | null = null;
@@ -981,14 +979,10 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 if (createdVoucherId == null && voucherId != null) {
                     const voucherToAssociate = await getVoucher(tx, voucherId);
                     if (voucherToAssociate == null) {
-                        res.status(400).json({message: "Tagliando non trovato"});
-                        tx.rollback();
-                        return null;
+                        throw new Error("Tagliando non trovato");
                     }
                     if (voucherToAssociate.permitId !== permitId) {
-                        res.status(400).json({message: "Permesso di tagliando e domanda non corrispondono"});
-                        tx.rollback();
-                        return null;
+                        throw new Error("Permesso di tagliando e domanda non corrispondono");
                     }
                 }
 
@@ -1018,9 +1012,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                     ...(outcomeId !== toUpdateApplication.outcomeId && {outcomeAuthUserId: modifiedByAuthUserId}),
                 }).where(eq(applications.id, applicationID)).returning();
                 if (updatedApplication == null || updatedApplication.length !== 1 || updatedApplication[0] == null) {
-                    console.log("Errore durante l'aggiornamento della domanda");
-                    tx.rollback();
-                    return null;
+                    throw new Error("Errore durante l'aggiornamento della domanda");
                 }
 
                 const deleteResult = await tx.delete(applicationsToVehicles).where(eq(applicationsToVehicles.applicationId, applicationID));
@@ -1037,9 +1029,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
 
                 const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
                 if (insertResult == null || insertResult.rowCount !== vehicles.length) {
-                    console.log("Errore durante l'aggiornamento delle associazioni tra domanda e veicoli");
-                    tx.rollback();
-                    return null;
+                    throw new Error("Errore durante l'aggiornamento delle associazioni tra domanda e veicoli");
                 }
 
                 let voucherHistoryId: number | null = null;
@@ -1076,9 +1066,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                     voucherHistoryId: (createdVoucherHistoryId != null ? createdVoucherHistoryId : voucherHistoryId),
                 }).returning();
                 if (updatedApplicationHistory == null || updatedApplicationHistory.length !== 1 || updatedApplicationHistory[0] == null) {
-                    console.log("Errore durante l'aggiornamento dello storico della domanda");
-                    tx.rollback();
-                    return null;
+                    throw new Error("Errore durante l'aggiornamento dello storico della domanda");
                 }
                 const updatedApplicationHistoryId = updatedApplicationHistory[0].id;
                 const updateResult = await tx.update(applications)
@@ -1098,15 +1086,11 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
 
                 const insertASVSResult = await tx.insert(applicationsHistoryToVehiclesHistory).values(vehiclesToInsertApplicationHistory);
                 if (insertASVSResult == null || insertASVSResult.rowCount !== vehicles.length) {
-                    console.log("Errore durante l'aggiornamento delle associazioni tra storico domanda e storico veicoli");
-                    tx.rollback();
-                    return null;
+                    throw new Error("Errore durante l'aggiornamento delle associazioni tra storico domanda e storico veicoli");
                 }
 
                 if (updateResult == null || updateResult.rowCount !== 1) {
-                    console.log("Errore durante l'aggiornamento della domanda con lo storico");
-                    tx.rollback();
-                    return null;
+                    throw new Error("Errore durante l'aggiornamento della domanda con lo storico");
                 }
                 return updatedApplication[0].id;
             });
@@ -1174,9 +1158,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
             const permitHistoryId = permit.lastPermitHistoryId as number;
 
             if (permit.applicationPlatesAmount != vehicles.length) {
-                res.status(400).json({message: "Numero di veicoli non valido"});
-                tx.rollback();
-                return;
+                throw new Error("Numero di veicoli non valido");
             }
 
             let createdVoucherId: number | null = null;
@@ -1199,14 +1181,10 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
             if (createdVoucherId == null && voucherId != null) {
                 const voucherToAssociate = await getVoucher(tx, voucherId);
                 if (voucherToAssociate == null) {
-                    res.status(400).json({message: "Tagliando non trovato"});
-                    tx.rollback();
-                    return null;
+                    throw new Error("Tagliando non trovato");
                 }
                 if (voucherToAssociate.permitId !== permitId) {
-                    res.status(400).json({message: "Permesso di tagliando e domanda non corrispondono"});
-                    tx.rollback();
-                    return null;
+                    throw new Error("Permesso di tagliando e domanda non corrispondono");
                 }
             }
 
@@ -1236,9 +1214,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 outcomeAuthUserId: modifiedByAuthUserId,
             }).returning();
             if (createdApplication == null || createdApplication.length !== 1 || createdApplication[0] == null) {
-                console.log("Errore durante la creazione della domanda");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante la creazione della domanda");
             }
             const createdApplicationId = createdApplication[0].id;
 
@@ -1256,9 +1232,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
 
             const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
             if (insertResult == null || insertResult.rowCount !== vehicles.length) {
-                console.log("Errore durante l'inserimento delle associazioni tra domanda e veicoli");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'inserimento delle associazioni tra domanda e veicoli");
             }
 
             let voucherHistoryId: number | null = null;
@@ -1295,9 +1269,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 voucherHistoryId: (createdVoucherHistoryId != null ? createdVoucherHistoryId : voucherHistoryId),
             }).returning();
             if (createdApplicationHistory == null || createdApplicationHistory.length !== 1 || createdApplicationHistory[0] == null) {
-                console.log("Errore durante l'inserimento dello storico della domanda");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'inserimento dello storico della domanda");
             }
             const updatedApplicationHistoryId = createdApplicationHistory[0].id;
             const updateResult = await tx.update(applications)
@@ -1314,15 +1286,11 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
 
             const insertASVSResult = await tx.insert(applicationsHistoryToVehiclesHistory).values(vehiclesToInsertApplicationHistory);
             if (insertASVSResult == null || insertASVSResult.rowCount !== vehicles.length) {
-                console.log("Errore durante l'inserimento delle associazioni tra storico domanda e storico veicoli");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'inserimento delle associazioni tra storico domanda e storico veicoli");
             }
 
             if (updateResult == null || updateResult.rowCount !== 1) {
-                console.log("Errore durante l'aggiornamento della domanda con lo storico");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'aggiornamento della domanda con lo storico");
             }
             return createdApplication[0].id;
             });

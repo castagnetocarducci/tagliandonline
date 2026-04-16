@@ -176,7 +176,6 @@ export const getVoucherNumerationNewData = async (tx: DbTransactionType, permitI
     if (updateResult == null || updateResult.rowCount !== 1) {
         throw new Error("Errore: aggiornamento non riuscito: " + updateResult);
     }
-    console.log("nextNumber: ", nextNumber);
     return {
         number: nextNumber,
         durationDays: durationDays

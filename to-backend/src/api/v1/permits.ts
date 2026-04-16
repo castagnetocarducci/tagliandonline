@@ -286,9 +286,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
                 numerationRegisterId
             }).where(eq(permits.id, permitID)).returning();
             if (updatedPermit == null || updatedPermit.length !== 1 || updatedPermit[0] == null) {
-                console.log("Errore durante l'aggiornamento del permesso");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'aggiornamento del permesso");
             }
             const updatedPermitHistory = await tx.insert(permitsHistory).values({
                 permitId: updatedPermit[0].id,
@@ -308,17 +306,13 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
                 numerationRegisterId: updatedPermit[0].numerationRegisterId,
             }).returning();
             if (updatedPermitHistory == null || updatedPermitHistory.length !== 1 || updatedPermitHistory[0] == null) {
-                console.log("Errore durante l'aggiornamento dello storico del permesso");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'aggiornamento dello storico del permesso");
             }
             const updateResult = await tx.update(permits)
                 .set({lastPermitHistoryId: updatedPermitHistory[0].id})
                 .where(eq(permits.id, updatedPermit[0].id));
             if (updateResult == null || updateResult.rowCount !== 1) {
-                console.log("Errore durante l'aggiornamento del permesso con lo storico");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'aggiornamento del permesso con lo storico");
             }
             return updatedPermit[0].id;
         });

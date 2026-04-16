@@ -7,7 +7,7 @@ import type {
     ApplicationOutcomeListEntry,
     ApplicationTypeListEntry,
     DataMessage,
-    PermitListEntry
+    PermitListEntry, VoucherAvailableOptionsApiResponse, VoucherDetails, VoucherDetailsApiResponse
 } from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput, type ValidationSupportedTypes} from "../../../hooks/useValidateFormInput.ts";
@@ -22,45 +22,41 @@ import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesL
 
 export function EditVoucher() {
     const navigate = useNavigate();
-    const [applicationDetails, setApplicationDetails] = useState<ApplicationDetails | null>(null);
+    const [voucherDetails, setVoucherDetails] = useState<VoucherDetails | null>(null);
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
-    const [applicationTypeList, setApplicationTypeList] = useState<ApplicationTypeListEntry[]>([]);
-    const [applicationOutcomeList, setApplicationOutcomeList] = useState<ApplicationOutcomeListEntry[]>([]);
     const [permitsList, setPermitsList] = useState<PermitListEntry[]>([]);
     const [vehiclesAmount, setVehiclesAmount] = useState<number>(2);
     const urlParams = useParams();
 
     useEffect(() => {
-        const abort = fetchApiAsync<ApplicationAvailableOptionsApiResponse>({
+        const abort = fetchApiAsync<VoucherAvailableOptionsApiResponse>({
             urlFromApiRoot: "/vouchers/availableOptions",
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
                 if (data != null) {
-                    setApplicationTypeList(data.applicationTypes);
-                    setApplicationOutcomeList(data.applicationOutcomes);
                     setPermitsList(data.permits);
                 }
             }
         });
         return abort;
-    }, [setErr, setLoading, setSucc, setApplicationTypeList, setApplicationOutcomeList]);
+    }, [setErr, setLoading, setSucc, setPermitsList]);
 
     useEffect(() => {
-        if (urlParams.applicationID == null || urlParams.applicationID == "") {
+        if (urlParams.voucherID == null || urlParams.voucherID == "") {
             navigate("/vouchers/list");
         }
     }, [navigate, urlParams]);
 
     useEffect(() => {
-        const abort = fetchApiAsync<ApplicationDetailsApiResponse>({
-            urlFromApiRoot: "/vouchers/detail/" + urlParams.applicationID,
+        const abort = fetchApiAsync<VoucherDetailsApiResponse>({
+            urlFromApiRoot: "/vouchers/detail/" + urlParams.voucherID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {...defaultGETRequestInit},
             callback: (data) => {
                 if (data != null) {
-                    setApplicationDetails(data.application);
+                    setVoucherDetails(data.voucher);
                 }
             }
         });
@@ -80,6 +76,11 @@ export function EditVoucher() {
             requestInit: {
                 ...defaultPOSTRequestInit,
                 body: JSON.stringify(formValues)
+            },
+            callback: (data) => {
+                if (data != null) {
+                    setVoucherDetails(data.voucher);
+                }
             }
         });
     }
@@ -138,31 +139,31 @@ export function EditVoucher() {
             </GoBack>
             <h2>Modifica domanda</h2>
             <Form onSubmit={onFormSubmit} className={"mt-4"}>
-                {applicationDetails != null && (
+                {voucherDetails != null && (
                     <>
                         <Row>
                             <Col lg={1}>
-                                <p><strong>ID</strong><br/>{applicationDetails.id}</p>
+                                <p><strong>ID</strong><br/>{voucherDetails.id}</p>
                             </Col>
                             <Col lg={3}>
                                 <p><strong>Creata
-                                    il</strong><br/>{new Date(applicationDetails.createdAt).toLocaleString()}</p>
+                                    il</strong><br/>{new Date(voucherDetails.createdAt).toLocaleString()}</p>
                             </Col>
                             <Col lg={3}>
                                 <p><strong>Ultima
-                                    modifica</strong><br/>{new Date(applicationDetails.updatedAt).toLocaleString()}
+                                    modifica</strong><br/>{new Date(voucherDetails.updatedAt).toLocaleString()}
                                 </p>
                             </Col>
-                            {applicationDetails.outcomeAuthUser != null && (
+                            {voucherDetails.outcomeAuthUser != null && (
                                 <Col lg={2}>
-                                    <p><strong>Utente esito</strong><br/>{applicationDetails.outcomeAuthUser.username}
+                                    <p><strong>Utente esito</strong><br/>{voucherDetails.outcomeAuthUser.username}
                                     </p>
                                 </Col>
                             )}
 
                             <Col lg={2}>
                                 <Button className={"mb-4"}
-                                        onClick={() => navigate(`/applications/list/${applicationDetails.id}/history`)}
+                                        onClick={() => navigate(`/applications/list/${voucherDetails.id}/history`)}
                                         color={"primary"} icon={true} outline title={"Visualizza storico domanda"}>
                                         <span className={"rounded-icon me-2"}>
                                             <Icon icon={"it-calendar"}/>
@@ -184,7 +185,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={dateStrToISOString(applicationDetails.requestDate)}
+                                                defaultValue={dateStrToISOString(voucherDetails.requestDate)}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -195,7 +196,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={dateStrToISOString(applicationDetails.outcomeDate)}
+                                                defaultValue={dateStrToISOString(voucherDetails.outcomeDate)}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -206,7 +207,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.registerNumber}
+                                                defaultValue={voucherDetails.registerNumber}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -217,7 +218,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={dateStrToISOString(applicationDetails.registerDate)}
+                                                defaultValue={dateStrToISOString(voucherDetails.registerDate)}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -235,7 +236,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.cf}
+                                                defaultValue={voucherDetails.cf}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -246,7 +247,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.firstname}
+                                                defaultValue={voucherDetails.firstname}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -257,7 +258,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.lastname}
+                                                defaultValue={voucherDetails.lastname}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -269,7 +270,7 @@ export function EditVoucher() {
                                                 validationText={"Inserisci un indirizzo email valido"}
                                                 persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.email}
+                                                defaultValue={voucherDetails.email}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -289,7 +290,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={dateStrToISOString(applicationDetails.birthDate)}
+                                                defaultValue={dateStrToISOString(voucherDetails.birthDate)}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -300,7 +301,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.birthCity != null ? applicationDetails.birthCity : ""}
+                                                defaultValue={voucherDetails.birthCity != null ? voucherDetails.birthCity : ""}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -311,7 +312,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.residenceCity != null ? applicationDetails.residenceCity : ""}
+                                                defaultValue={voucherDetails.residenceCity != null ? voucherDetails.residenceCity : ""}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -322,7 +323,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.residencePlace != null ? applicationDetails.residencePlace : ""}
+                                                defaultValue={voucherDetails.residencePlace != null ? voucherDetails.residencePlace : ""}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -333,7 +334,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.targetHousePlace != null ? applicationDetails.targetHousePlace : ""}
+                                                defaultValue={voucherDetails.targetHousePlace != null ? voucherDetails.targetHousePlace : ""}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -353,7 +354,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.targetHouseLandRegistrySheet != null ? applicationDetails.targetHouseLandRegistrySheet : ""}
+                                                defaultValue={voucherDetails.targetHouseLandRegistrySheet != null ? voucherDetails.targetHouseLandRegistrySheet : ""}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -364,7 +365,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.targetHouseLandRegistryMap != null ? applicationDetails.targetHouseLandRegistryMap : ""}
+                                                defaultValue={voucherDetails.targetHouseLandRegistryMap != null ? voucherDetails.targetHouseLandRegistryMap : ""}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -375,7 +376,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.targetHouseLandRegistrySubaltern != null ? applicationDetails.targetHouseLandRegistrySubaltern : ""}
+                                                defaultValue={voucherDetails.targetHouseLandRegistrySubaltern != null ? voucherDetails.targetHouseLandRegistrySubaltern : ""}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -386,7 +387,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.targetHouseLandRegistryCategory != null ? applicationDetails.targetHouseLandRegistryCategory : ""}
+                                                defaultValue={voucherDetails.targetHouseLandRegistryCategory != null ? voucherDetails.targetHouseLandRegistryCategory : ""}
                                                 isMandatory={false}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -400,7 +401,7 @@ export function EditVoucher() {
                                                 validationFunc={() => true}
                                                 validationText={""} persistingValidationText={false}
                                                 validationMark={false}
-                                                defaultValue={applicationDetails.notes != null ? applicationDetails.notes : ""}
+                                                defaultValue={voucherDetails.notes != null ? voucherDetails.notes : ""}
                                                 isMandatory={false}
                                                 errorMessage={""}
                                                 setNewValidation={setValidation}
@@ -417,7 +418,7 @@ export function EditVoucher() {
                             <Col md={4}>
                                 <ValidatedSelect name={"permitId"} validationFunc={() => true}
                                                  validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                 defaultValue={applicationDetails.permit.id}
+                                                 defaultValue={voucherDetails.permit.id}
                                                  isMandatory={true}
                                                  errorMessage={"Compilare i campi obbligatori"}
                                                  setNewValidation={setValidation}
@@ -428,7 +429,7 @@ export function EditVoucher() {
                             <Col md={4}>
                                 <ValidatedSelect name={"typeId"} validationFunc={() => true}
                                                  validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                 defaultValue={applicationDetails.type.id}
+                                                 defaultValue={voucherDetails.type.id}
                                                  isMandatory={true}
                                                  errorMessage={"Compilare i campi obbligatori"}
                                                  setNewValidation={setValidation}
@@ -438,7 +439,7 @@ export function EditVoucher() {
                             <Col md={4}>
                                 <ValidatedSelect name={"outcomeId"} validationFunc={() => true}
                                                  validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                 defaultValue={applicationDetails.outcome.id}
+                                                 defaultValue={voucherDetails.outcome.id}
                                                  isMandatory={true}
                                                  errorMessage={"Compilare i campi obbligatori"}
                                                  setNewValidation={setValidation}
@@ -460,12 +461,12 @@ export function EditVoucher() {
                 <SuccessErrorAlert err={err} succ={succ}/>
 
             </Form>
-            {applicationDetails != null && (
+            {voucherDetails != null && (
                 <>
                     <Row className={"mt-4"}>
                         <ValidatedVehiclesList name={"vehicles"} validationFunc={() => true}
                                                validationText={"Campo obbligatorio"}
-                                               defaultValue={applicationDetails.vehicles != null ? applicationDetails.vehicles.map(vehicle => vehicle.id) : []}
+                                               defaultValue={voucherDetails.vehicles != null ? voucherDetails.vehicles.map(vehicle => vehicle.id) : []}
                                                isMandatory={true}
                                                errorMessage={"Devi associare un numero corretto di veicoli"}
                                                setNewValidation={setValidation}

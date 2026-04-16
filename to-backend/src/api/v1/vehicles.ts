@@ -296,9 +296,7 @@ vehiclesRouter.post("/edit/:vehicleID", middlewareAuthCheck(["admin", "operatore
                 brand,
             }).where(eq(vehicles.id, vehicleID)).returning();
             if (updatedVehicle == null || updatedVehicle.length !== 1 || updatedVehicle[0] == null) {
-                console.log("Errore durante l'aggiornamento del veicolo");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'aggiornamento del veicolo");
             }
             const updatedVehicleHistory = await tx.insert(vehiclesHistory).values({
                 vehicleId: updatedVehicle[0].id,
@@ -309,17 +307,13 @@ vehiclesRouter.post("/edit/:vehicleID", middlewareAuthCheck(["admin", "operatore
                 brand: updatedVehicle[0].brand,
             }).returning();
             if (updatedVehicleHistory == null || updatedVehicleHistory.length !== 1 || updatedVehicleHistory[0] == null) {
-                console.log("Errore durante l'aggiornamento dello storico del veicolo");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'aggiornamento dello storico del veicolo");
             }
             const updateResult = await tx.update(vehicles)
                 .set({lastVehiclesHistoryId: updatedVehicleHistory[0].id})
                 .where(eq(vehicles.id, updatedVehicle[0].id));
             if (updateResult == null || updateResult.rowCount !== 1) {
-                console.log("Errore durante l'aggiornamento del veicolo con lo storico");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'aggiornamento del veicolo con lo storico");
             }
             return updatedVehicle[0].id;
         });
@@ -365,9 +359,7 @@ vehiclesRouter.post("/new", middlewareAuthCheck(["admin", "operatore", "vigile"]
                 brand,
             }).returning();
             if (insertedVehicle == null || insertedVehicle.length !== 1 || insertedVehicle[0] == null) {
-                console.log("Errore durante l'inserimento del veicolo");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'inserimento del veicolo");
             }
             const insertedVehicleHistory = await tx.insert(vehiclesHistory).values({
                 vehicleId: insertedVehicle[0].id,
@@ -378,17 +370,13 @@ vehiclesRouter.post("/new", middlewareAuthCheck(["admin", "operatore", "vigile"]
                 brand: insertedVehicle[0].brand
             }).returning();
             if (insertedVehicleHistory == null || insertedVehicleHistory.length !== 1 || insertedVehicleHistory[0] == null) {
-                console.log("Errore durante l'inserimento dello storico del veicolo");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'inserimento dello storico del veicolo");
             }
             const updateResult = await tx.update(vehicles)
                 .set({lastVehiclesHistoryId: insertedVehicleHistory[0].id})
                 .where(eq(vehicles.id, insertedVehicle[0].id));
             if (updateResult == null || updateResult.rowCount !== 1) {
-                console.log("Errore durante l'aggiornamento del veicolo con lo storico");
-                tx.rollback();
-                return null;
+                throw new Error("Errore durante l'aggiornamento del veicolo con lo storico");
             }
             return insertedVehicle[0].id;
         });
