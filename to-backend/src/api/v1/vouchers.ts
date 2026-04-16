@@ -28,6 +28,7 @@ import {
 } from "../../files/filesStorages.ts";
 import {generateVoucherDocumentFromTemplate, type VoucherTemplateData} from "../../reportsGeneration.ts";
 import {convertPDF} from "../../pdfConversion.ts";
+import {Mutex} from "../../utils/mutex.ts";
 
 export const vouchersRouter = Router();
 
@@ -1573,26 +1574,28 @@ vouchersRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (
     const db = DatabaseManager.instance.db;
     try {
         const createdVoucherId = await db.transaction(async (tx) => {
-            const permit = await getPermit(tx, permitId);
-            const permitHistoryId = permit.lastPermitHistoryId as number;
+            return await voucherNumerationMutex.runExclusive(async () => {
+                const permit = await getPermit(tx, permitId);
+                const permitHistoryId = permit.lastPermitHistoryId as number;
 
-            if (permit.applicationPlatesAmount != vehicles.length) {
-                res.status(400).json({message: "Numero di veicoli non valido"});
-                tx.rollback();
-                return;
-            }
+                if (permit.applicationPlatesAmount != vehicles.length) {
+                    res.status(400).json({message: "Numero di veicoli non valido"});
+                    tx.rollback();
+                    return;
+                }
 
-            const {newVoucherId, newVoucherHistoryId} = await createNewVoucher(tx, {
-                permitId: permitId,
-                permitHistoryId: permitHistoryId,
-                validFromDate: validFromDate,
-                validToDate: validToDate,
-                notes: notes,
-                permitApplicationPlatesAmount: permit.applicationPlatesAmount,
-                modifiedByAuthUserId: modifiedByAuthUserId,
-                vehicles: vehicles,
+                const {newVoucherId, newVoucherHistoryId} = await createNewVoucher(tx, {
+                    permitId: permitId,
+                    permitHistoryId: permitHistoryId,
+                    validFromDate: validFromDate,
+                    validToDate: validToDate,
+                    notes: notes,
+                    permitApplicationPlatesAmount: permit.applicationPlatesAmount,
+                    modifiedByAuthUserId: modifiedByAuthUserId,
+                    vehicles: vehicles,
+                });
+                return newVoucherId;
             });
-            return newVoucherId;
         });
         if (createdVoucherId == null) {
             res.status(500).json({message: "Errore durante l'inserimento del tagliando"});
@@ -1633,13 +1636,14 @@ export type VoucherCreationData = {
     permitId: number,
     permitHistoryId: number,
     permitApplicationPlatesAmount: number,
-    validFromDate: string,
+    validFromDate: string | null,
     validToDate: string | null,
     notes: string,
     modifiedByAuthUserId: number,
     vehicles: number[]
 };
 
+export const voucherNumerationMutex = new Mutex();
 export const createNewVoucher = async (tx: DbTransactionType, creationData: VoucherCreationData): Promise<{
     newVoucherId: number,
     newVoucherHistoryId: number
@@ -1647,16 +1651,22 @@ export const createNewVoucher = async (tx: DbTransactionType, creationData: Vouc
     if (creationData.permitApplicationPlatesAmount !== creationData.vehicles.length) {
         throw new Error("Numero di targhe nel permesso non corrispondente al numero di veicoli");
     }
-    const validFromDateT: Date = new Date(creationData.validFromDate);
+    let validFromDateT: Date = new Date();
+    if (creationData.validFromDate != null && creationData.validFromDate.trim() !== "") {
+        validFromDateT = new Date(creationData.validFromDate);
+    }
     if (validFromDateT.toString() === "Invalid Date") {
-        throw new Error("Errore durante la creazione del tagliando: data esito non valida");
+        throw new Error("Errore durante la creazione del tagliando: data inizio validità tagliando non valida");
     }
     const {number, durationDays} = await getVoucherNumerationNewData(tx, creationData.permitId);
     let expiryDateT: Date = new Date(validFromDateT);
-    if (creationData.validToDate != null && creationData.validToDate.trim() !== "" && new Date(creationData.validToDate).toString() != "Invalid Date") {
+    if (creationData.validToDate != null && creationData.validToDate.trim() !== "") {
         expiryDateT = new Date(creationData.validToDate);
     } else {
         expiryDateT.setDate(validFromDateT.getDate() + durationDays);
+    }
+    if (expiryDateT.toString() === "Invalid Date") {
+        throw new Error("Errore durante la creazione del tagliando: data scadenza tagliando non valida");
     }
     const createdVoucher = await tx.insert(vouchers).values({
         number: number,
@@ -1693,6 +1703,7 @@ export const createNewVoucher = async (tx: DbTransactionType, creationData: Vouc
         newVoucherId: createdVoucherId,
         newVoucherHistoryId: createdVoucherHistoryId,
     };
+
 }
 
 export const getLastVoucherHistoryId = async (tx: DbTransactionType, voucherId: number): Promise<number> => {

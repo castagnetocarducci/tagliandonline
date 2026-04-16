@@ -15,6 +15,7 @@ import {defaultPOSTRequestInit, fetchApiAsync} from "../../utils/fetching.ts";
 import {ValidatedInput} from "./ValidatedInput.tsx";
 import {LoadingSpinner} from "../LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../SuccessErrorAlert.tsx";
+import {Link} from "react-router";
 
 
 type ValidatedVehiclesListProps = {
@@ -242,8 +243,9 @@ export function ValidatedVehiclesList(
                                             Rimuovi
                                         </Button>
                                         <span className={"ms-3"}>
-                                            {vehicleListEntry.id}{": "}
-                                            <strong>{vehicleListEntry.plate}</strong>{" - "}
+                                            <Link to={"/vehicles/list/" + vehicleListEntry.id} target={"_blank"}>
+                                                {vehicleListEntry.id}{": "} <strong>{vehicleListEntry.plate}</strong>
+                                            </Link>{" - "}
                                             {vehicleListEntry.brand} {vehicleListEntry.model}
                                         </span>
                                     </span>
@@ -363,29 +365,30 @@ export function ValidatedVehiclesList(
                             <Row className={"mt-2 d-flex align-items-center"}>
                                 <Col md={3}>
 
-                                        {isVehicleSelected(vehicleListEntry.id) ? (
-                                            <Button onClick={() => removeVehicle(vehicleListEntry)}
-                                                    color={"secondary"} icon={true} title={"Rimuovi veicolo"}
-                                                    size={"xs"}>
+                                    {isVehicleSelected(vehicleListEntry.id) ? (
+                                        <Button onClick={() => removeVehicle(vehicleListEntry)}
+                                                color={"secondary"} icon={true} title={"Rimuovi veicolo"}
+                                                size={"xs"}>
                                     <span className={"rounded-icon me-2"}>
                                         <Icon icon={"it-minus"}/>
                                     </span>
-                                                Rimuovi
-                                            </Button>
-                                        ) : (
-                                            <Button onClick={() => addVehicle(vehicleListEntry)}
-                                                    color={"primary"} icon={true} title={"Associa veicolo"} size={"xs"}>
+                                            Rimuovi
+                                        </Button>
+                                    ) : (
+                                        <Button onClick={() => addVehicle(vehicleListEntry)}
+                                                color={"primary"} icon={true} title={"Associa veicolo"} size={"xs"}>
                                     <span className={"rounded-icon me-2"}>
                                         <Icon icon={"it-plus"}/>
                                     </span>
-                                                Associa
-                                            </Button>
-                                        )}
+                                            Associa
+                                        </Button>
+                                    )}
                                 </Col>
                                 <Col md={9}>
                             <span>
-                                            {vehicleListEntry.id}{": "}
-                                <strong>{vehicleListEntry.plate}</strong>{" - "}
+                                <Link to={"/vehicles/list/" + vehicleListEntry.id} target={"_blank"}>
+                                    {vehicleListEntry.id}{": "}<strong>{vehicleListEntry.plate}</strong>
+                                </Link>{" - "}
                                 {vehicleListEntry.brand} {vehicleListEntry.model}{" - "}
                                 {new Date(vehicleListEntry.updatedAt).toLocaleString()}
                                         </span>

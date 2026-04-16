@@ -186,7 +186,6 @@ export const applications = toSchema.table("applications", {
     birthCity: varchar({length: 64}),
     residenceCity: varchar({length: 64}),
     residencePlace: varchar({length: 128}),
-    targetHouseCity: varchar({length: 64}),
     targetHousePlace: varchar({length: 128}),
     targetHouseLandRegistrySheet: varchar({length: 8}),
     targetHouseLandRegistryMap: varchar({length: 8}),
