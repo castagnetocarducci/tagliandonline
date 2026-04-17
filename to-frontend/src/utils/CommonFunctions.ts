@@ -5,6 +5,9 @@ export const sleep = (ms: number) => {
 }
 
 export const validateEmail = (newEmailValue: ValidationSupportedTypes): boolean => {
+    if (newEmailValue == null) {
+        return false;
+    }
     const strValue = newEmailValue.toString();
     const regex = /^.+@.+$/;
     return regex.test(strValue);

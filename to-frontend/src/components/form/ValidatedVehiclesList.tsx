@@ -231,7 +231,7 @@ export function ValidatedVehiclesList(
 
                     {selectedVehiclesList.length > 0 ? (
 
-                        <List className={"border border-secondary rounded me-1"}>
+                        <List className={"border border-secondary rounded me-1 ps-2"}>
                             {selectedVehiclesList.map((vehicleListEntry, index) => (
                                 <ListItem key={index}>
                                     <span>

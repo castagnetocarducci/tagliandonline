@@ -1,4 +1,4 @@
-import {useNavigate, useParams} from "react-router";
+import {Link, useNavigate, useParams} from "react-router";
 import {type FormEvent, type FormEventHandler, useEffect, useState} from "react";
 import type {
     ApplicationAvailableOptionsApiResponse,
@@ -14,13 +14,14 @@ import type {
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput, type ValidationSupportedTypes} from "../../../hooks/useValidateFormInput.ts";
 import {defaultGETRequestInit, defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
-import {Button, Col, Container, Form, GoBack, Icon, Row} from "design-react-kit";
+import {Button, Col, Container, Form, GoBack, Icon, List, ListItem, Row} from "design-react-kit";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
 import {dateStrToISOString, validateEmail} from "../../../utils/CommonFunctions.ts";
 import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesList.tsx";
+import {RouterDesignLink} from "../../../components/links/RouterDesignLink.tsx";
 
 export function EditVoucher() {
     const navigate = useNavigate();
@@ -162,16 +163,22 @@ export function EditVoucher() {
             <GoBack link>
                 Torna indietro
             </GoBack>
-            <h2>Modifica domanda</h2>
+            <h2>Modifica tagliando</h2>
             <Form onSubmit={onEditFormSubmit} className={"mt-4"}>
                 {voucherDetails != null && (
                     <>
                         <Row>
                             <Col lg={1}>
-                                <p><strong>ID</strong><br/>{voucherDetails.id}</p>
+                                <p>ID<br/>{voucherDetails.id}</p>
+                            </Col>
+                            <Col lg={1}>
+                                <p><strong>Numero</strong><br/>{voucherDetails.number}</p>
+                            </Col>
+                            <Col lg={2}>
+                                <p><strong>Stato</strong><br/>{voucherDetails.currentState}</p>
                             </Col>
                             <Col lg={3}>
-                                <p><strong>Creata
+                                <p><strong>Creato
                                     il</strong><br/>{new Date(voucherDetails.createdAt).toLocaleString()}</p>
                             </Col>
                             <Col lg={3}>
@@ -179,17 +186,11 @@ export function EditVoucher() {
                                     modifica</strong><br/>{new Date(voucherDetails.updatedAt).toLocaleString()}
                                 </p>
                             </Col>
-                            {voucherDetails.outcomeAuthUser != null && (
-                                <Col lg={2}>
-                                    <p><strong>Utente esito</strong><br/>{voucherDetails.outcomeAuthUser.username}
-                                    </p>
-                                </Col>
-                            )}
 
                             <Col lg={2}>
                                 <Button className={"mb-4"}
-                                        onClick={() => navigate(`/applications/list/${voucherDetails.id}/history`)}
-                                        color={"primary"} icon={true} outline title={"Visualizza storico domanda"}>
+                                        onClick={() => navigate(`/vouchers/list/${voucherDetails.id}/history`)}
+                                        color={"primary"} icon={true} outline title={"Visualizza storico tagliando"}>
                                         <span className={"rounded-icon me-2"}>
                                             <Icon icon={"it-calendar"}/>
                                         </span>
@@ -200,246 +201,42 @@ export function EditVoucher() {
 
                         <Row className={"mt-4"}>
                             {/*
-        requestDate,
-        outcomeDate,
-        registerNumber,
-        registerDate,
-                    */}
-                            <Col md={3}>
-                                <ValidatedInput name={"requestDate"} labelText={"Data richiesta"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={dateStrToISOString(voucherDetails.requestDate)}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "date"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"outcomeDate"} labelText={"Data esito"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={dateStrToISOString(voucherDetails.outcomeDate)}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "date"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"registerNumber"} labelText={"Numero protocollo"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.registerNumber}
-                                                isMandatory={true}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "number"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"registerDate"} labelText={"Data protocollo"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={dateStrToISOString(voucherDetails.registerDate)}
-                                                isMandatory={true}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "date"}}/>
-                            </Col>
-                        </Row>
-                        <Row>
-                            {/*cf,
-        firstname,
-        lastname,
-        email,*/}
-
-                            <Col md={3}>
-                                <ValidatedInput name={"cf"} labelText={"Codice fiscale"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.cf}
-                                                isMandatory={true}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"firstname"} labelText={"Nome"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.firstname}
-                                                isMandatory={true}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"lastname"} labelText={"Cognome"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.lastname}
-                                                isMandatory={true}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={5}>
-                                <ValidatedInput name={"email"} labelText={"Email"}
-                                                validationFunc={validateEmail}
-                                                validationText={"Inserisci un indirizzo email valido"}
-                                                persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.email}
-                                                isMandatory={true}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                        </Row>
-                        <Row>
-                            {/*
-       birthDate,
-        birthCity,
-        residenceCity,
-        residencePlace,
-        targetHousePlace,*/}
-
-                            <Col md={2}>
-                                <ValidatedInput name={"birthDate"} labelText={"Data di nascita"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={dateStrToISOString(voucherDetails.birthDate)}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "date"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"birthCity"} labelText={"Luogo di nascita"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.birthCity != null ? voucherDetails.birthCity : ""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={2}>
-                                <ValidatedInput name={"residenceCity"} labelText={"Comune di residenza"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.residenceCity != null ? voucherDetails.residenceCity : ""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"residencePlace"} labelText={"Indirizzo di residenza"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.residencePlace != null ? voucherDetails.residencePlace : ""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"targetHousePlace"} labelText={"Indirizzo immobile"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.targetHousePlace != null ? voucherDetails.targetHousePlace : ""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-
-                        </Row>
-                        <Row>
-                            {/*
-        targetHouseLandRegistrySheet,
-        targetHouseLandRegistryMap,
-        targetHouseLandRegistrySubaltern,
-        targetHouseLandRegistryCategory,*/}
-
-                            <Col md={3}>
-                                <ValidatedInput name={"targetHouseLandRegistrySheet"} labelText={"Foglio"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.targetHouseLandRegistrySheet != null ? voucherDetails.targetHouseLandRegistrySheet : ""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"targetHouseLandRegistryMap"} labelText={"Mappale"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.targetHouseLandRegistryMap != null ? voucherDetails.targetHouseLandRegistryMap : ""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"targetHouseLandRegistrySubaltern"} labelText={"Subalterno"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.targetHouseLandRegistrySubaltern != null ? voucherDetails.targetHouseLandRegistrySubaltern : ""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"targetHouseLandRegistryCategory"} labelText={"Categoria"}
-                                                validationFunc={() => true}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.targetHouseLandRegistryCategory != null ? voucherDetails.targetHouseLandRegistryCategory : ""}
-                                                isMandatory={false}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                        </Row>
-                        {/*notes,*/}
-                        <Row>
-                            <Col md={8}>
-                                <ValidatedInput name={"notes"} labelText={"Note"}
-                                                validationFunc={() => true}
-                                                validationText={""} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={voucherDetails.notes != null ? voucherDetails.notes : ""}
-                                                isMandatory={false}
-                                                errorMessage={""}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "text"}}/>
-                            </Col>
-                        </Row>
-
-                        <Row>
-                            {/*
+        validFromDate,
+        validToDate,
         permitId,
-        outcomeId,
-        typeId,
         */}
+                            <Col md={3}>
+                                <ValidatedInput name={"validFromDate"} labelText={"Valido dal"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={dateStrToISOString(voucherDetails.validFromDate)}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "date"}}/>
+                            </Col>
+                            <Col md={3}>
+                                <ValidatedInput name={"validToDate"} labelText={"Scadenza"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={dateStrToISOString(voucherDetails.validToDate)}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "date"}}/>
+                            </Col>
+                            <Col md={2}>
+                                <ValidatedInput name={"revoked"} validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false} defaultValue={voucherDetails.revoked}
+                                                isMandatory={true}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                labelText={"Revocato"}
+                                                inputProps={{type: "checkbox", className: "form-check-input"}}/>
+                            </Col>
                             <Col md={4}>
                                 <ValidatedSelect name={"permitId"} validationFunc={() => true}
                                                  validationText={"Campo obbligatorio"} persistingValidationText={false}
@@ -451,27 +248,133 @@ export function EditVoucher() {
                                                  valueChangedCallback={selectedPermitChanged}
                                                  options={selectablePermits}/>
                             </Col>
-                            <Col md={4}>
-                                <ValidatedSelect name={"typeId"} validationFunc={() => true}
-                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                 defaultValue={voucherDetails.type.id}
-                                                 isMandatory={true}
-                                                 errorMessage={"Compilare i campi obbligatori"}
-                                                 setNewValidation={setValidation}
-                                                 labelText={"Tipo"}
-                                                 options={selectableApplicationTypes}/>
-                            </Col>
-                            <Col md={4}>
-                                <ValidatedSelect name={"outcomeId"} validationFunc={() => true}
-                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                 defaultValue={voucherDetails.outcome.id}
-                                                 isMandatory={true}
-                                                 errorMessage={"Compilare i campi obbligatori"}
-                                                 setNewValidation={setValidation}
-                                                 labelText={"Esito"}
-                                                 options={selectableApplicationOutcomes}/>
+                        </Row>
+
+                        {/*
+        notes,
+        */}
+                        <Row>
+                            <Col md={8}>
+                                <ValidatedInput name={"notes"} labelText={"Note"}
+                                                validationFunc={() => true}
+                                                validationText={""} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={voucherDetails.notes}
+                                                isMandatory={false}
+                                                errorMessage={""}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "text"}}/>
                             </Col>
                         </Row>
+
+                        {(voucherDetails.applications != null && voucherDetails.applications.length > 0) ? (
+                            <Col lg={12}>
+                                {(voucherDetails.applications.length > 0) && (
+                                    <>
+                                        <h4><strong>Domande collegate</strong></h4>
+                                        <List>
+                                            <ListItem>
+                                                <Col lg={2} className={"text-wrap"}>
+                                                    <strong>#</strong>
+                                                </Col>
+                                                <Col lg={2} className={"text-wrap"}>
+                                                    <strong>Nominativo</strong>
+                                                </Col>
+                                                <Col lg={1} className={"text-wrap"}>
+                                                    <strong>Tipo</strong>
+                                                </Col>
+                                                <Col lg={2} className={"text-wrap"}>
+                                                    <strong>Esito</strong>
+                                                </Col>
+                                                <Col lg={2} className={"text-wrap"}>
+                                                    <strong>Protocollo</strong>
+                                                </Col>
+                                                <Col lg={1} className={"text-wrap"}>
+                                                    <strong>Veicoli</strong>
+                                                </Col>
+                                                {/*<Col lg={1} className={"text-wrap"}>*/}
+                                                {/*    {application.targetHousePlace && application.targetHousePlace + " - "}*/}
+                                                {/*    {application.targetHouseLandRegistrySheet && application.targetHouseLandRegistrySheet + " "}*/}
+                                                {/*    {application.targetHouseLandRegistryMap && application.targetHouseLandRegistryMap + " "}*/}
+                                                {/*    {application.targetHouseLandRegistrySubaltern && application.targetHouseLandRegistrySubaltern + " "}*/}
+                                                {/*    {application.targetHouseLandRegistryCategory && application.targetHouseLandRegistryCategory + " "}*/}
+                                                {/*</Col>*/}
+                                                <Col lg={1} className={"text-break text-truncate"}>
+                                                    <strong>Email</strong>
+                                                </Col>
+                                            </ListItem>
+                                            {voucherDetails.applications.map((application, index) => {
+                                                if (index === 0) return (
+                                                    <ListItem>
+                                                        <Col lg={2} className={"text-wrap"}>
+                                                            <RouterDesignLink key={application.id}
+                                                                              to={`/applications/list/${application.id}`}
+                                                                              title={"Vai alla domanda"}>
+                                                                <div className={"it-right-zone"}>
+                                                                    <span
+                                                                        className={"text"}>Domanda {application.id}</span>
+                                                                    <Icon icon="it-chevron-right"/>
+                                                                </div>
+                                                            </RouterDesignLink>
+                                                        </Col>
+                                                        <Col lg={2} className={"text-wrap"}>
+                                                            {application.firstname} {application.lastname} {application.cf}
+                                                        </Col>
+                                                        <Col lg={1} className={"text-wrap"}>
+                                                            {application.typeDescription}
+                                                        </Col>
+                                                        <Col lg={2} className={"text-wrap"}>
+                                                            {application.outcomeDescription} in data {application.outcomeDate == null ? "N/A" : new Date(application.outcomeDate).toLocaleDateString()}
+                                                        </Col>
+                                                        <Col lg={2} className={"text-wrap"}>
+                                                            {application.registerNumber} del {new Date(application.registerDate).toLocaleDateString()}
+                                                        </Col>
+                                                        <Col lg={1} className={"text-wrap"}>
+                                                            {application.vehicles.map((vehicle) => vehicle.plate).join(", ")}
+                                                        </Col>
+                                                        {/*<Col lg={1} className={"text-wrap"}>*/}
+                                                        {/*    {application.targetHousePlace && application.targetHousePlace + " - "}*/}
+                                                        {/*    {application.targetHouseLandRegistrySheet && application.targetHouseLandRegistrySheet + " "}*/}
+                                                        {/*    {application.targetHouseLandRegistryMap && application.targetHouseLandRegistryMap + " "}*/}
+                                                        {/*    {application.targetHouseLandRegistrySubaltern && application.targetHouseLandRegistrySubaltern + " "}*/}
+                                                        {/*    {application.targetHouseLandRegistryCategory && application.targetHouseLandRegistryCategory + " "}*/}
+                                                        {/*</Col>*/}
+                                                        <Col lg={1} className={"text-break text-truncate"}>
+                                                            <Link
+                                                                to={"mailto:" + application.email}>{application.email}</Link>
+                                                        </Col>
+                                                        {/*<Col lg={1}>*/}
+                                                        {/*    {new Date(application.updatedAt).toLocaleString()}*/}
+                                                        {/*</Col>*/}
+                                                    </ListItem>
+                                                );
+                                                else return (
+                                                    <RouterDesignLink key={application.id}
+                                                                      to={`/applications/list/${application.id}`}
+                                                                      className={"list-item"}
+                                                                      title={"Vai alla domanda"}>
+                                                        <div className={"it-right-zone"}>
+                                                            <span className={"text"}>Domanda {application.id}</span>
+                                                            <Icon icon="it-chevron-right"/>
+                                                        </div>
+                                                    </RouterDesignLink>
+                                                )
+                                            })}
+                                        </List>
+                                    </>
+                                )}
+                                {(voucherDetails.applications.length === 0) && (
+                                    <p><strong>Nessuna domanda collegata</strong></p>
+                                )}
+                            </Col>
+                        ) : (
+                            <Row className={"mt-4"}>
+                                <Col md={12}>
+                                    <p><strong>Domande collegate</strong></p>
+                                </Col>
+                            </Row>
+                        )}
+
 
                         <Row className={"mt-4"}>
                             <Col md={4}>

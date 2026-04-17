@@ -1398,7 +1398,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
         req.body.notes == null || typeof req.body.notes !== "string" ||
         req.body.permitId == null || isNaN(parseInt(req.body.permitId)) ||
         req.body.vehicles == null || !Array.isArray(req.body.vehicles) || req.body.vehicles.some((elem: any) => typeof elem !== 'number')) {
-        res.status(400).json({message: "Parametri di creazione non validi"});
+        res.status(400).json({message: "Parametri di modifica non validi"});
         return;
     }
     if (req.body.revoked != null && typeof req.body.revoked === "string") {

@@ -105,7 +105,7 @@ export function NewVoucher() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "date"}}/>
                     </Col>
-                    <Col md={2}>
+                    <Col md={3}>
                         <ValidatedInput name={"validToDate"} labelText={"Scadenza"}
                                         validationFunc={() => true}
                                         validationText={"Campo obbligatorio"} persistingValidationText={false}
