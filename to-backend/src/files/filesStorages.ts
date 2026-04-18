@@ -32,6 +32,13 @@ export const uploadModelsMulter = multer({
     limits: {
         fileSize: 2 * 1024 * 1024, //2MB
         files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.path.endsWith(".docx")) {
+            cb(null, true);
+        } else {
+            cb(null, false);
+        }
     }
 });
 
@@ -60,6 +67,17 @@ export const uploadVouchersMulter = multer({
         fieldNameSize: 200,
         fileSize: 2 * 1024 * 1024, //2MB
         files: 3
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.fieldname === "signedAuthorization" &&
+            !(file.originalname.endsWith(".pdf") || file.originalname.endsWith(".p7m"))) {
+            cb(null, false);
+        } else if ((file.fieldname === "generatedAuthorizationTemplate" || file.fieldname === "generatedVoucherTemplate") &&
+            !file.originalname.endsWith(".docx")) {
+            cb(null, false);
+        } else {
+            cb(null, true);
+        }
     }
 });
 

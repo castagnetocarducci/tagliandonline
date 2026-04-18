@@ -7,11 +7,17 @@ import type {
     VoucherDetails,
     VoucherDetailsApiResponse,
     VoucherEditApiResponse,
+    VoucherGenerateTemplatesApiResponse,
     VoucherUploadApiResponse
 } from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {useValidateFormInput, type ValidationSupportedTypes} from "../../../hooks/useValidateFormInput.ts";
-import {defaultGETRequestInit, defaultPOSTRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
+import {
+    defaultGETRequestInit,
+    defaultPOSTRequestInit,
+    fetchApiAsync,
+    multipartPOSTRequestInit
+} from "../../../utils/fetching.ts";
 import {
     Button,
     Col,
@@ -35,12 +41,15 @@ import {dateStrToISOString} from "../../../utils/CommonFunctions.ts";
 import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesList.tsx";
 import {RouterDesignLink} from "../../../components/links/RouterDesignLink.tsx";
 import {RouterDesignTabLink} from "../../../components/links/RouterDesignTabLink.tsx";
+import {getApiUrl} from "../../../utils/ConfigProvider.ts";
+import {ValidatedUploadDragNdropSingle} from "../../../components/form/ValidatedUploadDragNdropSingle.tsx";
 
 export function EditVoucher() {
     const navigate = useNavigate();
     const [voucherDetails, setVoucherDetails] = useState<VoucherDetails | null>(null);
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
+    const uploadValidation = useValidateFormInput(setErr, setSucc);
     const [permitsList, setPermitsList] = useState<PermitListEntry[]>([]);
     const [vehiclesAmount, setVehiclesAmount] = useState<number>(2);
     const urlParams = useParams();
@@ -108,7 +117,9 @@ export function EditVoucher() {
             },
             callback: (data) => {
                 if (data != null && data.needTemplateGeneration != null) {
-                    setNeedTemplateGeneration(data.needTemplateGeneration);
+                    if (!needTemplateGeneration) {
+                        setNeedTemplateGeneration(data.needTemplateGeneration);
+                    }
                 }
             }
         });
@@ -116,20 +127,20 @@ export function EditVoucher() {
 
     const onGenerateTemplatesFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
         e.preventDefault();
-        //TODO: check if needed
-        // if (!valid) {
-        //     executeValidation(true);
-        //     return;
-        // }
-        fetchApiAsync<VoucherConvertPdfApiResponse>({
+
+        fetchApiAsync<VoucherGenerateTemplatesApiResponse>({
             urlFromApiRoot: "/vouchers/generateTemplates/" + urlParams.voucherID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultGETRequestInit
             },
             callback: (data) => {
-                if (data != null && data.voucher != null) {
-                    setVoucherDetails(data.voucher);
+                if (data != null && data.voucherDetails != null) {
+                    setVoucherDetails(data.voucherDetails);
+                    if (!needPdfConversion) {
+                        setNeedPdfConversion(data.needPdfConversion);
+                    }
+                    setNeedTemplateGeneration(false);
                 }
             }
         });
@@ -137,23 +148,37 @@ export function EditVoucher() {
 
     const onUploadFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
         e.preventDefault();
-        //TODO: check if needed
-        // if (!valid) {
-        //     executeValidation(true);
-        //     return;
-        // }
-        const formValues = getValueObject();
+        if (!uploadValidation.valid) {
+            uploadValidation.executeValidation(true);
+            return;
+        }
+        const formValues = uploadValidation.getValueObject();
+        //https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_forms_through_JavaScript
+        const formData = new FormData();
+        for (const [key, value] of Object.entries(formValues)) {
+            // FormData accetta solo Blob o string
+            if (value instanceof Array) {
+                if (value.length > 0 && (value[0] instanceof Blob || typeof value[0] === "string")) {
+                    formData.set(key, value[0]);
+                }
+            } else {
+                formData.set(key, "" + value);
+            }
+        }
+
         fetchApiAsync<VoucherUploadApiResponse>({
             urlFromApiRoot: "/vouchers/upload/" + urlParams.voucherID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
-                ...defaultPOSTRequestInit,
-                body: JSON.stringify(formValues)
+                ...multipartPOSTRequestInit,
+                body: formData
             },
             callback: (data) => {
-                if (data != null && data.voucher != null && data.needPdfConversion != null) {
-                    setVoucherDetails(data.voucher);
-                    setNeedPdfConversion(data.needPdfConversion);
+                if (data != null && data.voucherDetails != null) {
+                    setVoucherDetails(data.voucherDetails);
+                    if (!needPdfConversion) {
+                        setNeedPdfConversion(data.needPdfConversion);
+                    }
                 }
             }
         });
@@ -173,8 +198,9 @@ export function EditVoucher() {
                 ...defaultGETRequestInit
             },
             callback: (data) => {
-                if (data != null && data.voucher != null) {
-                    setVoucherDetails(data.voucher);
+                if (data != null && data.voucherDetails != null) {
+                    setVoucherDetails(data.voucherDetails);
+                    setNeedPdfConversion(false);
                 }
             }
         });
@@ -480,20 +506,175 @@ export function EditVoucher() {
                         {urlParams.tab === "documents" && voucherDetails != null && (
                             <>
                                 <h2>Documenti</h2>
-
-                                <Form onSubmit={onGenerateTemplatesFormSubmit} className={"mt-4"}>
-                                    {/*TODO: generate templates*/}
-
-                                </Form>
+                                <Row>
+                                    <Col md={3}>
+                                        <Form onSubmit={onGenerateTemplatesFormSubmit} className={"mt-4"}>
+                                            {/*TODO: generate templates*/}
+                                            <Button
+                                                color={(needTemplateGeneration || voucherDetails.generatedVoucherTemplatePath === null) ? "primary" : "warning"}
+                                                outline={!(needTemplateGeneration || voucherDetails.generatedVoucherTemplatePath === null)}
+                                                type={"submit"}
+                                                disabled={loading}>
+                                                Genera da modello
+                                            </Button>
+                                        </Form>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form onSubmit={onConvertPdfFormSubmit} className={"mt-4"}>
+                                            {/*TODO: convert*/}
+                                            <Button
+                                                color={(needPdfConversion || voucherDetails.generatedVoucherPdfPath === null) ? "primary" : "warning"}
+                                                outline={!(needPdfConversion || voucherDetails.generatedVoucherPdfPath === null)}
+                                                type={"submit"}
+                                                disabled={loading || voucherDetails.generatedVoucherTemplatePath === null}>
+                                                Converti in PDF
+                                            </Button>
+                                        </Form>
+                                    </Col>
+                                </Row>
 
                                 <Form onSubmit={onUploadFormSubmit} className={"mt-4"}>
                                     {/*TODO: upload*/}
+                                    <Row className={"align-items-center mt-4"}>
+                                        <Col md={3}>
+                                            <span><strong>Tagliando modificabile</strong></span><br/>
+                                            <Button href={getApiUrl() + voucherDetails.generatedVoucherTemplatePath}
+                                                    color={"primary"} icon={true}
+                                                    disabled={voucherDetails.generatedVoucherTemplatePath === null}
+                                                    title={"Scarica tagliando modificabile"}>
+                                                <Icon icon={"it-download"} color={"white"}/>
+                                                <span className={"ps-1"}>Scarica</span>
+                                            </Button>
+                                        </Col>
+                                        <Col md={8}>
+                                            {voucherDetails.generatedVoucherTemplatePath === null ? (
+                                                <i>Ancora da generare</i>
+                                            ) : (
+                                                <ValidatedUploadDragNdropSingle
+                                                    name={"generatedVoucherTemplate"}
+                                                    acceptedFileExtensions={[".docx"]}
+                                                    validationFunc={() => true}
+                                                    validationText={""}
+                                                    isMandatory={false}
+                                                    errorMessage={"File non valido"}
+                                                    setNewValidation={uploadValidation.setValidation}
+                                                />
+                                            )}
+                                        </Col>
+                                    </Row>
 
-                                </Form>
-                                <Form onSubmit={onConvertPdfFormSubmit} className={"mt-4"}>
-                                    {/*TODO: convert*/}
+                                    <Row className={"align-items-center mt-4"}>
+                                        <Col md={3}>
+                                            <span><strong>Autorizzazione modificabile</strong></span><br/>
+                                            <Button
+                                                href={getApiUrl() + voucherDetails.generatedAuthorizationTemplatePath}
+                                                color={"primary"} icon={true}
+                                                disabled={voucherDetails.generatedAuthorizationTemplatePath === null}
+                                                title={"Scarica autorizzazione modificabile"}>
+                                                <Icon icon={"it-download"} color={"white"}/>
+                                                <span className={"ps-1"}>Scarica</span>
+                                            </Button>
+                                        </Col>
+                                        <Col md={8}>
+                                            {voucherDetails.generatedAuthorizationTemplatePath === null ? (
+                                                <i>Ancora da generare</i>
+                                            ) : (
+                                                <ValidatedUploadDragNdropSingle
+                                                    name={"generatedAuthorizationTemplate"}
+                                                    acceptedFileExtensions={[".docx"]}
+                                                    validationFunc={() => true}
+                                                    validationText={""}
+                                                    isMandatory={false}
+                                                    errorMessage={"File non valido"}
+                                                    setNewValidation={uploadValidation.setValidation}
+                                                />
+                                            )}
+                                        </Col>
+                                    </Row>
 
+                                    <Row className={"align-items-center mt-4"}>
+                                        <Col md={3}>
+                                            <span><strong>Tagliando PDF</strong></span><br/>
+                                            {/*href={getApiUrl() + voucherDetails.generatedVoucherPdfPath}*/}
+                                            <Button type={"button"}
+                                                    onClick={() => {
+                                                        window.open(getApiUrl() + voucherDetails.generatedVoucherPdfPath, "_blank")
+                                                    }}
+                                                    color={"primary"} icon={true}
+                                                    disabled={voucherDetails.generatedVoucherPdfPath === null}
+                                                    title={"Scarica pdf tagliando"}>
+                                                <Icon icon={"it-download"} color={"white"}/>
+                                                <span className={"ps-1"}>Scarica</span>
+                                            </Button>
+                                        </Col>
+                                        <Col md={8}>
+                                            {voucherDetails.generatedVoucherPdfPath === null && (
+                                                <i>Ancora da generare</i>
+                                            )}
+                                        </Col>
+                                    </Row>
+
+                                    <Row className={"align-items-center mt-4"}>
+                                        <Col md={3}>
+                                            <span><strong>Autorizzazione PDF</strong></span><br/>
+                                            {/*href={getApiUrl() + voucherDetails.generatedAuthorizationPdfPath}*/}
+                                            <Button type={"button"}
+                                                    onClick={() => {
+                                                        window.open(getApiUrl() + voucherDetails.generatedAuthorizationPdfPath, "_blank")
+                                                    }}
+                                                    color={"primary"} icon={true}
+                                                    disabled={voucherDetails.generatedAuthorizationPdfPath === null}
+                                                    title={"Scarica pdf autorizzazione"}>
+                                                <Icon icon={"it-download"} color={"white"}/>
+                                                <span className={"ps-1"}>Scarica</span>
+                                            </Button>
+                                        </Col>
+                                        <Col md={8}>
+                                            {voucherDetails.generatedAuthorizationPdfPath === null && (
+                                                <i>Ancora da generare</i>
+                                            )}
+                                        </Col>
+                                    </Row>
+
+                                    <Row className={"align-items-center mt-4"}>
+                                        <Col md={3}>
+                                            <span><strong>Autorizzazione firmata</strong></span><br/>
+                                            {/*href={getApiUrl() + voucherDetails.signedAuthorizationPath}*/}
+                                            <Button type={"button"}
+                                                    onClick={() => {
+                                                        window.open(getApiUrl() + voucherDetails.signedAuthorizationPath, "_blank")
+                                                    }}
+                                                    color={"primary"} icon={true}
+                                                    disabled={voucherDetails.signedAuthorizationPath === null}
+                                                    title={"Scarica autorizzazione firmata"}>
+                                                <Icon icon={"it-download"} color={"white"}/>
+                                                <span className={"ps-1"}>Scarica</span>
+                                            </Button>
+                                        </Col>
+                                        <Col md={8}>
+                                            <ValidatedUploadDragNdropSingle
+                                                name={"signedAuthorization"}
+                                                acceptedFileExtensions={[".pdf", ".p7m"]}
+                                                validationFunc={() => true}
+                                                validationText={""}
+                                                isMandatory={false}
+                                                errorMessage={"File non valido"}
+                                                setNewValidation={uploadValidation.setValidation}
+                                            />
+                                        </Col>
+                                    </Row>
+                                    <Row className={"align-items-center mt-5"}>
+                                        <Col md={3}>
+                                            <Button color={"primary"}
+                                                    type={"submit"}
+                                                    disabled={!uploadValidation.valid || loading}>
+                                                Carica file
+                                            </Button>
+                                        </Col>
+                                    </Row>
                                 </Form>
+                                <br/>
+
                                 <LoadingSpinner loading={loading}/>
                                 <SuccessErrorAlert err={err} succ={succ}/>
 

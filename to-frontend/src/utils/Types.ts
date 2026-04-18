@@ -573,19 +573,19 @@ export type VoucherEditApiResponse = {
 
 export type VoucherGenerateTemplatesApiResponse = {
     message: string,
-    voucher: VoucherDetails,
+    voucherDetails: VoucherDetails,
     needPdfConversion: boolean
 }
 
 export type VoucherUploadApiResponse = {
     message: string,
-    voucher: VoucherDetails,
+    voucherDetails: VoucherDetails,
     needPdfConversion: boolean
 }
 
 export type VoucherConvertPdfApiResponse = {
     message: string,
-    voucher: VoucherDetails
+    voucherDetails: VoucherDetails
 }
 
 //endregion
