@@ -505,6 +505,11 @@ export type VoucherDetails = {
         outcomeDate: Date | null,
         outcomeDescription: string,
         typeDescription: string,
+        targetHousePlace: string | null,
+        targetHouseLandRegistrySheet: string | null,
+        targetHouseLandRegistryMap: string | null,
+        targetHouseLandRegistrySubaltern: string | null,
+        targetHouseLandRegistryCategory: string | null,
         vehicles: {
             id: number,
             createdAt: Date,

@@ -30,7 +30,7 @@ export function EditPermit() {
 
     useEffect(() => {
         if (urlParams.permitID == null || urlParams.permitID == "") {
-            navigate("/permits/list");
+            navigate("/permits/list", {replace: true});
         }
     }, [navigate, urlParams]);
 

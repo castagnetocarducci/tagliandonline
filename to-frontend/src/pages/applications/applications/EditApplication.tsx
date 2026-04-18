@@ -51,7 +51,7 @@ export function EditApplication() {
 
     useEffect(() => {
         if (urlParams.applicationID == null || urlParams.applicationID == "") {
-            navigate("/applications/list");
+            navigate("/applications/list", {replace: true});
         }
     }, [navigate, urlParams]);
 

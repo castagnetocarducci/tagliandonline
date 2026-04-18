@@ -20,7 +20,7 @@ export const VehiclesManagement = () => {
 
     useEffect(() => {
         if (location.pathname === "/vehicles" || location.pathname === "/vehicles/") {
-            navigate("/vehicles/list");
+            navigate("/vehicles/list", {replace: true});
         }
     }, [location, navigate]);
 

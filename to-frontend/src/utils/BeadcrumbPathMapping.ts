@@ -16,6 +16,7 @@ const breadcrumbPathMap = new Map<string, string>([
     ["emailTemplates", "Modelli email"],
     ["history", "Storico"],
     ["vehicles", "Veicoli"],
+    ["check-voucher", "Controlla"],
 ]);
 
 type SingleBreadcrumb = {

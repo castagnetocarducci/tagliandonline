@@ -20,7 +20,7 @@ export const VouchersManagement = () => {
 
     useEffect(() => {
         if (location.pathname === "/vouchers" || location.pathname === "/vouchers/") {
-            navigate("/vouchers/list");
+            navigate("/vouchers/list", {replace: true});
         }
     }, [location, navigate]);
 

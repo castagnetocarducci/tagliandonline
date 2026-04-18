@@ -20,7 +20,7 @@ export function EditDocTemplate() {
 
     useEffect(() => {
         if (urlParams.docTemplateID == null || urlParams.docTemplateID == "") {
-            navigate("/docTemplates");
+            navigate("/docTemplates", {replace: true});
         }
     }, [navigate, urlParams]);
 

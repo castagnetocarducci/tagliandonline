@@ -3,7 +3,7 @@ import {useEffect, useState} from "react";
 import type {VoucherPublicCheck, VoucherPublicCheckApiResponse} from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
 import {defaultGETRequestInit, fetchApiAsync} from "../../../utils/fetching.ts";
-import {Col, Container, GoBack, Row} from "design-react-kit";
+import {Col, Container, Row} from "design-react-kit";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 
@@ -38,9 +38,6 @@ export function CheckVoucher() {
 
     return (
         <Container>
-            <GoBack link>
-                Torna indietro
-            </GoBack>
             <h2>Controllo tagliando online</h2>
 
             {/*
@@ -71,40 +68,42 @@ export function CheckVoucher() {
             {voucherPublicCheck != null ? <>
                 <Row>
                     <Col md={6}>
-                        <h3>
+                        <h2>
                             Tagliando numero {voucherPublicCheck.number}{'  '}
                             <small className="text-muted">
-                                ID univoco: {voucherPublicCheck.id} (ultimo aggiornamento: {new Date(voucherPublicCheck.updatedAt).toLocaleString()})
+                                ID univoco: {voucherPublicCheck.id}
                             </small>
+                        </h2>
+                        (ultimo aggiornamento: {new Date(voucherPublicCheck.updatedAt).toLocaleString()})
+                        <h3>
+                            <span className={"text-decoration-underline"}><strong>{voucherPublicCheck.currentState}</strong></span>
                         </h3>
                         <h4>
-                            {voucherPublicCheck.currentState}
-                        </h4>
-                        <h5>
                             Valido dal{' '}
                             {new Date(voucherPublicCheck.validFromDate).toLocaleDateString()}
-                            al{' '}
+                            {' '}al{' '}
                             {new Date(voucherPublicCheck.validToDate).toLocaleDateString()}
-                        </h5>
-                        <h4>
-                            Veicoli:
                         </h4>
+                        <h3>
+                            Veicoli:
+                        </h3>
                         {voucherPublicCheck.vehicles.map((vehicle, index) => (
-                            <h5 key={index}>
-                                <strong>{vehicle.plate}</strong>: {vehicle.brand} {vehicle.model}
-                            </h5>
+                            <h4 key={index}>
+                                {" - "}<strong>{vehicle.plate}</strong>: {vehicle.brand} {vehicle.model}
+                            </h4>
                         ))}
 
                     </Col>
                     <Col md={6}>
+                        <h3>
+                            Permesso per {voucherPublicCheck.permit.description}
+                            {/*<small className="text-muted">(ID: {voucherPublicCheck.permit.id})</small>*/}
+                        </h3>
                         <h4>
-                            Permesso <small className="text-muted">{voucherPublicCheck.permit.id}</small> per {voucherPublicCheck.permit.description}
-                        </h4>
-                        <h5>
-                            {voucherPublicCheck.permit.disabled && "Decaduto"}
-                            Veicoli utilizzabili contemporaneamente: {voucherPublicCheck.permit.simultaneousPlatesAmount}
+                            {voucherPublicCheck.permit.disabled && "Decaduto"}<br/>
+                            Veicoli utilizzabili contemporaneamente: {voucherPublicCheck.permit.simultaneousPlatesAmount}<br/>
                             Numero targhe autorizzabili: {voucherPublicCheck.permit.applicationPlatesAmount}
-                        </h5>
+                        </h4>
                     </Col>
                 </Row>
             </> : <>

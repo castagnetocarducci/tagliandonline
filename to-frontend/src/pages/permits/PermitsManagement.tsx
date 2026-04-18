@@ -30,7 +30,7 @@ export const PermitsManagement = () => {
 
     useEffect(() => {
         if (location.pathname === "/permits" || location.pathname === "/permits/") {
-            navigate("/permits/list");
+            navigate("/permits/list", {replace: true});
         }
     }, [location, navigate]);
 

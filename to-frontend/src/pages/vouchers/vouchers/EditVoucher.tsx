@@ -160,6 +160,10 @@ export function EditVoucher() {
 
     return (
         <Container>
+            <h1>Gestione tagliando</h1>
+            
+
+
             <GoBack link>
                 Torna indietro
             </GoBack>
@@ -169,10 +173,10 @@ export function EditVoucher() {
                     <>
                         <Row>
                             <Col lg={1}>
-                                <p>ID<br/>{voucherDetails.id}</p>
+                                <p><strong>ID</strong><br/>{voucherDetails.id}</p>
                             </Col>
                             <Col lg={1}>
-                                <p><strong>Numero</strong><br/>{voucherDetails.number}</p>
+                                <p><strong>Numero</strong><br/><strong>{voucherDetails.number}</strong></p>
                             </Col>
                             <Col lg={2}>
                                 <p><strong>Stato</strong><br/>{voucherDetails.currentState}</p>
@@ -273,7 +277,7 @@ export function EditVoucher() {
                                     <>
                                         <h4><strong>Domande collegate</strong></h4>
                                         <List>
-                                            <ListItem>
+                                            <ListItem key={"header"}>
                                                 <Col lg={2} className={"text-wrap"}>
                                                     <strong>#</strong>
                                                 </Col>
@@ -286,29 +290,24 @@ export function EditVoucher() {
                                                 <Col lg={2} className={"text-wrap"}>
                                                     <strong>Esito</strong>
                                                 </Col>
-                                                <Col lg={2} className={"text-wrap"}>
+                                                <Col lg={1} className={"text-wrap"}>
                                                     <strong>Protocollo</strong>
+                                                </Col>
+                                                <Col lg={2} className={"text-wrap"}>
+                                                    <strong>Indirizzo e Catasto</strong>
                                                 </Col>
                                                 <Col lg={1} className={"text-wrap"}>
                                                     <strong>Veicoli</strong>
                                                 </Col>
-                                                {/*<Col lg={1} className={"text-wrap"}>*/}
-                                                {/*    {application.targetHousePlace && application.targetHousePlace + " - "}*/}
-                                                {/*    {application.targetHouseLandRegistrySheet && application.targetHouseLandRegistrySheet + " "}*/}
-                                                {/*    {application.targetHouseLandRegistryMap && application.targetHouseLandRegistryMap + " "}*/}
-                                                {/*    {application.targetHouseLandRegistrySubaltern && application.targetHouseLandRegistrySubaltern + " "}*/}
-                                                {/*    {application.targetHouseLandRegistryCategory && application.targetHouseLandRegistryCategory + " "}*/}
-                                                {/*</Col>*/}
                                                 <Col lg={1} className={"text-break text-truncate"}>
                                                     <strong>Email</strong>
                                                 </Col>
                                             </ListItem>
                                             {voucherDetails.applications.map((application, index) => {
                                                 if (index === 0) return (
-                                                    <ListItem>
+                                                    <ListItem key={application.id}>
                                                         <Col lg={2} className={"text-wrap"}>
-                                                            <RouterDesignLink key={application.id}
-                                                                              to={`/applications/list/${application.id}`}
+                                                            <RouterDesignLink to={`/applications/list/${application.id}`}
                                                                               title={"Vai alla domanda"}>
                                                                 <div className={"it-right-zone"}>
                                                                     <span
@@ -326,19 +325,19 @@ export function EditVoucher() {
                                                         <Col lg={2} className={"text-wrap"}>
                                                             {application.outcomeDescription} in data {application.outcomeDate == null ? "N/A" : new Date(application.outcomeDate).toLocaleDateString()}
                                                         </Col>
-                                                        <Col lg={2} className={"text-wrap"}>
+                                                        <Col lg={1} className={"text-wrap"}>
                                                             {application.registerNumber} del {new Date(application.registerDate).toLocaleDateString()}
+                                                        </Col>
+                                                        <Col lg={2} className={"text-wrap"}>
+                                                            {application.targetHousePlace && application.targetHousePlace + " - "}
+                                                            {application.targetHouseLandRegistrySheet && application.targetHouseLandRegistrySheet + " "}
+                                                            {application.targetHouseLandRegistryMap && application.targetHouseLandRegistryMap + " "}
+                                                            {application.targetHouseLandRegistrySubaltern && application.targetHouseLandRegistrySubaltern + " "}
+                                                            {application.targetHouseLandRegistryCategory && application.targetHouseLandRegistryCategory + " "}
                                                         </Col>
                                                         <Col lg={1} className={"text-wrap"}>
                                                             {application.vehicles.map((vehicle) => vehicle.plate).join(", ")}
                                                         </Col>
-                                                        {/*<Col lg={1} className={"text-wrap"}>*/}
-                                                        {/*    {application.targetHousePlace && application.targetHousePlace + " - "}*/}
-                                                        {/*    {application.targetHouseLandRegistrySheet && application.targetHouseLandRegistrySheet + " "}*/}
-                                                        {/*    {application.targetHouseLandRegistryMap && application.targetHouseLandRegistryMap + " "}*/}
-                                                        {/*    {application.targetHouseLandRegistrySubaltern && application.targetHouseLandRegistrySubaltern + " "}*/}
-                                                        {/*    {application.targetHouseLandRegistryCategory && application.targetHouseLandRegistryCategory + " "}*/}
-                                                        {/*</Col>*/}
                                                         <Col lg={1} className={"text-break text-truncate"}>
                                                             <Link
                                                                 to={"mailto:" + application.email}>{application.email}</Link>

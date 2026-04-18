@@ -30,10 +30,12 @@ export const EditUser = () => {
 
     useEffect(() => {
         if (userDataCtx.userData == null || userDataCtx.userData.role !== "admin") {
-            navigate("/");
+            navigate("/", {replace: true});
+            return;
         }
         if (urlParams.userID == null || urlParams.userID == "") {
-            navigate("/users");
+            navigate("/users", {replace: true});
+            return;
         }
     }, [userDataCtx, navigate, urlParams]);
 

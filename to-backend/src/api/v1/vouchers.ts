@@ -85,6 +85,11 @@ type VoucherListEntry = {
         firstname: string,
         lastname: string,
         email: string,
+        targetHousePlace: string | null,
+        targetHouseLandRegistrySheet: string | null,
+        targetHouseLandRegistryMap: string | null,
+        targetHouseLandRegistrySubaltern: string | null,
+        targetHouseLandRegistryCategory: string | null,
     }[]
 }
 
@@ -123,6 +128,11 @@ type VoucherDetails = {
         outcomeDate: Date | null,
         outcomeDescription: string,
         typeDescription: string,
+        targetHousePlace: string | null,
+        targetHouseLandRegistrySheet: string | null,
+        targetHouseLandRegistryMap: string | null,
+        targetHouseLandRegistrySubaltern: string | null,
+        targetHouseLandRegistryCategory: string | null,
         vehicles: {
             id: number,
             createdAt: Date,
@@ -534,6 +544,11 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
                 firstname: a.firstname,
                 lastname: a.lastname,
                 email: a.email,
+                targetHousePlace: a.targetHousePlace,
+                targetHouseLandRegistrySheet: a.targetHouseLandRegistrySheet,
+                targetHouseLandRegistryMap: a.targetHouseLandRegistryMap,
+                targetHouseLandRegistrySubaltern: a.targetHouseLandRegistrySubaltern,
+                targetHouseLandRegistryCategory: a.targetHouseLandRegistryCategory
             })),
 
             permit: {
@@ -652,6 +667,11 @@ const getVoucherDetails = async (voucher: DetailedVoucherQueryResult) => {
             outcomeDate: a.outcomeDate == null ? null : new Date(a.outcomeDate),
             outcomeDescription: a.outcome == null ? "" : a.outcome.description,
             typeDescription: a.type == null ? "" : a.type.description,
+            targetHousePlace: a.targetHousePlace,
+            targetHouseLandRegistrySheet: a.targetHouseLandRegistrySheet,
+            targetHouseLandRegistryMap: a.targetHouseLandRegistryMap,
+            targetHouseLandRegistrySubaltern: a.targetHouseLandRegistrySubaltern,
+            targetHouseLandRegistryCategory: a.targetHouseLandRegistryCategory,
             vehicles: a.vehicles == null ? [] : a.vehicles.map(v => ({
                 id: v.id,
                 createdAt: v.createdAt,
@@ -791,6 +811,11 @@ vouchersRouter.get("/byID/:voucherID", middlewareAuthCheck(["admin", "operatore"
             firstname: a.firstname,
             lastname: a.lastname,
             email: a.email,
+            targetHousePlace: a.targetHousePlace,
+            targetHouseLandRegistrySheet: a.targetHouseLandRegistrySheet,
+            targetHouseLandRegistryMap: a.targetHouseLandRegistryMap,
+            targetHouseLandRegistrySubaltern: a.targetHouseLandRegistrySubaltern,
+            targetHouseLandRegistryCategory: a.targetHouseLandRegistryCategory
         })),
 
         permit: {

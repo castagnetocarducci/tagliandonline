@@ -335,12 +335,12 @@ export function ValidatedVehiclesList(
                         <Row>
                             <Col md={3}></Col>
                             <Col md={9}>
-                                <span>
+                                <p className={"mt-0 mb-0"}>
                                     {"ID: "}
                                     <strong>Targa</strong>{" - "}
                                     Marca Modello{" - "}
                                     Ultima modifica
-                                </span>
+                                </p>
                                 {/*<Col md={1}>*/}
                                 {/*    <strong>#</strong>*/}
                                 {/*</Col>*/}
@@ -385,13 +385,13 @@ export function ValidatedVehiclesList(
                                     )}
                                 </Col>
                                 <Col md={9}>
-                            <span>
+                            <p className={"mt-0 mb-0"}>
                                 <Link to={"/vehicles/list/" + vehicleListEntry.id} target={"_blank"}>
                                     {vehicleListEntry.id}{": "}<strong>{vehicleListEntry.plate}</strong>
                                 </Link>{" - "}
                                 {vehicleListEntry.brand} {vehicleListEntry.model}{" - "}
                                 {new Date(vehicleListEntry.updatedAt).toLocaleString()}
-                                        </span>
+                                        </p>
                                 </Col>
                                 {/*<Col md={1} className={""}>*/}
                                 {/*    {vehicleListEntry.id}*/}

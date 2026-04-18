@@ -19,7 +19,7 @@ export function EditEmailTemplate() {
 
     useEffect(() => {
         if (urlParams.emailTemplateID == null || urlParams.emailTemplateID == "") {
-            navigate("/emailTemplates");
+            navigate("/emailTemplates", {replace: true});
         }
     }, [navigate, urlParams]);
 

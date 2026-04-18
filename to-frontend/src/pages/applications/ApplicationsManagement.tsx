@@ -20,7 +20,7 @@ export const ApplicationsManagement = () => {
 
     useEffect(() => {
         if (location.pathname === "/applications" || location.pathname === "/applications/") {
-            navigate("/applications/list");
+            navigate("/applications/list", {replace: true});
         }
     }, [location, navigate]);
 

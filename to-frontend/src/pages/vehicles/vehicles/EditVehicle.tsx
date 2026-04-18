@@ -19,7 +19,7 @@ export function EditVehicle() {
 
     useEffect(() => {
         if (urlParams.vehicleID == null || urlParams.vehicleID == "") {
-            navigate("/vehicles/list");
+            navigate("/vehicles/list", {replace: true});
         }
     }, [navigate, urlParams]);
 

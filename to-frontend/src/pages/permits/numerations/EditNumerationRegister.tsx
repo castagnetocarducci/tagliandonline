@@ -18,7 +18,7 @@ export function EditNumerationRegister() {
 
     useEffect(() => {
         if (urlParams.numerationRegisterID == null || urlParams.numerationRegisterID == "") {
-            navigate("/numerations");
+            navigate("/numerations", {replace: true});
         }
     }, [navigate, urlParams]);
 
