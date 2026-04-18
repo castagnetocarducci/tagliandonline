@@ -33,6 +33,7 @@ export const VouchersManagement = () => {
                     <Route path="/list/new" element={<NewVoucher/>}/>
                 }
                 <Route path="/list/:voucherID/history" element={<VoucherHistory/>}/>
+                <Route path="/list/:voucherID/:tab" element={<EditVoucher/>}/>
                 <Route path="/list/:voucherID" element={<EditVoucher/>}/>
                 <Route path="/list" element={<VouchersList/>}/>
             </Routes>

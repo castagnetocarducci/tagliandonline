@@ -571,6 +571,12 @@ export type VoucherEditApiResponse = {
     needTemplateGeneration: boolean
 }
 
+export type VoucherGenerateTemplatesApiResponse = {
+    message: string,
+    voucher: VoucherDetails,
+    needPdfConversion: boolean
+}
+
 export type VoucherUploadApiResponse = {
     message: string,
     voucher: VoucherDetails,
