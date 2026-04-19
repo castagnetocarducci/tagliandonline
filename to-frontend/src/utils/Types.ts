@@ -529,9 +529,12 @@ export type VoucherDetails = {
     }[],
     emails: {
         id: number,
+        createdAt: Date,
+        sentDate: Date,
         to: string,
         subject: string,
-        attachmentsPresent: boolean,
+        body: string,
+        attachments: string | null
     }[],
 }
 

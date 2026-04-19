@@ -371,7 +371,7 @@ export const vouchersHistoryToVehiclesHistory = toSchema.table("vouchersHistoryT
 export const vouchersEmailsHistory = toSchema.table("vouchersEmailsHistory", {
     id: commonColumns.idAutoIncr(),
     createdAt: commonColumns.createdAt(),
-    sentDate: timestamp(),
+    sentDate: commonColumns.createdAt(),
     to: varchar({length: 512}).notNull(),
     subject: varchar({length: 512}).notNull(),
     body: text().notNull(),

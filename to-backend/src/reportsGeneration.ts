@@ -7,6 +7,12 @@ import {ConfigProvider} from "./configProvider.ts";
 import {join} from "node:path";
 import {deleteFileByPath, getSuffixedFilenameStr} from "./files/filesStorages.ts";
 
+type VehicleData = {
+    marcaStr: string,
+    modelloStr: string,
+    targaStr: string
+}
+
 export type VoucherTemplateData = {
     numeroTagliandoStr: string,
     descrizionePermessoStr: string,
@@ -30,11 +36,7 @@ export type VoucherTemplateData = {
     catastoMappaleAbitazioneDesignataStr: string,
     catastoSubalternoAbitazioneDesignataStr: string,
     catastoCategoriaAbitazioneDesignataStr: string,
-    targheArr: {
-        marcaStr: string,
-        modelloStr: string,
-        targaStr: string
-    }[]
+    targheArr: VehicleData[]
     verificationUrl: string,
 }
 
@@ -81,5 +83,34 @@ export const generateDocumentFromTemplate = async (templateFilepath: string, out
             success: false,
         };
     }
+}
+
+export const generateEmailFromTemplate = (subject: string, body: string, inputData: VoucherTemplateData) => {
+    const newSubject = substituteText(subject, inputData);
+    const newBody = substituteText(body, inputData);
+    return {
+        subject: newSubject,
+        body: newBody
+    };
+}
+
+const substituteText = (toReplace: string, inputData: VoucherTemplateData): string => {
+    let result = toReplace;
+    Object.keys(inputData).forEach(key => {
+        const value = inputData[key as keyof VoucherTemplateData];
+        if (value == null) {
+            return;
+        }
+        if (typeof value === "string") {
+            result = result.replaceAll(cmdDelimiters[0] + key + cmdDelimiters[1], value.toString());
+        } else if (Array.isArray(value)) {
+            let vehiclesStr = "";
+            value.forEach((v, i) => {
+                vehiclesStr += (i > 0 ? ", " : "") + v.marcaStr + " " + v.modelloStr + " " + v.targaStr;
+            })
+            result = result.replaceAll(cmdDelimiters[0] + key + cmdDelimiters[1], vehiclesStr);
+        }
+    });
+    return result;
 }
 

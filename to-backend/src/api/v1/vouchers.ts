@@ -26,11 +26,18 @@ import {
     getFileFromMulterFields,
     uploadVouchersMulter
 } from "../../files/filesStorages.ts";
-import {generateVoucherDocumentFromTemplate, type VoucherTemplateData} from "../../reportsGeneration.ts";
+import {
+    generateEmailFromTemplate,
+    generateVoucherDocumentFromTemplate,
+    type VoucherTemplateData
+} from "../../reportsGeneration.ts";
 import {convertPDF} from "../../pdfConversion.ts";
 import {Mutex} from "../../utils/mutex.ts";
+import {SmtpManager} from "../../smtpManager.ts";
 
 export const vouchersRouter = Router();
+
+type VoucherCurrentState = "Revocato" | "Scaduto" | "Non ancora valido" | "Valido";
 
 type VoucherPublicCheck = {
     id: number,
@@ -93,6 +100,18 @@ type VoucherListEntry = {
     }[]
 }
 
+type EmailAttachment = {
+    filename: string,
+    path: string
+}
+
+type Email = {
+    subject: string,
+    body: string,
+    to: string,
+    attachments: EmailAttachment[],
+}
+
 type VoucherDetails = {
     id: number,
     createdAt: Date,
@@ -115,7 +134,7 @@ type VoucherDetails = {
         disabled: boolean,
         simultaneousPlatesAmount: number,
         applicationPlatesAmount: number,
-        voucherDurationDays: number
+        voucherDurationDays: number,
     },
     applications: {
         id: number,
@@ -152,9 +171,12 @@ type VoucherDetails = {
     }[],
     emails: {
         id: number,
+        createdAt: Date,
+        sentDate: Date,
         to: string,
         subject: string,
-        attachmentsPresent: boolean,
+        body: string,
+        attachments: string | null
     }[],
 }
 
@@ -203,7 +225,7 @@ type VoucherDetails = {
 //
 // */
 
-const getVoucherCurrentState = (revoked: boolean, validFromDate: string, validToDate: string) => {
+const getVoucherCurrentState = (revoked: boolean, validFromDate: string, validToDate: string): VoucherCurrentState => {
     if (revoked) {
         return "Revocato";
     } else if (new Date() > new Date(validToDate)) {
@@ -602,7 +624,10 @@ const getDetailedVoucher = async (tx: DbTransactionType, voucherID: number) => {
             permit: {
                 with: {
                     voucherDocTemplate: true,
-                    authorizationDocTemplate: true
+                    authorizationDocTemplate: true,
+                    approveEmailTemplate: true,
+                    revokeEmailTemplate: true,
+                    refuseEmailTemplate: true,
                 },
             },
             emails: true
@@ -632,6 +657,7 @@ const getVoucherDetails = async (voucher: DetailedVoucherQueryResult) => {
         throw new Error("Errore nel reperire le associazioni del tagliando");
     }
     const currentState = getVoucherCurrentState(voucher.revoked, voucher.validFromDate, voucher.validToDate);
+
     const voucherDetails: VoucherDetails = {
         id: voucher.id,
         createdAt: voucher.createdAt,
@@ -654,7 +680,8 @@ const getVoucherDetails = async (voucher: DetailedVoucherQueryResult) => {
             disabled: voucher.permit.disabled,
             simultaneousPlatesAmount: voucher.permit.simultaneousPlatesAmount,
             applicationPlatesAmount: voucher.permit.applicationPlatesAmount,
-            voucherDurationDays: voucher.permit.voucherDurationDays
+            voucherDurationDays: voucher.permit.voucherDurationDays,
+
         },
         applications: voucher.applications.map(a => ({
             id: a.id,
@@ -683,9 +710,12 @@ const getVoucherDetails = async (voucher: DetailedVoucherQueryResult) => {
         })),
         emails: voucher.emails.map(e => ({
             id: e.id,
+            createdAt: new Date(e.createdAt),
+            sentDate: new Date(e.sentDate),
             to: e.to,
             subject: e.subject,
-            attachmentsPresent: e.attachments != null && e.attachments.length > 0,
+            body: e.body,
+            attachments: e.attachments
         })),
         vehicles: voucher.vehicles.map(v => ({
             id: v.id,
@@ -1299,23 +1329,13 @@ vouchersRouter.get("/convertPDFs/:voucherID", middlewareAuthCheck(["admin", "ope
     }
 });
 
-
-const generateTemplates = async (voucher: DetailedVoucherQueryResult): Promise<{
-    generatedVoucherTemplatePath: string,
-    generatedAuthorizationTemplatePath: string
-}> => {
-
+const getVoucherTemplateDataFromDetailedQuery = (voucher: DetailedVoucherQueryResult): VoucherTemplateData => {
     if (voucher == null || voucher.permit == null || voucher.applications == null) {
         throw new Error("Errore nel reperire il tagliando o le sue associazioni");
     }
     if (voucher.applications.length === 0) {
         throw new Error("Il tagliando non ha domande associate");
     }
-    if (voucher.permit.voucherDocTemplate == null || voucher.permit.authorizationDocTemplate == null) {
-        throw new Error("Errore nel reperire i modelli di tagliando e autorizzazione");
-    }
-    const voucherBaseTemplatePath = voucher.permit.voucherDocTemplate.path;
-    const authorizationBaseTemplatePath = voucher.permit.authorizationDocTemplate.path;
 
     const targetApplication = voucher.applications[0];
     if (targetApplication == null) {
@@ -1354,6 +1374,30 @@ const generateTemplates = async (voucher: DetailedVoucherQueryResult): Promise<{
         }),
         verificationUrl: ConfigProvider.instance.configs.baseUrl + "/check-voucher/" + voucher.id,
     }
+    return voucherTemplateData;
+}
+
+const generateTemplates = async (voucher: DetailedVoucherQueryResult): Promise<{
+    generatedVoucherTemplatePath: string,
+    generatedAuthorizationTemplatePath: string
+}> => {
+    if (voucher == null || voucher.permit == null) {
+        throw new Error("Errore nel reperire il tagliando o le sue associazioni");
+    }
+    if (voucher.permit.voucherDocTemplate == null || voucher.permit.authorizationDocTemplate == null) {
+        throw new Error("Errore nel reperire i modelli di tagliando e autorizzazione");
+    }
+    if (voucher.permit.voucherDocTemplate.disabled) {
+        throw new Error("Il modello di tagliando " + voucher.permit.voucherDocTemplate.description + "(" + voucher.permit.voucherDocTemplate.id + ")" + " è disabilitato");
+    }
+    if (voucher.permit.authorizationDocTemplate.disabled) {
+        throw new Error("Il modello di autorizzazione " + voucher.permit.authorizationDocTemplate.description + "(" + voucher.permit.authorizationDocTemplate.id + ")" + " è disabilitato");
+    }
+
+    const voucherBaseTemplatePath = voucher.permit.voucherDocTemplate.path;
+    const authorizationBaseTemplatePath = voucher.permit.authorizationDocTemplate.path;
+
+    const voucherTemplateData = getVoucherTemplateDataFromDetailedQuery(voucher);
 
     const resVoucher = await generateVoucherDocumentFromTemplate(voucherBaseTemplatePath, "tagliando", voucher.id, voucherTemplateData);
     if (!resVoucher.success) {
@@ -1790,6 +1834,175 @@ export const updateVoucherWithApplication = async (tx: DbTransactionType, vouche
         vehiclesToInsertVoucher.map(v => v.vehicleId), modifiedByAuthUserId, permit.lastPermitHistoryId);
 }
 
+vouchersRouter.get("/generateEmail/:voucherID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+    if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
+        res.status(400).json({message: "Tagliando non trovato"});
+        return;
+    }
+    const voucherID = parseInt(req.params.voucherID as string);
+    if (isNaN(voucherID)) {
+        res.status(400).json({message: "ID tagliando non valido"});
+        return;
+    }
 
+    try {
+        const db = DatabaseManager.instance.db;
+        const generatedEmail = await db.transaction(async (tx) => {
+            const detailedVoucherQuery = await getDetailedVoucher(tx, voucherID);
+            return generateEmail(detailedVoucherQuery);
+        });
 
+        res.json({
+            message: "Mail generata con successo",
+            email: generatedEmail
+        });
+    } catch (e) {
+        res.status(500).json({message: "Errore nella generazione della mail: " + e});
+        return;
+    }
+});
+
+const generateEmail = (voucher: DetailedVoucherQueryResult): Email => {
+    if (voucher == null || voucher.permit == null) {
+        throw new Error("Errore nel reperire il tagliando o le sue associazioni");
+    }
+    if (voucher.permit.approveEmailTemplate == null || voucher.permit.refuseEmailTemplate == null || voucher.permit.revokeEmailTemplate == null) {
+        throw new Error("Errore nel reperire i modelli di email del permesso");
+    }
+    if (voucher.applications.length === 0) {
+        throw new Error("Il tagliando non ha domande associate");
+    }
+    const targetApplication = voucher.applications[0];
+    if (targetApplication == null) {
+        throw new Error("Errore nel reperire la domanda associata al tagliando");
+    }
+    if (voucher.generatedVoucherPdfPath == null || voucher.generatedVoucherPdfPath.trim() === "") {
+        throw new Error("PDF del tagliando non generato");
+    }
+    if (voucher.signedAuthorizationPath == null || voucher.signedAuthorizationPath.trim() === "") {
+        throw new Error("Autorizzazione firmata non presente");
+    }
+    const voucherTemplateData = getVoucherTemplateDataFromDetailedQuery(voucher);
+
+    const currentState = getVoucherCurrentState(voucher.revoked, voucher.validFromDate, voucher.validToDate);
+    const emailAttachments: EmailAttachment[] = [];
+    if (currentState !== "Revocato") {
+        emailAttachments.push({
+            filename: "Tagliando " + voucher.number + ".pdf",
+            path: voucher.generatedVoucherPdfPath
+        });
+        emailAttachments.push({
+            filename: "Autorizzazione firmata.pdf",
+            path: voucher.signedAuthorizationPath
+        });
+    }
+    const targetEmailTemplate = currentState === "Revocato" ? voucher.permit.revokeEmailTemplate : voucher.permit.approveEmailTemplate;
+
+    if (targetEmailTemplate.disabled) {
+        throw new Error("Il modello di email " + targetEmailTemplate.description + "(" + targetEmailTemplate.id + ")" + " è disabilitato");
+    }
+
+    const generatedTemplate = generateEmailFromTemplate(targetEmailTemplate.subject, targetEmailTemplate.body, voucherTemplateData);
+    return {
+        to: targetApplication.email,
+        subject: generatedTemplate.subject,
+        body: generatedTemplate.body,
+        attachments: emailAttachments
+    }
+}
+
+vouchersRouter.get("/sendEmail/:voucherID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+    if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
+        res.status(400).json({message: "Tagliando non trovato"});
+        return;
+    }
+    const voucherID = parseInt(req.params.voucherID as string);
+    if (isNaN(voucherID)) {
+        res.status(400).json({message: "ID tagliando non valido"});
+        return;
+    }
+
+    /*
+    subject: string,
+    body: string,
+    attachments: EmailAttachment[],
+     */
+    if (req.body.subject == null || typeof req.body.subject !== "string" || req.body.subject.trim() === "" ||
+        req.body.body == null || typeof req.body.body !== "string" || req.body.body.trim() === "" ||
+        req.body.to == null || typeof req.body.to !== "string" || req.body.to.trim() === "" ||
+        req.body.attachments == null || !Array.isArray(req.body.attachments)) {
+        res.status(400).json({message: "Parametri non validi"});
+        return;
+    }
+    for (const attachment of req.body.attachments) {
+        /*
+    filename: string,
+    path: string
+         */
+        if (attachment.filename || typeof attachment.filename !== "string" || attachment.filename.trim() === "" ||
+            attachment.path || typeof attachment.path !== "string" || attachment.path.trim() === "") {
+            res.status(400).json({message: "Allegati non validi"});
+            return;
+        }
+    }
+
+    const emailToSend: Email = {
+        to: req.body.to,
+        subject: req.body.subject,
+        body: req.body.body,
+        attachments: req.body.attachments
+    }
+
+    // let sent = false;
+    // let saved = false;
+    try {
+        // salvataggio in emailHistory
+        const db = DatabaseManager.instance.db;
+        const voucherDetails = await db.transaction(async (tx) => {
+            const detailedVoucherQuery = await getDetailedVoucher(tx, voucherID);
+            const voucherDetails = await getVoucherDetails(detailedVoucherQuery);
+            // invio della mail
+            const sendResult = await SmtpManager.instance.sendMail({
+                from: ConfigProvider.instance.configs.smtpUser,
+                to: emailToSend.to,
+                subject: emailToSend.subject,
+                text: emailToSend.body,
+                attachments: emailToSend.attachments.map(attachment => ({
+                    filename: attachment.filename,
+                    path: attachment.path
+                })),
+            });
+            if (sendResult.err != null) {
+                throw new Error(sendResult.err);
+            }
+            const attachments = JSON.stringify(emailToSend.attachments);
+            const updatedVoucherEmailHistory = await tx.insert(vouchersEmailsHistory).values({
+                voucherId: voucherID,
+                to: emailToSend.to,
+                subject: emailToSend.subject,
+                body: emailToSend.body,
+                attachments: attachments,
+            }).returning();
+            if (updatedVoucherEmailHistory == null || updatedVoucherEmailHistory.length !== 1 || updatedVoucherEmailHistory[0] == null) {
+                throw new Error("Errore durante l'aggiornamento dello storico del tagliando");
+            }
+            return voucherDetails;
+        });
+        res.json({
+            message: "Mail inviata con successo",
+            voucherDetails: voucherDetails
+        });
+    } catch (e) {
+        res.status(500).json({message: "Errore nell'invio o nel salvataggio della mail: " + e});
+        return;
+    }
+});
 
