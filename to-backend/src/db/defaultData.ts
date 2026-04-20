@@ -44,19 +44,19 @@ export const populateDefaultData = async () => {
     await db.insert(emailTemplates).values([
         {
             description: "accettata",
-            subject: "Invio tagliando {#numeroTalignadoStr#} - TagliandOnline",
-            body: "La sua richiesta, presentata con protocollo n. {#numeroProtocolloStr#}, è stata accettata in data {#dataCopmletamentoStr#}.<br/>" +
+            subject: "Invio tagliando {#numeroTagliandoStr#} - TagliandOnline",
+            body: "La sua richiesta, presentata con protocollo n. {#numeroProtocolloStr#} del {#dataProtocolloStr#}, è stata accettata in data {#dataCopmletamentoStr#}.<br/>" +
                 "Si trasmette in allegato il contrassegno <b>da stampare e tenere esposto nel veicolo</b> e l'autorizzazione <b>da stampare ed esibire in caso di controllo</b>."
         },
         {
             description: "rifiutata",
             subject: "Domanda emissione tagliando rifiutata - TagliandOnline",
-            body: "La sua richiesta, presentata con protocollo n. {#numeroProtocolloStr#}, è stata rifiutata in data {#dataCopmletamentoStr#}."
+            body: "La sua richiesta, presentata con protocollo n. {#numeroProtocolloStr#} del {#dataProtocolloStr#}, è stata rifiutata in data {#dataCompletamentoStr#}."
         },
         {
             description: "revocato",
-            subject: "Revoca tagliando {#numeroTalignadoStr#} - TagliandOnline",
-            body: "Il suo tagliando n. {#numeroTalignadoStr#} è stato revocato, pertanto non è più valido."
+            subject: "Revoca tagliando {#numeroTagliandoStr#} - TagliandOnline",
+            body: "Il suo tagliando n. {#numeroTagliandoStr#} per {#descrizionePermessoStr#} è stato revocato, pertanto non è più valido."
         },
     ]);
 

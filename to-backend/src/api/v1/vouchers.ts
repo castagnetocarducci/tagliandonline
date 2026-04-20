@@ -34,6 +34,8 @@ import {
 import {convertPDF} from "../../pdfConversion.ts";
 import {Mutex} from "../../utils/mutex.ts";
 import {SmtpManager} from "../../smtpManager.ts";
+import path from "node:path";
+import {existsSync} from "node:fs";
 
 export const vouchersRouter = Router();
 
@@ -102,6 +104,7 @@ type VoucherListEntry = {
 
 type EmailAttachment = {
     filename: string,
+    downloadPath: string,
     path: string
 }
 
@@ -1342,21 +1345,32 @@ const getVoucherTemplateDataFromDetailedQuery = (voucher: DetailedVoucherQueryRe
         throw new Error("Errore nel reperire la domanda associata al tagliando");
     }
 
+    const dateToLocaleStringOrEmpty = (dateStr: string | null): string => {
+        if (dateStr == null || dateStr.trim() === "") {
+            return "";
+        }
+        const date = new Date(dateStr);
+        if (date.toString() === "Invalid Date") {
+            return "";
+        }
+        return date.toLocaleDateString();
+    }
+
     const voucherTemplateData: VoucherTemplateData = {
         numeroTagliandoStr: "" + voucher.number,
         descrizionePermessoStr: voucher.permit.printedName,
         tipologiaDomanda: targetApplication.type == null ? "N/A" : targetApplication.type.description,
-        dataProtocolloStr: targetApplication.registerDate,
+        dataProtocolloStr: dateToLocaleStringOrEmpty(targetApplication.registerDate),
         numeroProtocolloStr: "" + targetApplication.registerNumber,
-        dataCompletamentoStr: targetApplication.outcomeDate ?? voucher.validFromDate,
-        dataInizioValiditaStr: voucher.validFromDate,
-        dataFineValiditaStr: voucher.validToDate,
+        dataCompletamentoStr: dateToLocaleStringOrEmpty(targetApplication.outcomeDate ?? voucher.validFromDate),
+        dataInizioValiditaStr: dateToLocaleStringOrEmpty(voucher.validFromDate),
+        dataFineValiditaStr: dateToLocaleStringOrEmpty(voucher.validToDate),
         cognomeIstruttoreStr: targetApplication.outcomeAuthUser == null ? "N/A" : targetApplication.outcomeAuthUser.lastname,
         nomeIstruttoreStr: targetApplication.outcomeAuthUser == null ? "N/A" : targetApplication.outcomeAuthUser.firstname,
         cognomeRichiedenteStr: targetApplication.lastname,
         nomeRichiedenteStr: targetApplication.firstname,
         comuneNascitaRichiedenteStr: targetApplication.birthCity == null ? "N/A" : targetApplication.birthCity,
-        dataNascitaRichiedenteStr: targetApplication.birthDate == null ? "N/A" : targetApplication.birthDate,
+        dataNascitaRichiedenteStr: targetApplication.birthDate == null ? "N/A" : dateToLocaleStringOrEmpty(targetApplication.birthDate),
         codiceFiscaleRichiedenteStr: targetApplication.cf == null ? "N/A" : targetApplication.cf,
         comuneResidenzaRichiedenteStr: targetApplication.residenceCity == null ? "N/A" : targetApplication.residenceCity,
         indirizzoResidenzaRichiedenteStr: targetApplication.residencePlace == null ? "N/A" : targetApplication.residencePlace,
@@ -1893,10 +1907,12 @@ const generateEmail = (voucher: DetailedVoucherQueryResult): Email => {
     if (currentState !== "Revocato") {
         emailAttachments.push({
             filename: "Tagliando " + voucher.number + ".pdf",
+            downloadPath: adjustPathForDownload(voucher.generatedVoucherPdfPath),
             path: voucher.generatedVoucherPdfPath
         });
         emailAttachments.push({
-            filename: "Autorizzazione firmata.pdf",
+            filename: "Autorizzazione firmata" + path.extname(voucher.signedAuthorizationPath),
+            downloadPath: adjustPathForDownload(voucher.signedAuthorizationPath),
             path: voucher.signedAuthorizationPath
         });
     }
@@ -1915,7 +1931,7 @@ const generateEmail = (voucher: DetailedVoucherQueryResult): Email => {
     }
 }
 
-vouchersRouter.get("/sendEmail/:voucherID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
+vouchersRouter.post("/sendEmail/:voucherID", middlewareAuthCheck(["admin", "operatore"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
         return;
@@ -1947,8 +1963,9 @@ vouchersRouter.get("/sendEmail/:voucherID", middlewareAuthCheck(["admin", "opera
     filename: string,
     path: string
          */
-        if (attachment.filename || typeof attachment.filename !== "string" || attachment.filename.trim() === "" ||
-            attachment.path || typeof attachment.path !== "string" || attachment.path.trim() === "") {
+        if (attachment.filename == null || typeof attachment.filename !== "string" || attachment.filename.trim() === "" ||
+            attachment.path == null || typeof attachment.path !== "string" || attachment.path.trim() === "" ||
+            !existsSync(attachment.path)) {
             res.status(400).json({message: "Allegati non validi"});
             return;
         }
@@ -1974,7 +1991,7 @@ vouchersRouter.get("/sendEmail/:voucherID", middlewareAuthCheck(["admin", "opera
                 from: ConfigProvider.instance.configs.smtpUser,
                 to: emailToSend.to,
                 subject: emailToSend.subject,
-                text: emailToSend.body,
+                html: emailToSend.body,
                 attachments: emailToSend.attachments.map(attachment => ({
                     filename: attachment.filename,
                     path: attachment.path

@@ -101,14 +101,15 @@ const substituteText = (toReplace: string, inputData: VoucherTemplateData): stri
         if (value == null) {
             return;
         }
+        const toReplaceStr = cmdDelimiters[0] + key + cmdDelimiters[1];
         if (typeof value === "string") {
-            result = result.replaceAll(cmdDelimiters[0] + key + cmdDelimiters[1], value.toString());
+            result = result.replaceAll(toReplaceStr, value.toString());
         } else if (Array.isArray(value)) {
             let vehiclesStr = "";
             value.forEach((v, i) => {
                 vehiclesStr += (i > 0 ? ", " : "") + v.marcaStr + " " + v.modelloStr + " " + v.targaStr;
             })
-            result = result.replaceAll(cmdDelimiters[0] + key + cmdDelimiters[1], vehiclesStr);
+            result = result.replaceAll(toReplaceStr, vehiclesStr);
         }
     });
     return result;

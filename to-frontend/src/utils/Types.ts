@@ -591,5 +591,28 @@ export type VoucherConvertPdfApiResponse = {
     voucherDetails: VoucherDetails
 }
 
+export type EmailAttachment = {
+    filename: string,
+    downloadPath: string,
+    path: string
+}
+
+export type Email = {
+    subject: string,
+    body: string,
+    to: string,
+    attachments: EmailAttachment[],
+}
+
+export type VoucherGenerateEmailApiResponse = {
+    message: string,
+    email: Email,
+}
+
+export type VoucherSendEmailApiResponse = {
+    message: string,
+    voucherDetails: VoucherDetails,
+}
+
 //endregion
 

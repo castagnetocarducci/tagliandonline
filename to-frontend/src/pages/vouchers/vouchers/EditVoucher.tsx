@@ -1,13 +1,14 @@
 import {Link, useNavigate, useParams} from "react-router";
 import {type FormEvent, type FormEventHandler, useEffect, useState} from "react";
 import type {
+    Email, EmailAttachment,
     PermitListEntry,
     VoucherAvailableOptionsApiResponse,
     VoucherConvertPdfApiResponse,
     VoucherDetails,
     VoucherDetailsApiResponse,
-    VoucherEditApiResponse,
-    VoucherGenerateTemplatesApiResponse,
+    VoucherEditApiResponse, VoucherGenerateEmailApiResponse,
+    VoucherGenerateTemplatesApiResponse, VoucherSendEmailApiResponse,
     VoucherUploadApiResponse
 } from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
@@ -43,6 +44,7 @@ import {RouterDesignLink} from "../../../components/links/RouterDesignLink.tsx";
 import {RouterDesignTabLink} from "../../../components/links/RouterDesignTabLink.tsx";
 import {getApiUrl} from "../../../utils/ConfigProvider.ts";
 import {ValidatedUploadDragNdropSingle} from "../../../components/form/ValidatedUploadDragNdropSingle.tsx";
+import {ValidatedTextArea} from "../../../components/form/ValidatedTextArea.tsx";
 
 export function EditVoucher() {
     const navigate = useNavigate();
@@ -50,11 +52,14 @@ export function EditVoucher() {
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
     const uploadValidation = useValidateFormInput(setErr, setSucc);
+    const emailValidation = useValidateFormInput(setErr, setSucc);
     const [permitsList, setPermitsList] = useState<PermitListEntry[]>([]);
     const [vehiclesAmount, setVehiclesAmount] = useState<number>(2);
     const urlParams = useParams();
     const [needTemplateGeneration, setNeedTemplateGeneration] = useState<boolean>(false);
     const [needPdfConversion, setNeedPdfConversion] = useState<boolean>(false);
+    const [email, setEmail] = useState<Email | null>(null);
+    const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[] | null>(null);
 
     useEffect(() => {
         const abort = fetchApiAsync<VoucherAvailableOptionsApiResponse>({
@@ -186,11 +191,7 @@ export function EditVoucher() {
 
     const onConvertPdfFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
         e.preventDefault();
-        //TODO: check if needed
-        // if (!valid) {
-        //     executeValidation(true);
-        //     return;
-        // }
+
         fetchApiAsync<VoucherConvertPdfApiResponse>({
             urlFromApiRoot: "/vouchers/convertPDFs/" + urlParams.voucherID,
             errSuccLoading: {setErr, setSucc, setLoading},
@@ -204,6 +205,94 @@ export function EditVoucher() {
                 }
             }
         });
+    }
+
+    const onGenerateEmailFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
+        e.preventDefault();
+
+        fetchApiAsync<VoucherGenerateEmailApiResponse>({
+            urlFromApiRoot: "/vouchers/generateEmail/" + urlParams.voucherID,
+            errSuccLoading: {setErr, setSucc, setLoading},
+            requestInit: {
+                ...defaultGETRequestInit
+            },
+            callback: (data) => {
+                if (data != null && data.email != null) {
+                    setEmail(data.email);
+                    setEmailAttachments(data.email.attachments);
+                }
+            }
+        });
+    }
+
+    const onSendEmailFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
+        e.preventDefault();
+        if (!emailValidation.valid) {
+            emailValidation.executeValidation(true);
+            return;
+        }
+        const formValues = emailValidation.getValueObject();
+        const attachments: { path: string, filename: string }[] = [];
+        for (let i = 0; i < (emailAttachments != null ? emailAttachments.length : 0); i++) {
+            const path = formValues["attachment" + i + "-path"];
+            const filename = formValues["attachment" + i + "-filename"];
+            if (path == null || filename == null) {
+                continue;
+            }
+            delete formValues["attachment" + i + "-path"];
+            delete formValues["attachment" + i + "-filename"];
+            attachments.push({
+                path: "" + path,
+                filename: "" + filename
+            });
+        }
+        const toSendValues = {
+            ...formValues,
+            attachments: attachments
+        }
+
+        fetchApiAsync<VoucherSendEmailApiResponse>({
+            urlFromApiRoot: "/vouchers/sendEmail/" + urlParams.voucherID,
+            errSuccLoading: {setErr, setSucc, setLoading},
+            requestInit: {
+                ...defaultPOSTRequestInit,
+                body: JSON.stringify(toSendValues)
+            },
+            callback: (data) => {
+                if (data != null && data.voucherDetails != null) {
+                    setVoucherDetails(data.voucherDetails);
+                    setEmail(null);
+                    setEmailAttachments(null);
+                }
+            }
+        });
+    }
+
+    const onRemoveEmailAttachmentClick = (attachmentIndex: number) => {
+        if (emailAttachments == null) {
+            return;
+        }
+        const newAttachments = [...emailAttachments];
+        newAttachments.splice(attachmentIndex, 1);
+        setEmailAttachments(newAttachments);
+    }
+
+    const convertStringAttachments = (attachments: string): string[] => {
+        try {
+            const attachmentArr = JSON.parse(attachments);
+            if (!(attachmentArr instanceof Array)) {
+                return [];
+            }
+            const res: string[] = [];
+            for (const attachment of attachmentArr) {
+                if (attachment.filename != null && typeof attachment.filename === "string") {
+                    res.push(attachment.filename);
+                }
+            }
+            return res;
+        } catch {
+            return [];
+        }
     }
 
     const selectablePermits: SelectOption[] = [{label: "seleziona", value: ""}];
@@ -509,7 +598,6 @@ export function EditVoucher() {
                                 <Row>
                                     <Col md={3}>
                                         <Form onSubmit={onGenerateTemplatesFormSubmit} className={"mt-4"}>
-                                            {/*TODO: generate templates*/}
                                             <Button
                                                 color={(needTemplateGeneration || voucherDetails.generatedVoucherTemplatePath === null) ? "primary" : "warning"}
                                                 outline={!(needTemplateGeneration || voucherDetails.generatedVoucherTemplatePath === null)}
@@ -521,7 +609,6 @@ export function EditVoucher() {
                                     </Col>
                                     <Col md={3}>
                                         <Form onSubmit={onConvertPdfFormSubmit} className={"mt-4"}>
-                                            {/*TODO: convert*/}
                                             <Button
                                                 color={(needPdfConversion || voucherDetails.generatedVoucherPdfPath === null) ? "primary" : "warning"}
                                                 outline={!(needPdfConversion || voucherDetails.generatedVoucherPdfPath === null)}
@@ -534,7 +621,6 @@ export function EditVoucher() {
                                 </Row>
 
                                 <Form onSubmit={onUploadFormSubmit} className={"mt-4"}>
-                                    {/*TODO: upload*/}
                                     <Row className={"align-items-center mt-4"}>
                                         <Col md={3}>
                                             <span><strong>Tagliando modificabile</strong></span><br/>
@@ -683,12 +769,236 @@ export function EditVoucher() {
                         {urlParams.tab === "emails" && voucherDetails != null && (
                             <>
                                 <h2>Email</h2>
-                                <Form onSubmit={onEditFormSubmit} className={"mt-4"}>
 
+                                <Row>
+                                    <Col md={3}>
+                                        <Form onSubmit={onGenerateEmailFormSubmit} className={"mt-4"}>
+                                            <Button
+                                                color={(email === null) ? "primary" : "warning"}
+                                                outline={!(email === null)}
+                                                type={"submit"}
+                                                disabled={loading}>
+                                                Genera da modello
+                                            </Button>
+                                        </Form>
+                                    </Col>
+                                </Row>
 
-                                    <LoadingSpinner loading={loading}/>
-                                    <SuccessErrorAlert err={err} succ={succ}/>
-                                </Form>
+                                {email != null ? (
+                                    <Form onSubmit={onSendEmailFormSubmit} className={"mt-5"}>
+                                        <Row className={"mt-4"}>
+                                            <Col md={12}>
+                                                <ValidatedInput name={"to"} labelText={"Destinatario"}
+                                                                validationFunc={() => true}
+                                                                validationText={"Campo obbligatorio"}
+                                                                persistingValidationText={false}
+                                                                validationMark={false} defaultValue={email.to}
+                                                                isMandatory={true}
+                                                                errorMessage={"Compilare i campi obbligatori"}
+                                                                setNewValidation={emailValidation.setValidation}
+                                                                inputProps={{type: "text"}}/>
+                                            </Col>
+                                        </Row>
+                                        <Row>
+                                            <Col md={12}>
+                                                <ValidatedInput name={"subject"} labelText={"Oggetto"}
+                                                                validationFunc={() => true}
+                                                                validationText={"Campo obbligatorio"}
+                                                                persistingValidationText={false}
+                                                                validationMark={false} defaultValue={email.subject}
+                                                                isMandatory={true}
+                                                                errorMessage={"Compilare i campi obbligatori"}
+                                                                setNewValidation={emailValidation.setValidation}
+                                                                inputProps={{type: "text"}}/>
+                                            </Col>
+                                        </Row>
+                                        <Row>
+                                            <Col md={12}>
+                                                <ValidatedTextArea name={"body"} labelText={"Corpo"}
+                                                                   validationFunc={() => true}
+                                                                   validationText={"Campo obbligatorio"}
+                                                                   persistingValidationText={false}
+                                                                   validationMark={false} defaultValue={email.body}
+                                                                   isMandatory={true}
+                                                                   errorMessage={"Compilare i campi obbligatori"}
+                                                                   setNewValidation={emailValidation.setValidation}
+                                                                   textAreaProps={{rows: 5}}/>
+                                            </Col>
+                                        </Row>
+                                        <Row>
+                                            <Col md={12}>
+                                                {emailAttachments != null && emailAttachments.length > 0 ? (
+                                                    <>
+                                                        <List>
+                                                            {emailAttachments.map((attachment, index) => (
+                                                                <Row key={attachment.path}>
+                                                                    <Col md={4}>
+                                                                        <ValidatedInput
+                                                                            name={"attachment" + index + "-filename"}
+                                                                            labelText={"Allegato " + (index + 1)}
+                                                                            validationFunc={() => true}
+                                                                            validationText={"Campo obbligatorio"}
+                                                                            persistingValidationText={false}
+                                                                            validationMark={false}
+                                                                            defaultValue={attachment.filename}
+                                                                            isMandatory={true}
+                                                                            errorMessage={"Compilare i campi obbligatori"}
+                                                                            setNewValidation={emailValidation.setValidation}
+                                                                            inputProps={{type: "text"}}/>
+                                                                    </Col>
+                                                                    <Col md={2}>
+                                                                        <Button type={"button"}
+                                                                                onClick={() => {
+                                                                                    window.open(getApiUrl() + attachment.downloadPath, "_blank")
+                                                                                }}
+                                                                                color={"primary"} icon={true}
+                                                                                size={"xs"}
+                                                                                disabled={attachment.downloadPath == null}
+                                                                                title={"Scarica allegato"}>
+                                                                            <span className={"rounded-icon"}>
+                                                                                <Icon icon={"it-download"}
+                                                                                      color={"black"}/>
+                                                                            </span>
+                                                                            <span className={"ps-1"}>Scarica</span>
+                                                                        </Button>
+                                                                    </Col>
+                                                                    <Col md={2}>
+                                                                        <Button type={"button"}
+                                                                                onClick={() => onRemoveEmailAttachmentClick(index)}
+                                                                                color={"secondary"} icon={true}
+                                                                                size={"xs"}
+                                                                                title={"Rimuovi allegato"}>
+                                                                            <span className={"rounded-icon me-2"}>
+                                                                                <Icon icon={"it-minus"}/>
+                                                                            </span>
+                                                                            <span className={"ps-1"}>Rimuovi</span>
+                                                                        </Button>
+                                                                    </Col>
+                                                                    <Col md={2} className={"d-none"}>
+                                                                        {/*hidden for path parameter*/}
+                                                                        <ValidatedInput
+                                                                            name={"attachment" + index + "-path"}
+                                                                            labelText={"Percorso allegato " + (index + 1)}
+                                                                            validationFunc={() => true}
+                                                                            validationText={"Campo obbligatorio"}
+                                                                            persistingValidationText={false}
+                                                                            validationMark={false}
+                                                                            defaultValue={attachment.path}
+                                                                            isMandatory={true}
+                                                                            errorMessage={"Compilare i campi obbligatori"}
+                                                                            setNewValidation={emailValidation.setValidation}
+                                                                            inputProps={{type: "text"}}/>
+                                                                    </Col>
+                                                                </Row>
+                                                            ))}
+                                                            {/*    <ListItem key={index} className="icon-left">
+                                                                    <RouterDesignLink
+                                                                        to={getApiUrl() + attachment.downloadPath}
+                                                                        target={"_blank"}
+                                                                        title={"Vedi allegato"}>
+                                                                        <Icon aria-hidden color="primary"
+                                                                            icon="it-chevron-right"/>
+                                                                        <span>
+                                                                            {attachment.filename}
+                                                                        </span>
+                                                                    </RouterDesignLink>
+                                                                </ListItem>*/}
+                                                        </List>
+                                                    </>
+                                                ) : (
+                                                    <span>Nessun allegato</span>
+                                                )}
+                                            </Col>
+                                        </Row>
+                                        <Row className={"align-items-center mt-4"}>
+                                            <Col md={3}>
+                                                <Button color={"primary"}
+                                                        type={"submit"}
+                                                        disabled={!emailValidation.valid || loading}>
+                                                    Invia email
+                                                </Button>
+                                            </Col>
+                                        </Row>
+                                    </Form>
+                                ) : (
+                                    <Row className={"mt-4"}>
+                                        <Col md={12}>
+                                            <i>Ancora da generare</i>
+                                        </Col>
+                                    </Row>
+                                )}
+
+                                <LoadingSpinner loading={loading}/>
+                                <SuccessErrorAlert err={err} succ={succ}/>
+
+                                <h3 className={"mt-4"}>Email inviate</h3>
+                                {voucherDetails.emails == null || voucherDetails.emails.length === 0 ? (
+                                    <span>Nessuna email inviata</span>
+                                ) : (
+                                    <>
+                                        <Row>
+                                            {/*
+                                    id
+                                    sentDate
+                                    to
+                                    subject
+                                    body
+                                    attachments*/}
+                                            <Col lg={1}>
+                                                <strong>#</strong>
+                                            </Col>
+                                            <Col lg={1}>
+                                                <strong>Data invio</strong>
+                                            </Col>
+                                            <Col lg={2}>
+                                                <strong>Destinatario</strong>
+                                            </Col>
+                                            <Col lg={2}>
+                                                <strong>Oggetto</strong>
+                                            </Col>
+                                            <Col lg={4}>
+                                                <strong>Corpo</strong>
+                                            </Col>
+                                            <Col lg={2}>
+                                                <strong>Allegati</strong>
+                                            </Col>
+                                        </Row>
+                                        {voucherDetails.emails.map((emailHistory, index) => (
+                                                <Row key={index}>
+                                                    <Col lg={1}>
+                                                        <span>{emailHistory.id}</span>
+                                                    </Col>
+                                                    <Col lg={1} className={"text-wrap"}>
+                                                        {new Date(emailHistory.sentDate).toLocaleDateString()}
+                                                    </Col>
+                                                    <Col lg={2} className={"text-wrap text-break"}>
+                                                        {emailHistory.to}
+                                                    </Col>
+                                                    <Col lg={2} className={"text-wrap"}>
+                                                        {emailHistory.subject}
+                                                    </Col>
+                                                    <Col lg={4} className={"text-wrap"}>
+                                                        {emailHistory.body}
+                                                    </Col>
+                                                    <Col lg={2}>
+                                                        {emailHistory.attachments == null || emailHistory.attachments.trim() === "" ? (
+                                                            <span>Nessun allegato</span>
+                                                        ) : (
+                                                            <>
+                                                                {convertStringAttachments(emailHistory.attachments).map((attachmentName, index) => (
+                                                                    <p key={index}>{attachmentName}</p>
+                                                                ))}
+                                                            </>
+                                                        )}
+
+                                                    </Col>
+
+                                                </Row>
+                                            )
+                                        )}
+                                    </>
+                                )}
+
                             </>
                         )}
 
