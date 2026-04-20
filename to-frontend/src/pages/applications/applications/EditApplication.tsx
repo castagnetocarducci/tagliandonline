@@ -4,9 +4,9 @@ import type {
     ApplicationAvailableOptionsApiResponse,
     ApplicationDetails,
     ApplicationDetailsApiResponse,
+    ApplicationEditApiResponse,
     ApplicationOutcomeListEntry,
     ApplicationTypeListEntry,
-    DataMessage,
     PermitListEntry
 } from "../../../utils/Types.ts";
 import {useErrSuccLoad} from "../../../hooks/useErrSuccLoad.ts";
@@ -76,12 +76,17 @@ export function EditApplication() {
             return;
         }
         const formValues = getValueObject();
-        fetchApiAsync<DataMessage>({
+        fetchApiAsync<ApplicationEditApiResponse>({
             urlFromApiRoot: "/applications/edit/" + urlParams.applicationID,
             errSuccLoading: {setErr, setSucc, setLoading},
             requestInit: {
                 ...defaultPOSTRequestInit,
                 body: JSON.stringify(formValues)
+            },
+            callback: (data) => {
+                if (data != null && data.applicationDetails != null) {
+                    setApplicationDetails(data.applicationDetails);
+                }
             }
         });
     }

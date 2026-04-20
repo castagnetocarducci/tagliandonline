@@ -402,6 +402,11 @@ export type ApplicationDetailsApiResponse = {
     application: ApplicationDetails
 }
 
+export type ApplicationEditApiResponse = {
+    message: string,
+    applicationDetails: ApplicationDetails
+}
+
 export type ApplicationHistoryApiResponse = {
     message: string,
     applicationHistory: HistoryEvent[]

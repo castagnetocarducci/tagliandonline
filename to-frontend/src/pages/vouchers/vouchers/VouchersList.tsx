@@ -562,7 +562,7 @@ export function VouchersList() {
                         <Col lg={1} className={"text-wrap"}>
                             <strong>{voucherListEntry.vehicles.map((vehicle) => vehicle.plate).join(", ")}</strong>
                         </Col>
-                        {voucherListEntry.applications != null && voucherListEntry.applications.length > 0 && voucherListEntry.applications[0] != null && (
+                        {voucherListEntry.applications != null && voucherListEntry.applications.length > 0 && voucherListEntry.applications[0] != null ? (
                             <>
                                 <Col lg={1} className={"text-wrap"}>
                                     {voucherListEntry.applications[0].firstname} {voucherListEntry.applications[0].lastname}
@@ -578,8 +578,16 @@ export function VouchersList() {
                                     {voucherListEntry.applications[0].targetHouseLandRegistryCategory && voucherListEntry.applications[0].targetHouseLandRegistryCategory + " "}
                                 </Col>
                                 <Col lg={1} className={"text-break text-truncate"}>
-                                    <Link to={"mailto:" + voucherListEntry.applications[0].email}>{voucherListEntry.applications[0].email}</Link>
+                                    <Link
+                                        to={"mailto:" + voucherListEntry.applications[0].email}>{voucherListEntry.applications[0].email}</Link>
                                 </Col>
+                            </>
+                        ) : (
+                            <>
+                                <Col lg={1}>N/A</Col>
+                                <Col lg={1}>N/A</Col>
+                                <Col lg={1}>N/A</Col>
+                                <Col lg={1}>N/A</Col>
                             </>
                         )}
                         <Col lg={1}>

@@ -1654,7 +1654,10 @@ vouchersRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (
             res.status(500).json({message: "Errore durante l'inserimento del tagliando"});
             return;
         }
-        res.status(200).json({message: "Tagliando creato con successo"});
+        res.status(200).json({
+            message: "Tagliando creato con successo",
+            id: createdVoucherId
+        });
         return;
     } catch (e) {
         res.status(500).json({message: "Errore durante la creazione della tagliando: " + e});
@@ -1767,7 +1770,7 @@ export const getLastVoucherHistoryId = async (tx: DbTransactionType, voucherId: 
     return foundVouchers[0].lastVoucherHistoryId;
 }
 
-export const updateVoucherWithApplication = async (tx: DbTransactionType, voucherId: number, modifiedByAuthUserId: number): Promise<void> => {
+export const updateVoucherWithApplication = async (tx: DbTransactionType, applicationId: number, voucherId: number, modifiedByAuthUserId: number): Promise<void> => {
     const foundVouchers = await tx.select().from(vouchers).where(eq(vouchers.id, voucherId));//.rightJoin(vouchersToVehicles, eq(vouchers.id, vouchersToVehicles.voucherId));
     if (foundVouchers == null || foundVouchers.length !== 1 || foundVouchers[0] == null) {
         throw new Error("Errore tagliando non trovato");
@@ -1777,9 +1780,12 @@ export const updateVoucherWithApplication = async (tx: DbTransactionType, vouche
     if (foundVoucherVehicles == null) {
         throw new Error("Errore veicoli non trovati per il tagliando");
     }
-    const foundApplications = await tx.select().from(applications).where(eq(applications.voucherId, voucherId)).orderBy(desc(applications.outcomeDate));//.rightJoin(applicationsToVehicles, eq(applications.id, applicationsToVehicles.applicationId));
+    const foundApplications = await tx.select().from(applications).where(and(eq(applications.id, applicationId), eq(applications.voucherId, voucherId))).orderBy(desc(applications.outcomeDate), desc(applications.id));//.rightJoin(applicationsToVehicles, eq(applications.id, applicationsToVehicles.applicationId));
     if (foundApplications == null || foundApplications.length === 0 || foundApplications[0] == null) {
         throw new Error("Errore domanda non trovata");
+    }
+    if (foundApplications[0].voucherId !== voucherId) {
+        throw new Error("Tagliando associato alla domanda non corrispondente");
     }
     const foundApplication = foundApplications[0];
     const foundApplicationVehicles = await tx.select().from(applicationsToVehicles).where(eq(applicationsToVehicles.applicationId, foundApplication.id));

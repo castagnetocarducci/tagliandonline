@@ -1,5 +1,5 @@
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
-import {DatabaseManager} from "../../db/databaseManager.ts";
+import {DatabaseManager, type DbTransactionType} from "../../db/databaseManager.ts";
 import {
     applications,
     applicationsEmailsHistory,
@@ -23,6 +23,7 @@ import {getLastVehicleHistoryId} from "./vehicles.ts";
 import {ConfigProvider} from "../../configProvider.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
+import {adjustPathForDownload} from "./downloadFile.ts";
 
 export const applicationsRouter = Router();
 
@@ -523,23 +524,8 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
     });
 });
 
-applicationsRouter.get("/detail/:applicationID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
-    if (req.user == null) {
-        res.status(401).json({message: "Non autorizzato"});
-        return;
-    }
-    if (req.params.applicationID == null || ("" + req.params.applicationID).trim() == "") {
-        res.status(400).json({message: "Domanda non trovata"});
-        return;
-    }
-    const applicationID = parseInt(req.params.applicationID as string);
-    if (isNaN(applicationID)) {
-        res.status(400).json({message: "ID domanda non valido"});
-        return;
-    }
-
-    const db = DatabaseManager.instance.db;
-    const application = await db.query.applications.findFirst({
+export const getDetailedApplication = async (tx: DbTransactionType, applicationID: number) => {
+    const application = await tx.query.applications.findFirst({
         where: {
             id: applicationID,
         },
@@ -553,13 +539,17 @@ applicationsRouter.get("/detail/:applicationID", middlewareAuthCheck(["admin", "
             outcomeAuthUser: true,
         }
     });
+    return application;
+}
+
+type DetailedApplicationQueryResult = Awaited<ReturnType<typeof getDetailedApplication>>;
+
+const getApplicationDetails = async (application: DetailedApplicationQueryResult) => {
     if (application == null) {
-        res.status(500).json({message: "Domanda non trovata"});
-        return;
+        throw new Error("Domanda non trovata");
     }
     if (application.permit == null || application.outcome == null || application.type == null) {
-        res.status(500).json({message: "Errore nel reperire le associazioni della domanda"});
-        return;
+        throw new Error("Errore nel reperire le associazioni della domanda");
     }
     const applicationDetails: ApplicationDetails = {
         id: application.id,
@@ -622,6 +612,30 @@ applicationsRouter.get("/detail/:applicationID", middlewareAuthCheck(["admin", "
             brand: v.brand,
         })),
     };
+    return applicationDetails;
+}
+
+
+applicationsRouter.get("/detail/:applicationID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+    if (req.user == null) {
+        res.status(401).json({message: "Non autorizzato"});
+        return;
+    }
+    if (req.params.applicationID == null || ("" + req.params.applicationID).trim() == "") {
+        res.status(400).json({message: "Domanda non trovata"});
+        return;
+    }
+    const applicationID = parseInt(req.params.applicationID as string);
+    if (isNaN(applicationID)) {
+        res.status(400).json({message: "ID domanda non valido"});
+        return;
+    }
+
+    const db = DatabaseManager.instance.db;
+    const applicationDetails = await db.transaction(async (tx) => {
+        const detailedApplicationQuery = await getDetailedApplication(tx, applicationID);
+        return await getApplicationDetails(detailedApplicationQuery);
+    });
 
     res.json({
         message: "Domanda acquisita con successo",
@@ -838,10 +852,10 @@ const checkApplicationParameters = (req: AuthRequest) => {
         req.body.targetHouseLandRegistryCategory = null;
     }
     if (req.body.createVoucher != null && typeof req.body.createVoucher === "string") {
-        req.body.createVoucher = req.body.createVoucher === true;
+        req.body.createVoucher = req.body.createVoucher === "true";
     }
     if (req.body.updateVoucher != null && typeof req.body.updateVoucher === "string") {
-        req.body.updateVoucher = req.body.updateVoucher === true;
+        req.body.updateVoucher = req.body.updateVoucher === "true";
     }
 
     if (
@@ -950,7 +964,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             return;
         }
 
-        const updatedApplicationId = await db.transaction(async (tx) => {
+        const updatedApplicationDetails = await db.transaction(async (tx) => {
             return await voucherNumerationMutex.runExclusive(async () => {
                 const permit = await getPermit(tx, permitId);
                 const permitHistoryId = permit.lastPermitHistoryId as number;
@@ -981,7 +995,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                     if (voucherToAssociate == null) {
                         throw new Error("Tagliando non trovato");
                     }
-                    if (voucherToAssociate.permitId !== permitId) {
+                    if (voucherToAssociate.permitId !== parseInt(permitId)) {
                         throw new Error("Permesso di tagliando e domanda non corrispondono");
                     }
                 }
@@ -1022,14 +1036,13 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                         vehicleId: vehicleId as number,
                     }
                 });
-
-                if (createdVoucherId == null && voucherId != null && updateVoucher) {
-                    await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
-                }
-
                 const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
                 if (insertResult == null || insertResult.rowCount !== vehicles.length) {
                     throw new Error("Errore durante l'aggiornamento delle associazioni tra domanda e veicoli");
+                }
+
+                if (createdVoucherId == null && voucherId != null && updateVoucher) {
+                    await updateVoucherWithApplication(tx, applicationID, voucherId, modifiedByAuthUserId);
                 }
 
                 let voucherHistoryId: number | null = null;
@@ -1088,18 +1101,27 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 if (insertASVSResult == null || insertASVSResult.rowCount !== vehicles.length) {
                     throw new Error("Errore durante l'aggiornamento delle associazioni tra storico domanda e storico veicoli");
                 }
-
                 if (updateResult == null || updateResult.rowCount !== 1) {
                     throw new Error("Errore durante l'aggiornamento della domanda con lo storico");
                 }
-                return updatedApplication[0].id;
+
+                const detailedApplicationQuery = await getDetailedApplication(tx, applicationID);
+                if (detailedApplicationQuery == null) {
+                    throw new Error("Domanda non trovata");
+                }
+                const applicationDetails = await getApplicationDetails(detailedApplicationQuery);
+
+                return applicationDetails;
             });
         });
-        if (updatedApplicationId == null) {
+        if (updatedApplicationDetails == null) {
             res.status(500).json({message: "Errore durante l'aggiornamento della domanda"});
             return;
         }
-        res.status(200).json({message: "Domanda aggiornata con successo"});
+        res.status(200).json({
+            message: "Domanda aggiornata con successo",
+            applicationDetails: updatedApplicationDetails
+        });
         return;
     } catch (e) {
         res.status(500).json({message: "Errore durante l'aggiornamento della domanda: " + e});
@@ -1154,152 +1176,158 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
     try {
         const createdApplicationId = await db.transaction(async (tx) => {
             return await voucherNumerationMutex.runExclusive(async () => {
-            const permit = await getPermit(tx, permitId);
-            const permitHistoryId = permit.lastPermitHistoryId as number;
+                const permit = await getPermit(tx, permitId);
+                const permitHistoryId = permit.lastPermitHistoryId as number;
 
-            if (permit.applicationPlatesAmount != vehicles.length) {
-                throw new Error("Numero di veicoli non valido");
-            }
+                if (permit.applicationPlatesAmount != vehicles.length) {
+                    throw new Error("Numero di veicoli non valido");
+                }
 
-            let createdVoucherId: number | null = null;
-            let createdVoucherHistoryId: number | null = null;
-            if (createVoucher && voucherId == null) {
-                const {newVoucherId, newVoucherHistoryId} = await createNewVoucher(tx, {
+                let createdVoucherId: number | null = null;
+                let createdVoucherHistoryId: number | null = null;
+                if (createVoucher && voucherId == null) {
+                    const {newVoucherId, newVoucherHistoryId} = await createNewVoucher(tx, {
+                        permitId: permitId,
+                        permitHistoryId: permitHistoryId,
+                        validFromDate: outcomeDate,
+                        validToDate: null,
+                        notes: "",
+                        permitApplicationPlatesAmount: permit.applicationPlatesAmount,
+                        modifiedByAuthUserId: modifiedByAuthUserId,
+                        vehicles: vehicles,
+                    });
+                    createdVoucherId = newVoucherId;
+                    createdVoucherHistoryId = newVoucherHistoryId;
+                }
+
+                if (createdVoucherId == null && voucherId != null) {
+                    const voucherToAssociate = await getVoucher(tx, voucherId);
+                    if (voucherToAssociate == null) {
+                        throw new Error("Tagliando non trovato");
+                    }
+                    if (voucherToAssociate.permitId !== parseInt(permitId)) {
+                        throw new Error("Permesso di tagliando e domanda non corrispondono");
+                    }
+                }
+
+                const createdApplication = await tx.insert(applications).values({
+                    ...(requestDate != null && {requestDate: requestDate}),
+                    outcomeDate: outcomeDate,
+                    registerNumber: registerNumber,
+                    registerDate: registerDate,
+                    cf: cf,
+                    firstname: firstname,
+                    lastname: lastname,
+                    email: email,
+                    birthDate: birthDate,
+                    birthCity: birthCity,
+                    residenceCity: residenceCity,
+                    residencePlace: residencePlace,
+                    targetHousePlace: targetHousePlace,
+                    targetHouseLandRegistrySheet: targetHouseLandRegistrySheet,
+                    targetHouseLandRegistryMap: targetHouseLandRegistryMap,
+                    targetHouseLandRegistrySubaltern: targetHouseLandRegistrySubaltern,
+                    targetHouseLandRegistryCategory: targetHouseLandRegistryCategory,
+                    notes: notes,
                     permitId: permitId,
-                    permitHistoryId: permitHistoryId,
-                    validFromDate: outcomeDate,
-                    validToDate: null,
-                    notes: "",
-                    permitApplicationPlatesAmount: permit.applicationPlatesAmount,
+                    typeId: typeId,
+                    outcomeId: outcomeId,
+                    voucherId: (createdVoucherId != null ? createdVoucherId : voucherId),
+                    outcomeAuthUserId: modifiedByAuthUserId,
+                }).returning();
+                if (createdApplication == null || createdApplication.length !== 1 || createdApplication[0] == null) {
+                    throw new Error("Errore durante la creazione della domanda");
+                }
+                const createdApplicationId = createdApplication[0].id;
+
+                // const deleteResult = await tx.delete(applicationsToVehicles).where(eq(applicationsToVehicles.applicationId, applicationID));
+                const vehiclesToInsertApplication = (vehicles as number[]).map((vehicleId) => {
+                    return {
+                        applicationId: createdApplicationId,
+                        vehicleId: vehicleId as number,
+                    }
+                });
+
+                const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
+                if (insertResult == null || insertResult.rowCount !== vehicles.length) {
+                    throw new Error("Errore durante l'inserimento delle associazioni tra domanda e veicoli");
+                }
+
+                if (createdVoucherId == null && voucherId != null && updateVoucher) {
+                    await updateVoucherWithApplication(tx, createdApplicationId, voucherId, modifiedByAuthUserId);
+                }
+
+                let voucherHistoryId: number | null = null;
+                if (voucherId != null) {
+                    voucherHistoryId = await getLastVoucherHistoryId(tx, voucherId);
+                }
+
+                const createdApplicationHistory = await tx.insert(applicationsHistory).values({
+                    applicationId: createdApplication[0].id,
                     modifiedByAuthUserId: modifiedByAuthUserId,
-                    vehicles: vehicles,
-                });
-                createdVoucherId = newVoucherId;
-                createdVoucherHistoryId = newVoucherHistoryId;
-            }
 
-            if (createdVoucherId == null && voucherId != null) {
-                const voucherToAssociate = await getVoucher(tx, voucherId);
-                if (voucherToAssociate == null) {
-                    throw new Error("Tagliando non trovato");
+                    requestDate: createdApplication[0].requestDate,
+                    outcomeDate: createdApplication[0].outcomeDate,
+                    registerNumber: createdApplication[0].registerNumber,
+                    registerDate: createdApplication[0].registerDate,
+                    cf: createdApplication[0].cf,
+                    firstname: createdApplication[0].firstname,
+                    lastname: createdApplication[0].lastname,
+                    email: createdApplication[0].email,
+                    birthDate: createdApplication[0].birthDate,
+                    birthCity: createdApplication[0].birthCity,
+                    residenceCity: createdApplication[0].residenceCity,
+                    residencePlace: createdApplication[0].residencePlace,
+                    targetHousePlace: createdApplication[0].targetHousePlace,
+                    targetHouseLandRegistrySheet: createdApplication[0].targetHouseLandRegistrySheet,
+                    targetHouseLandRegistryMap: createdApplication[0].targetHouseLandRegistryMap,
+                    targetHouseLandRegistrySubaltern: createdApplication[0].targetHouseLandRegistrySubaltern,
+                    targetHouseLandRegistryCategory: createdApplication[0].targetHouseLandRegistryCategory,
+                    notes: createdApplication[0].notes,
+                    permitHistoryId: permitHistoryId,
+                    outcomeId: createdApplication[0].outcomeId,
+                    typeId: createdApplication[0].typeId,
+                    outcomeAuthUserId: createdApplication[0].outcomeAuthUserId,
+                    voucherHistoryId: (createdVoucherHistoryId != null ? createdVoucherHistoryId : voucherHistoryId),
+                }).returning();
+                if (createdApplicationHistory == null || createdApplicationHistory.length !== 1 || createdApplicationHistory[0] == null) {
+                    throw new Error("Errore durante l'inserimento dello storico della domanda");
                 }
-                if (voucherToAssociate.permitId !== permitId) {
-                    throw new Error("Permesso di tagliando e domanda non corrispondono");
+                const updatedApplicationHistoryId = createdApplicationHistory[0].id;
+                const updateResult = await tx.update(applications)
+                    .set({lastApplicationHistoryId: updatedApplicationHistoryId})
+                    .where(eq(applications.id, createdApplication[0].id));
+                const vehiclesToInsertApplicationHistory: {
+                    applicationHistoryId: number,
+                    vehicleHistoryId: number
+                }[] = [];
+                for (const vehicleId of vehicles) {
+                    const vehicleHistoryId = await getLastVehicleHistoryId(tx, vehicleId);
+                    vehiclesToInsertApplicationHistory.push({
+                        applicationHistoryId: updatedApplicationHistoryId,
+                        vehicleHistoryId: vehicleHistoryId,
+                    });
                 }
-            }
 
-            const createdApplication = await tx.insert(applications).values({
-                requestDate: requestDate,
-                outcomeDate: outcomeDate,
-                registerNumber: registerNumber,
-                registerDate: registerDate,
-                cf: cf,
-                firstname: firstname,
-                lastname: lastname,
-                email: email,
-                birthDate: birthDate,
-                birthCity: birthCity,
-                residenceCity: residenceCity,
-                residencePlace: residencePlace,
-                targetHousePlace: targetHousePlace,
-                targetHouseLandRegistrySheet: targetHouseLandRegistrySheet,
-                targetHouseLandRegistryMap: targetHouseLandRegistryMap,
-                targetHouseLandRegistrySubaltern: targetHouseLandRegistrySubaltern,
-                targetHouseLandRegistryCategory: targetHouseLandRegistryCategory,
-                notes: notes,
-                permitId: permitId,
-                typeId: typeId,
-                outcomeId: outcomeId,
-                voucherId: (createdVoucherId != null ? createdVoucherId : voucherId),
-                outcomeAuthUserId: modifiedByAuthUserId,
-            }).returning();
-            if (createdApplication == null || createdApplication.length !== 1 || createdApplication[0] == null) {
-                throw new Error("Errore durante la creazione della domanda");
-            }
-            const createdApplicationId = createdApplication[0].id;
-
-            // const deleteResult = await tx.delete(applicationsToVehicles).where(eq(applicationsToVehicles.applicationId, applicationID));
-            const vehiclesToInsertApplication = (vehicles as number[]).map((vehicleId) => {
-                return {
-                    applicationId: createdApplicationId,
-                    vehicleId: vehicleId as number,
+                const insertASVSResult = await tx.insert(applicationsHistoryToVehiclesHistory).values(vehiclesToInsertApplicationHistory);
+                if (insertASVSResult == null || insertASVSResult.rowCount !== vehicles.length) {
+                    throw new Error("Errore durante l'inserimento delle associazioni tra storico domanda e storico veicoli");
                 }
-            });
 
-            if (createdVoucherId == null && voucherId != null && updateVoucher) {
-                await updateVoucherWithApplication(tx, voucherId, modifiedByAuthUserId);
-            }
-
-            const insertResult = await tx.insert(applicationsToVehicles).values(vehiclesToInsertApplication);
-            if (insertResult == null || insertResult.rowCount !== vehicles.length) {
-                throw new Error("Errore durante l'inserimento delle associazioni tra domanda e veicoli");
-            }
-
-            let voucherHistoryId: number | null = null;
-            if (voucherId != null) {
-                voucherHistoryId = await getLastVoucherHistoryId(tx, voucherId);
-            }
-
-            const createdApplicationHistory = await tx.insert(applicationsHistory).values({
-                applicationId: createdApplication[0].id,
-                modifiedByAuthUserId: modifiedByAuthUserId,
-
-                requestDate: createdApplication[0].requestDate,
-                outcomeDate: createdApplication[0].outcomeDate,
-                registerNumber: createdApplication[0].registerNumber,
-                registerDate: createdApplication[0].registerDate,
-                cf: createdApplication[0].cf,
-                firstname: createdApplication[0].firstname,
-                lastname: createdApplication[0].lastname,
-                email: createdApplication[0].email,
-                birthDate: createdApplication[0].birthDate,
-                birthCity: createdApplication[0].birthCity,
-                residenceCity: createdApplication[0].residenceCity,
-                residencePlace: createdApplication[0].residencePlace,
-                targetHousePlace: createdApplication[0].targetHousePlace,
-                targetHouseLandRegistrySheet: createdApplication[0].targetHouseLandRegistrySheet,
-                targetHouseLandRegistryMap: createdApplication[0].targetHouseLandRegistryMap,
-                targetHouseLandRegistrySubaltern: createdApplication[0].targetHouseLandRegistrySubaltern,
-                targetHouseLandRegistryCategory: createdApplication[0].targetHouseLandRegistryCategory,
-                notes: createdApplication[0].notes,
-                permitHistoryId: permitHistoryId,
-                outcomeId: createdApplication[0].outcomeId,
-                typeId: createdApplication[0].typeId,
-                outcomeAuthUserId: createdApplication[0].outcomeAuthUserId,
-                voucherHistoryId: (createdVoucherHistoryId != null ? createdVoucherHistoryId : voucherHistoryId),
-            }).returning();
-            if (createdApplicationHistory == null || createdApplicationHistory.length !== 1 || createdApplicationHistory[0] == null) {
-                throw new Error("Errore durante l'inserimento dello storico della domanda");
-            }
-            const updatedApplicationHistoryId = createdApplicationHistory[0].id;
-            const updateResult = await tx.update(applications)
-                .set({lastApplicationHistoryId: updatedApplicationHistoryId})
-                .where(eq(applications.id, createdApplication[0].id));
-            const vehiclesToInsertApplicationHistory: { applicationHistoryId: number, vehicleHistoryId: number }[] = [];
-            for (const vehicleId of vehicles) {
-                const vehicleHistoryId = await getLastVehicleHistoryId(tx, vehicleId);
-                vehiclesToInsertApplicationHistory.push({
-                    applicationHistoryId: updatedApplicationHistoryId,
-                    vehicleHistoryId: vehicleHistoryId,
-                });
-            }
-
-            const insertASVSResult = await tx.insert(applicationsHistoryToVehiclesHistory).values(vehiclesToInsertApplicationHistory);
-            if (insertASVSResult == null || insertASVSResult.rowCount !== vehicles.length) {
-                throw new Error("Errore durante l'inserimento delle associazioni tra storico domanda e storico veicoli");
-            }
-
-            if (updateResult == null || updateResult.rowCount !== 1) {
-                throw new Error("Errore durante l'aggiornamento della domanda con lo storico");
-            }
-            return createdApplication[0].id;
+                if (updateResult == null || updateResult.rowCount !== 1) {
+                    throw new Error("Errore durante l'aggiornamento della domanda con lo storico");
+                }
+                return createdApplication[0].id;
             });
         });
         if (createdApplicationId == null) {
             res.status(500).json({message: "Errore durante l'inserimento della domanda"});
             return;
         }
-        res.status(200).json({message: "Domanda creata con successo"});
+        res.status(200).json({
+            message: "Domanda creata con successo",
+            id: createdApplicationId
+        });
         return;
     } catch (e) {
         res.status(500).json({message: "Errore durante la creazione della domanda: " + e});
