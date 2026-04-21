@@ -1,4 +1,4 @@
-import {Button, Col, Container, Icon, Table} from "design-react-kit";
+import {Button, Col, Container, Icon, Row, Table} from "design-react-kit";
 import {useUserDataContext} from "../../hooks/useUserDataContext.ts";
 import {useNavigate} from "react-router";
 import {useEffect, useState} from "react";
@@ -37,54 +37,58 @@ export const Users = () => {
 
     return (
         <Container>
-            <h1>Gestione utenti</h1>
-            <Col lg={12}>
+            <h1>Utenti</h1>
+            <Row className={"mt-4"}>
                 <Col md={3}>
                     <Button onClick={() => navigate(`/users/new`)}
                             color={"primary"} icon={true} title={"Aggiungi nuovo utente"}>
                         <span className={"rounded-icon me-2"}>
-                        <Icon icon={"it-plus"} />
+                        <Icon icon={"it-plus"}/>
                             </span>
                         Nuovo
                     </Button>
                 </Col>
-                <Table>
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Nome</th>
-                        <th>Cognome</th>
-                        <th>Email</th>
-                        <th>Ruolo</th>
-                        <th>Disabilitato</th>
-                        <th>Modifica</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {usersList != null && usersList.map((userListEntry) => (
-                        <tr key={userListEntry.id}>
-                            <th>{userListEntry.id}</th>
-                            <td>{userListEntry.username}</td>
-                            <td>{userListEntry.firstName}</td>
-                            <td>{userListEntry.lastName}</td>
-                            <td>{userListEntry.email}</td>
-                            <td>{userListEntry.role}</td>
-                            <td>{userListEntry.disabled ? "Disabilitato" : "Attivo"}</td>
-                            <td>
-                                <Button onClick={() => navigate(`/users/${userListEntry.id}`)}
-                                        color={"secondary"} icon={true} outline title={"Modifica"}>
-                                    <Icon icon={"it-pencil"}/>
-                                </Button>
-                            </td>
+            </Row>
+            <Row className={"mt-4"}>
+                <Col lg={12}>
+                    <Table>
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Nome</th>
+                            <th>Cognome</th>
+                            <th>Email</th>
+                            <th>Ruolo</th>
+                            <th>Disabilitato</th>
+                            <th>Modifica</th>
                         </tr>
-                    ))}
-                    </tbody>
-                </Table>
-                <LoadingSpinner loading={loading}/>
+                        </thead>
+                        <tbody>
+                        {usersList != null && usersList.map((userListEntry) => (
+                            <tr key={userListEntry.id}>
+                                <th>{userListEntry.id}</th>
+                                <td>{userListEntry.username}</td>
+                                <td>{userListEntry.firstName}</td>
+                                <td>{userListEntry.lastName}</td>
+                                <td>{userListEntry.email}</td>
+                                <td>{userListEntry.role}</td>
+                                <td>{userListEntry.disabled ? "Disabilitato" : "Attivo"}</td>
+                                <td>
+                                    <Button onClick={() => navigate(`/users/${userListEntry.id}`)}
+                                            color={"secondary"} icon={true} outline title={"Modifica"}>
+                                        <Icon icon={"it-pencil"}/>
+                                    </Button>
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </Table>
+                    <LoadingSpinner loading={loading}/>
 
-                <SuccessErrorAlert err={err} succ={null}/>
-            </Col>
+                    <SuccessErrorAlert err={err} succ={null}/>
+                </Col>
+            </Row>
         </Container>
     );
 }

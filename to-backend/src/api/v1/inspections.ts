@@ -4,7 +4,7 @@ import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
 import {
     applications,
-    applicationsToVehicles,
+    applicationsToVehicles, inspectionChecks, inspections,
     vehicles,
     vouchers,
     vouchersEmailsHistory,
@@ -36,571 +36,115 @@ import {Mutex} from "../../utils/mutex.ts";
 import {SmtpManager} from "../../smtpManager.ts";
 import path from "node:path";
 import {existsSync} from "node:fs";
+import {getVoucherCurrentState} from "./vouchers.ts";
 
-export const vouchersRouter = Router();
+export const inspectionsRouter = Router();
 
-type VoucherCurrentState = "Revocato" | "Scaduto" | "Non ancora valido" | "Valido";
+type InspectionCurrentState = "Pronta" | "In corso" | "Conclusa";
 
-type VoucherPublicCheck = {
+type InspectionListEntry = {
     id: number,
-    createdAt: Date,
-    updatedAt: Date,
-    number: number,
-    revoked: boolean,
-    currentState: string,
-    validFromDate: Date,
-    validToDate: Date,
-    permit: {
-        id: number,
-        description: string,
-        disabled: boolean,
-        simultaneousPlatesAmount: number,
-        applicationPlatesAmount: number,
-        voucherDurationDays: number
-    },
-    vehicles: {
-        id: number,
-        plate: string,
-        model: string,
-        brand: string,
-    }[]
+    startDate: Date,
+    endDate: Date | null,
+    description: string,
+    currentState: InspectionCurrentState
 }
 
-type VoucherListEntry = {
+type InspectionCheck = {
     id: number,
     createdAt: Date,
-    updatedAt: Date,
-    number: number,
-    revoked: boolean,
-    currentState: string,
-    validFromDate: Date,
-    validToDate: Date,
-    permit: {
-        id: number,
-        description: string,
-        disabled: boolean
-    },
-    vehicles: {
-        id: number,
+    vehicleHistory: {
+        vehicleId: number,
         plate: string,
         model: string,
         brand: string,
-    }[],
-    applications: {
-        id: number,
-        registerNumber: number,
-        registerDate: Date,
-        cf: string,
+    },
+    voucherHistory: {
+        voucherId: number,
+        number: number,
+        revoked: boolean,
+        currentState: string,
+        validFromDate: Date,
+        validToDate: Date,
+        permitHistory: {
+            permitId: number,
+            description: string,
+            disabled: boolean,
+            simultaneousPlatesAmount: number,
+            applicationPlatesAmount: number,
+            voucherDurationDays: number
+        },
+    },
+    checkedByAuthUser: {
+        username: string,
         firstname: string,
-        lastname: string,
-        email: string,
-        targetHousePlace: string | null,
-        targetHouseLandRegistrySheet: string | null,
-        targetHouseLandRegistryMap: string | null,
-        targetHouseLandRegistrySubaltern: string | null,
-        targetHouseLandRegistryCategory: string | null,
-    }[]
-}
-
-type EmailAttachment = {
-    filename: string,
-    downloadPath: string,
-    path: string
-}
-
-type Email = {
-    subject: string,
-    body: string,
-    to: string,
-    attachments: EmailAttachment[],
-}
-
-type VoucherDetails = {
-    id: number,
-    createdAt: Date,
-    updatedAt: Date,
-    number: number,
-    revoked: boolean,
-    currentState: string,
-    validFromDate: Date,
-    validToDate: Date,
-    notes: string,
-    generatedVoucherTemplatePath: string | null,
-    generatedAuthorizationTemplatePath: string | null,
-    generatedVoucherPdfPath: string | null,
-    generatedAuthorizationPdfPath: string | null,
-    signedAuthorizationPath: string | null,
-    permit: {
-        id: number,
-        description: string,
-        printedName: string,
-        disabled: boolean,
-        simultaneousPlatesAmount: number,
-        applicationPlatesAmount: number,
-        voucherDurationDays: number,
+        lastname: string
     },
-    applications: {
-        id: number,
-        registerNumber: number,
-        registerDate: Date,
-        cf: string,
-        firstname: string,
-        lastname: string,
-        email: string,
-        outcomeDate: Date | null,
-        outcomeDescription: string,
-        typeDescription: string,
-        targetHousePlace: string | null,
-        targetHouseLandRegistrySheet: string | null,
-        targetHouseLandRegistryMap: string | null,
-        targetHouseLandRegistrySubaltern: string | null,
-        targetHouseLandRegistryCategory: string | null,
-        vehicles: {
-            id: number,
-            createdAt: Date,
-            updatedAt: Date,
-            plate: string,
-            model: string,
-            brand: string,
-        }[],
-    }[],
-    vehicles: {
-        id: number,
-        createdAt: Date,
-        updatedAt: Date,
-        plate: string,
-        model: string,
-        brand: string,
-    }[],
-    emails: {
-        id: number,
-        createdAt: Date,
-        sentDate: Date,
-        to: string,
-        subject: string,
-        body: string,
-        attachments: string | null
-    }[],
+};
+
+export type InspectionDetails = {
+    id: number,
+    startDate: Date,
+    endDate: Date | null,
+    description: string,
+    currentState: InspectionCurrentState,
+    inspectionChecks: InspectionCheck[]
 }
 
-// /*
-// export const vouchers = toSchema.table("vouchers", {
-//     id: commonColumns.idAutoIncr(),
-//     createdAt: commonColumns.createdAt(),
-//     updatedAt: commonColumns.updatedAt(),
-//     number: integer().notNull(),
-//     revoked: commonColumns.disabled(),
-//     validFromDate: date().notNull(),
-//     validToDate: date().notNull(),
-//     notes: commonColumns.notes(),
-//     permitId: integer().notNull().references(() => permits.id),
-//     generatedVoucherTemplatePath: commonColumns.path512(),
-//     generatedAuthorizationTemplatePath: commonColumns.path512(),
-//     generatedVoucherPdfPath: commonColumns.path512(),
-//     generatedAuthorizationPdfPath: commonColumns.path512(),
-//     signedAuthorizationPath: commonColumns.path512(),
-//     lastVoucherHistoryId: integer().references((): AnyPgColumn => vouchersHistory.id),
-// }, (t) => [
-//     index("vouchersNumberIndex").on(t.number),
-//     index("vouchersPermitIdIndex").on(t.permitId),
-// ])
-//
-// vouchers: {
-//     permit: r.one.permits({
-//         from: r.vouchers.permitId,
-//         to: r.permits.id
-//     }),
-//     applications: r.many.applications(),
-//     vehicles: r.many.vehicles({
-//         from: r.vouchers.id.through(r.vouchersToVehicles.voucherId),
-//         to: r.vehicles.id.through(r.vouchersToVehicles.vehicleId)
-//     }),
-//     emails: r.many.vouchersEmailsHistory(),
-//     voucherHistory: r.many.vouchersHistory({
-//         alias: "voucherHistoryRel",
-//     }),
-//     lastVoucherHistory: r.one.vouchersHistory({ //non speculare
-//         from: r.vouchers.lastVoucherHistoryId,
-//         to: r.vouchersHistory.id,
-//         alias: "lastVoucherHistoryRel",
-//     })
-// },
-//
-// */
+type InspectionDetailsAnomalies = InspectionDetails & {
+    anomalyInspectionChecks: InspectionCheck[]
+}
 
-export const getVoucherCurrentState = (revoked: boolean, validFromDate: string, validToDate: string): VoucherCurrentState => {
-    if (revoked) {
-        return "Revocato";
-    } else if (new Date() > new Date(validToDate)) {
-        return "Scaduto";
-    } else if (new Date() < new Date(validFromDate)) {
-        return "Non ancora valido";
+
+const getInspectionCurrentState = (startDate: Date, endDate: Date | null): InspectionCurrentState => {
+    if (endDate != null) {
+        return "Conclusa";
+    } else if (new Date() < startDate) {
+        return "Pronta";
     } else {
-        return "Valido";
+        return "In corso";
     }
 }
 
-vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+inspectionsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
         return res.status(401).json({message: "Non autorizzato"});
     }
-    /*
-    id: number,
-    createdAt: Date,
-    updatedAt: Date,
-
-    number: number,
-
-    revoked: boolean, non gestito
-
-    validFromDate: Date,
-    validToDate: Date,
-
-    notes: string, non gestito
-
-
-    permit: {
-        id: number,
-        description: string,
-        printedName: string,
-        disabled: boolean,
-        simultaneousPlatesAmount: number,
-        applicationPlatesAmount: number
-    },
-    generatedVoucherTemplatePath: string,
-    generatedAuthorizationTemplatePath: string,
-    generatedVoucherPdfPath: string,
-    generatedAuthorizationPdfPath: string,
-    signedAuthorizationPath: string,
-    applications: {
-        id: number,
-        registerNumber: string,
-        registerDate: Date,
-        cf: string,
-        firstname: string,
-        lastname: string,
-        email: string,
-        outcomeDate: Date,
-        outcomeDescription: string,
-        typeDescription: string,
-        emails: {
-            id: number,
-            to: string,
-            subject: string,
-            attachmentsPresent: boolean
-        }[],
-    }[],
-    vehicles: {
-        id: number,
-        plate: string,
-        model: string,
-        brand: string,
-    }[],
-    emails: {
-        id: number,
-        to: string,
-        subject: string,
-        attachmentsPresent: boolean,
-    }[],
-
-     */
 
     const {
-        idFrom,
-        idTo,
-
-        numberFrom,
-        numberTo,
-
-        validityStartedFromDate,
-        validityStartedToDate,
-
-        expiresFromDate,
-        expiresToDate,
-
-        emailTo,
-        permitId,
-
-        applicationId,
-        requestDate,
-        outcomeDate,
-        registerNumber,
-        registerDate,
-        cf,
-        firstname,
-        lastname,
-        email,
-        targetHousePlace,
-        targetHouseLandRegistrySheet,
-        targetHouseLandRegistryMap,
-        targetHouseLandRegistrySubaltern,
-        targetHouseLandRegistryCategory,
-
-        vehicleId,
-        vehiclePlate,
-        vehicleModel,
-        vehicleBrand,
-
         page,
     } = req.body;
     const db = DatabaseManager.instance.db;
     const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
-    // const countConditions = [], queryConditions = [];
-    const vouchersCountConditions = [], vouchersQueryConditions = [];
-    const applicationsCountConditions = [], applicationsQueryConditions = [];
-    const vehiclesCountConditions = [], vehiclesQueryConditions = [];
-    const emailsCountConditions = [], emailsQueryConditions = [];
 
-    // vouchers filters
-    if (idFrom != null && !isNaN(parseInt(idFrom))) {
-        vouchersCountConditions.push(gte(vouchers.id, parseInt(idFrom)));
-        vouchersQueryConditions.push({id: {gte: idFrom}});
-    }
-    if (idTo != null && !isNaN(parseInt(idTo))) {
-        vouchersCountConditions.push(lte(vouchers.id, parseInt(idTo)));
-        vouchersQueryConditions.push({id: {lte: idTo}});
-    }
-    if (numberFrom != null && !isNaN(parseInt(numberFrom))) {
-        vouchersCountConditions.push(gte(vouchers.number, parseInt(numberFrom)));
-        vouchersQueryConditions.push({number: {gte: numberFrom}});
-    }
-    if (numberTo != null && !isNaN(parseInt(numberTo))) {
-        vouchersCountConditions.push(gte(vouchers.number, parseInt(numberTo)));
-        vouchersQueryConditions.push({number: {gte: numberTo}});
-    }
-    if (validityStartedFromDate != null && !isNaN(parseInt(validityStartedFromDate))) {
-        vouchersCountConditions.push(gte(vouchers.validFromDate, new Date(validityStartedFromDate).toISOString()));
-        vouchersQueryConditions.push({validFromDate: {gte: new Date(validityStartedFromDate).toISOString()}});
-    }
-    if (validityStartedToDate != null && !isNaN(parseInt(validityStartedToDate))) {
-        vouchersCountConditions.push(gte(vouchers.validToDate, new Date(validityStartedToDate).toISOString()));
-        vouchersQueryConditions.push({validToDate: {gte: new Date(validityStartedToDate).toISOString()}});
-    }
-    if (expiresFromDate != null && !isNaN(parseInt(expiresFromDate))) {
-        vouchersCountConditions.push(gte(vouchers.validFromDate, new Date(expiresFromDate).toISOString()));
-        vouchersQueryConditions.push({validFromDate: {gte: new Date(expiresFromDate).toISOString()}});
-    }
-    if (expiresToDate != null && !isNaN(parseInt(expiresToDate))) {
-        vouchersCountConditions.push(gte(vouchers.validToDate, new Date(expiresToDate).toISOString()));
-        vouchersQueryConditions.push({validToDate: {gte: new Date(expiresToDate).toISOString()}});
-    }
-    if (permitId != null && !isNaN(parseInt(permitId))) {
-        vouchersCountConditions.push(eq(vouchers.permitId, parseInt(permitId)));
-        vouchersQueryConditions.push({permitId: parseInt(permitId)});
-    }
-
-    //applications
-    if (applicationId != null && !isNaN(parseInt(applicationId))) {
-        applicationsCountConditions.push(eq(applications.id, parseInt(applicationId)));
-        applicationsQueryConditions.push({id: parseInt(applicationId)});
-    }
-    if (requestDate != null && new Date(requestDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate).toLocaleDateString()));
-        applicationsQueryConditions.push({requestDate: new Date(requestDate).toLocaleDateString()});
-    }
-    if (outcomeDate != null && new Date(outcomeDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toLocaleDateString()));
-        applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toLocaleDateString()});
-    }
-    if (registerNumber != null && !isNaN(parseInt(registerNumber))) {
-        applicationsCountConditions.push(eq(applications.registerNumber, parseInt(registerNumber)));
-        applicationsQueryConditions.push({registerNumber: parseInt(registerNumber)});
-    }
-    if (registerDate != null && new Date(registerDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.registerDate, new Date(registerDate).toLocaleDateString()));
-        applicationsQueryConditions.push({registerDate: new Date(registerDate).toLocaleDateString()});
-    }
-    if (cf != null && cf.trim() !== "") {
-        applicationsCountConditions.push(ilike(applications.cf, `%${cf}%`));
-        applicationsQueryConditions.push({cf: {ilike: `%${cf}%`}});
-    }
-    if (firstname != null && firstname.trim() !== "") {
-        applicationsCountConditions.push(ilike(applications.firstname, `%${firstname}%`));
-        applicationsQueryConditions.push({firstname: {ilike: `%${firstname}%`}});
-    }
-    if (lastname != null && lastname.trim() !== "") {
-        applicationsCountConditions.push(ilike(applications.lastname, `%${lastname}%`));
-        applicationsQueryConditions.push({lastname: {ilike: `%${lastname}%`}});
-    }
-    if (email != null && email.trim() !== "") {
-        applicationsCountConditions.push(ilike(applications.email, `%${email}%`));
-        applicationsQueryConditions.push({email: {ilike: `%${email}%`}});
-    }
-    if (targetHousePlace != null && targetHousePlace.trim() !== "") {
-        applicationsCountConditions.push(ilike(applications.targetHousePlace, `%${targetHousePlace}%`));
-        applicationsQueryConditions.push({targetHousePlace: {ilike: `%${targetHousePlace}%`}});
-    }
-    if (targetHouseLandRegistrySheet != null && targetHouseLandRegistrySheet.trim() !== "") {
-        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySheet, `%${targetHouseLandRegistrySheet}%`));
-        applicationsQueryConditions.push({targetHouseLandRegistrySheet: {ilike: `%${targetHouseLandRegistrySheet}%`}});
-    }
-    if (targetHouseLandRegistryMap != null && targetHouseLandRegistryMap.trim() !== "") {
-        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryMap, `%${targetHouseLandRegistryMap}%`));
-        applicationsQueryConditions.push({targetHouseLandRegistryMap: {ilike: `%${targetHouseLandRegistryMap}%`}});
-    }
-    if (targetHouseLandRegistrySubaltern != null && targetHouseLandRegistrySubaltern.trim() !== "") {
-        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistrySubaltern, `%${targetHouseLandRegistrySubaltern}%`));
-        applicationsQueryConditions.push({targetHouseLandRegistrySubaltern: {ilike: `%${targetHouseLandRegistrySubaltern}%`}});
-    }
-    if (targetHouseLandRegistryCategory != null && targetHouseLandRegistryCategory.trim() !== "") {
-        applicationsCountConditions.push(ilike(applications.targetHouseLandRegistryCategory, `%${targetHouseLandRegistryCategory}%`));
-        applicationsQueryConditions.push({targetHouseLandRegistryCategory: {ilike: `%${targetHouseLandRegistryCategory}%`}});
-    }
-
-    // email history
-    if (emailTo != null && emailTo.trim() !== "") {
-        emailsCountConditions.push(ilike(vouchersEmailsHistory.to, `%${emailTo}%`));
-        emailsQueryConditions.push({to: {ilike: `%${emailTo}%`}});
-        // const emailsSubQuery = db.select({id: applicationsEmailsHistory.id}).from(applicationsEmailsHistory).where(ilike(applicationsEmailsHistory.to, `%${emailTo}%`));
-        // applicationsCountConditions.push(exists(emailsSubQuery.where(eq(applications.id, applicationsEmailsHistory.applicationId))));
-    }
-
-    //vehicles
-    if (vehicleId != null && !isNaN(parseInt(vehicleId))) {
-        vehiclesCountConditions.push(eq(vehicles.id, parseInt(vehicleId)));
-        vehiclesQueryConditions.push({id: parseInt(vehicleId)});
-    }
-    if (vehiclePlate != null && vehiclePlate.trim() !== "") {
-        vehiclesCountConditions.push(ilike(vehicles.plate, `%${vehiclePlate}%`));
-        vehiclesQueryConditions.push({plate: {ilike: `%${vehiclePlate}%`}});
-    }
-    if (vehicleModel != null && vehicleModel.trim() !== "") {
-        vehiclesCountConditions.push(ilike(vehicles.model, `%${vehicleModel}%`));
-        vehiclesQueryConditions.push({model: {ilike: `%${vehicleModel}%`}});
-    }
-    if (vehicleBrand != null && vehicleBrand.trim() !== "") {
-        vehiclesCountConditions.push(ilike(vehicles.brand, `%${vehicleBrand}%`));
-        vehiclesQueryConditions.push({brand: {ilike: `%${vehicleBrand}%`}});
-    }
-
-    // if (plate != null && plate.trim() !== "") { vehiclesCountConditions.push(ilike(vehicles.plate, `%${plate}%`)); vehiclesQueryConditions.push({plate: {ilike: `%${plate}%`}}); }
-    // if (model != null && model.trim() !== "") { vehiclesCountConditions.push(ilike(vehicles.model, `%${model}%`)); vehiclesQueryConditions.push({model: {ilike: `%${model}%`}}); }
-    // if (brand != null && brand.trim() !== "") { vehiclesCountConditions.push(ilike(vehicles.brand, `%${brand}%`)); vehiclesQueryConditions.push({brand: {ilike: `%${brand}%`}}); }
-
-    //const totalAmount = await db.$count(applications, and(...applicationsCountConditions));
-
-
-    // counting section
-    const vehiclesCountFilterSubQuery = db.select().from(vouchersToVehicles)
-        .leftJoin(vehicles, eq(vouchersToVehicles.vehicleId, vehicles.id))
-        .where(and(eq(vouchers.id, vouchersToVehicles.voucherId), ...vehiclesCountConditions));
-    const applicationsCountFilterSubQuery = db.select().from(applications)
-        .where(and(eq(vouchers.id, applications.voucherId), ...applicationsCountConditions));
-    const emailsCountFilterSubQuery = db.select().from(vouchersEmailsHistory)
-        .where(and(eq(vouchers.id, vouchersEmailsHistory.voucherId), ...emailsCountConditions));
-
-    const existsCountConditions = [];
-    if (vehiclesCountConditions.length > 0) {
-        existsCountConditions.push(exists(vehiclesCountFilterSubQuery));
-    }
-    if (applicationsCountConditions.length > 0) {
-        existsCountConditions.push(exists(applicationsCountFilterSubQuery));
-    }
-    if (emailsCountConditions.length > 0) {
-        existsCountConditions.push(exists(emailsCountFilterSubQuery));
-    }
-
-    const totalAmount = await db.select({count: count()}).from(vouchers)
-        .where(and(...vouchersCountConditions, ...existsCountConditions));
+    const totalAmount = await db.select({count: count()}).from(inspections);
     if (totalAmount == null || totalAmount.length !== 1 || totalAmount[0] == null) {
         return res.status(500).json({message: "Errore nel conteggio dei risultati"});
     }
-    // console.log(totalAmount[0].count);
-
-    // const vehiclesArr = await db.select().from(applications)
-    //     .where(and(...applicationsSearchConditions))
-    //     .orderBy(desc(applications.id))
-    //     .offset(page != null ? (page - 1) * resultsPerPage : 0).limit(resultsPerPage);
 
     // query section
-    const vouchersArr = await db.query.vouchers.findMany({
-        where: {
-            AND: [
-                ...vouchersQueryConditions,
-            ],
-            vehicles: (vehiclesQueryConditions.length === 0 ? undefined : {
-                AND: [...vehiclesQueryConditions]
-            }),
-            applications: (applicationsQueryConditions.length === 0 ? undefined : {
-                AND: [...applicationsQueryConditions],
-            }),
-            emails: (emailsQueryConditions.length === 0 ? undefined : {
-                AND: [...emailsQueryConditions],
-            }),
-        },
-
-        with: {
-            vehicles: true,
-            applications: {
-                orderBy: {outcomeDate: "desc", id: "desc"}, // choose application with most recent outcomeDate or ID
-            },
-            permit: true,
-            emails: true
-        },
+    const inspectionsArr = await db.query.inspections.findMany({
         orderBy: {id: "desc"},
         offset: page != null ? (page - 1) * resultsPerPage : 0,
         limit: resultsPerPage,
     });
-    if (vouchersArr == null) {
-        return res.status(500).json({message: "Errore nel reperire i tagliandi"});
+    if (inspectionsArr == null) {
+        return res.status(500).json({message: "Errore nel reperire le ispezioni"});
     }
-    const vouchersList: VoucherListEntry[] = [];
-    for (const vouch of vouchersArr) {
-        if (vouch.permit == null) {
-            return res.status(500).json({message: "Errore nel reperire le associazioni di uno dei tagliandi"});
-        }
-        const currentState = getVoucherCurrentState(vouch.revoked, vouch.validFromDate, vouch.validToDate);
-        vouchersList.push({
-            id: vouch.id,
-            createdAt: vouch.createdAt,
-            updatedAt: vouch.updatedAt,
-
-            number: vouch.number,
-            revoked: vouch.revoked,
-            currentState: currentState,
-            validFromDate: new Date(vouch.validFromDate),
-            validToDate: new Date(vouch.validToDate),
-
-            applications: vouch.applications.map(a => ({
-                id: a.id,
-                registerNumber: a.registerNumber,
-                registerDate: new Date(a.registerDate),
-                cf: a.cf ?? "",
-                firstname: a.firstname,
-                lastname: a.lastname,
-                email: a.email,
-                targetHousePlace: a.targetHousePlace,
-                targetHouseLandRegistrySheet: a.targetHouseLandRegistrySheet,
-                targetHouseLandRegistryMap: a.targetHouseLandRegistryMap,
-                targetHouseLandRegistrySubaltern: a.targetHouseLandRegistrySubaltern,
-                targetHouseLandRegistryCategory: a.targetHouseLandRegistryCategory
-            })),
-
-            permit: {
-                id: vouch.permit.id,
-                description: vouch.permit.description,
-                disabled: vouch.permit.disabled,
-            },
-
-            // emails: vouch.emails.map(e => ({
-            //     id: e.id,
-            //     to: e.to,
-            //     subject: e.subject,
-            //     attachmentsPresent: e.attachments != null && e.attachments.length > 0,
-            // })),
-            vehicles: vouch.vehicles.map(v => ({
-                id: v.id,
-                createdAt: v.createdAt,
-                updatedAt: v.updatedAt,
-                plate: v.plate,
-                model: v.model,
-                brand: v.brand,
-            })),
+    const inspectionsList: InspectionListEntry[] = [];
+    for (const inspection of inspectionsArr) {
+        const currentState = getInspectionCurrentState(inspection.startDate, inspection.endDate);
+        inspectionsList.push({
+            id: inspection.id,
+            startDate: inspection.startDate,
+            endDate: inspection.endDate,
+            description: inspection.description,
+            currentState: currentState
         });
     }
     res.json({
-        message: "Tagliandi acquisiti con successo",
-        vouchersList: vouchersList,
+        message: "Ispezioni acquisite con successo",
+        inspectionsList: inspectionsList,
         pageData: {
             currentPage: page != null ? page : 1,
             totalPages: Math.ceil(totalAmount[0].count / resultsPerPage),
@@ -608,128 +152,221 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
     });
 });
 
-const getDetailedVoucher = async (tx: DbTransactionType, voucherID: number) => {
-    const voucher = await tx.query.vouchers.findFirst({
+
+
+const getDetailedInspectionPaged = async (tx: DbTransactionType, inspectionID: number, page: number | null) => {
+    const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
+    const totalAmount = await tx.select({count: count()}).from(inspectionChecks)
+        .where(eq(inspectionChecks.inspectionId, inspectionID));
+    if (totalAmount == null || totalAmount.length !== 1 || totalAmount[0] == null) {
+        throw new Error("Errore nel conteggio dei risultati");
+    }
+    const inspection = await tx.query.inspections.findFirst({
         where: {
-            id: voucherID,
+            id: inspectionID,
         },
         with: {
-            vehicles: true,
-            applications: {
+            inspectionChecks: {
+                offset: page != null ? (page - 1) * resultsPerPage : 0,
+                orderBy: {id: "desc"},
                 with: {
-                    vehicles: true,
-                    outcome: true,
-                    type: true,
-                    outcomeAuthUser: true
-                },
-                orderBy: {outcomeDate: "desc", id: "desc"}, // choose application with most recent outcomeDate or ID
-            },
-            permit: {
-                with: {
-                    voucherDocTemplate: true,
-                    authorizationDocTemplate: true,
-                    approveEmailTemplate: true,
-                    revokeEmailTemplate: true,
-                    refuseEmailTemplate: true,
-                },
-            },
-            emails: true
+                    checkedByAuthUser: true,
+                    voucherHistory: {
+                        with: {
+                            permitHistory: true
+                        }
+                    },
+                    vehicleHistory: true
+                }
+            }
         },
     });
-    return voucher;
+    return {
+        inspection: inspection,
+        pageData: {
+            currentPage: page != null ? page : 1,
+            totalPages: Math.ceil(totalAmount[0].count / resultsPerPage),
+        }
+    };
 }
+type DetailedInspectionPagedQueryResult = Awaited<ReturnType<typeof getDetailedInspectionPaged>>;
 
-type DetailedVoucherQueryResult = Awaited<ReturnType<typeof getDetailedVoucher>>;
-
-export const getVoucher = async (tx: DbTransactionType, voucherID: number) => {
-    const voucher = await tx.query.vouchers.findFirst({
+export const getDetailedOngoingInspectionFull = async (tx: DbTransactionType) => {
+    const inspections = await tx.query.inspections.findMany({
         where: {
-            id: voucherID,
+            endDate: {isNotNull: true},
+        },
+        with: {
+            inspectionChecks: {
+                orderBy: {id: "desc"},
+                with: {
+                    checkedByAuthUser: true,
+                    voucherHistory: {
+                        with: {
+                            permitHistory: true
+                        }
+                    },
+                    vehicleHistory: true
+                }
+            }
+        },
+        orderBy: {id: "desc"},
+    });
+    return inspections;
+}
+type DetailedOngoingInspectionsQueryResult = Awaited<ReturnType<typeof getDetailedOngoingInspectionFull>>;
+
+const getDetailedInspectionFull = async (tx: DbTransactionType, inspectionID: number) => {
+    const inspection = await tx.query.inspections.findFirst({
+        where: {
+            id: inspectionID,
+        },
+        with: {
+            inspectionChecks: {
+                orderBy: {id: "desc"},
+                with: {
+                    checkedByAuthUser: true,
+                    voucherHistory: {
+                        with: {
+                            permitHistory: true
+                        }
+                    },
+                    vehicleHistory: true
+                }
+            }
+        },
+    });
+    return inspection;
+}
+type DetailedInspectionQueryResult = Awaited<ReturnType<typeof getDetailedInspectionFull>>;
+
+const getInspection = async (tx: DbTransactionType, inspectionID: number) => {
+    const inspection = await tx.query.inspections.findFirst({
+        where: {
+            id: inspectionID,
         }
     });
-    return voucher;
+    return inspection;
+}
+type InspectionQueryResult = Awaited<ReturnType<typeof getInspection>>;
+
+const getInspectionDetails = (inspection: DetailedInspectionQueryResult) => {
+    if (inspection == null) {
+        throw new Error("Ispezione non trovata");
+    }
+    const currentState = getInspectionCurrentState(inspection.startDate, inspection.endDate);
+    const inspectionDetails: InspectionDetails = {
+        id: inspection.id,
+        startDate: inspection.startDate,
+        endDate: inspection.endDate,
+        description: inspection.description,
+        currentState: currentState,
+
+        inspectionChecks: inspection.inspectionChecks == null ? [] : inspection.inspectionChecks.map((check) => {
+            if (check == null || check.vehicleHistory == null || check.checkedByAuthUser == null || check.voucherHistory == null || check.voucherHistory.permitHistory == null) {
+                throw new Error("Errore nel reperire le associazioni di un rilievo");
+            }
+            const voucherCurrentState = getVoucherCurrentState(check.voucherHistory.revoked, check.voucherHistory.validFromDate, check.voucherHistory.validToDate);
+
+            return {
+                id: check.id,
+                createdAt: check.createdAt,
+                vehicleHistory: {
+                    vehicleId: check.vehicleHistory.id,
+                    plate: check.vehicleHistory.plate,
+                    model: check.vehicleHistory.model,
+                    brand: check.vehicleHistory.brand,
+                },
+                voucherHistory: {
+                    voucherId: check.voucherHistory.voucherId,
+                    number: check.voucherHistory.number,
+                    revoked: check.voucherHistory.revoked,
+                    currentState: voucherCurrentState,
+                    validFromDate: new Date(check.voucherHistory.validFromDate),
+                    validToDate: new Date(check.voucherHistory.validToDate),
+                    permitHistory: {
+                        permitId: check.voucherHistory.permitHistory.permitId,
+                        description: check.voucherHistory.permitHistory.description,
+                        disabled: check.voucherHistory.permitHistory.disabled,
+                        simultaneousPlatesAmount: check.voucherHistory.permitHistory.simultaneousPlatesAmount,
+                        applicationPlatesAmount: check.voucherHistory.permitHistory.applicationPlatesAmount,
+                        voucherDurationDays: check.voucherHistory.permitHistory.voucherDurationDays
+                    },
+                },
+                checkedByAuthUser: {
+                    username: check.checkedByAuthUser.username,
+                    firstname: check.checkedByAuthUser.firstname,
+                    lastname: check.checkedByAuthUser.lastname
+                },
+            }}),
+    };
+    return inspectionDetails;
 }
 
-type VoucherQueryResult = Awaited<ReturnType<typeof getVoucher>>;
-
-const getVoucherDetails = async (voucher: DetailedVoucherQueryResult) => {
-    if (voucher == null) {
-        throw new Error("Tagliando non trovato");
+export const getOngoingInspectionsDetails = (inspections: DetailedOngoingInspectionsQueryResult) => {
+    if (inspections == null) {
+        throw new Error("Ispezioni non trovate");
     }
-    if (voucher.permit == null) {
-        throw new Error("Errore nel reperire le associazioni del tagliando");
+    const inspectionsDetails: InspectionDetails[] = [];
+    for (const inspection of inspections) {
+        const currentState = getInspectionCurrentState(inspection.startDate, inspection.endDate);
+        inspectionsDetails.push({
+            id: inspection.id,
+            startDate: inspection.startDate,
+            endDate: inspection.endDate,
+            description: inspection.description,
+            currentState: currentState,
+
+            inspectionChecks: inspection.inspectionChecks == null ? [] : inspection.inspectionChecks.map((check) => {
+                if (check == null || check.vehicleHistory == null || check.checkedByAuthUser == null || check.voucherHistory == null || check.voucherHistory.permitHistory == null) {
+                    throw new Error("Errore nel reperire le associazioni di un rilievo");
+                }
+                const voucherCurrentState = getVoucherCurrentState(check.voucherHistory.revoked, check.voucherHistory.validFromDate, check.voucherHistory.validToDate);
+                return {
+                    id: check.id,
+                    createdAt: check.createdAt,
+                    vehicleHistory: {
+                        vehicleId: check.vehicleHistory.id,
+                        plate: check.vehicleHistory.plate,
+                        model: check.vehicleHistory.model,
+                        brand: check.vehicleHistory.brand,
+                    },
+                    voucherHistory: {
+                        voucherId: check.voucherHistory.voucherId,
+                        number: check.voucherHistory.number,
+                        revoked: check.voucherHistory.revoked,
+                        currentState: voucherCurrentState,
+                        validFromDate: new Date(check.voucherHistory.validFromDate),
+                        validToDate: new Date(check.voucherHistory.validToDate),
+                        permitHistory: {
+                            permitId: check.voucherHistory.permitHistory.permitId,
+                            description: check.voucherHistory.permitHistory.description,
+                            disabled: check.voucherHistory.permitHistory.disabled,
+                            simultaneousPlatesAmount: check.voucherHistory.permitHistory.simultaneousPlatesAmount,
+                            applicationPlatesAmount: check.voucherHistory.permitHistory.applicationPlatesAmount,
+                            voucherDurationDays: check.voucherHistory.permitHistory.voucherDurationDays
+                        },
+                    },
+                    checkedByAuthUser: {
+                        username: check.checkedByAuthUser.username,
+                        firstname: check.checkedByAuthUser.firstname,
+                        lastname: check.checkedByAuthUser.lastname
+                    },
+                }}),
+        });
     }
-    const currentState = getVoucherCurrentState(voucher.revoked, voucher.validFromDate, voucher.validToDate);
+    return inspectionsDetails;
+}
 
-    const voucherDetails: VoucherDetails = {
-        id: voucher.id,
-        createdAt: voucher.createdAt,
-        updatedAt: voucher.updatedAt,
-        number: voucher.number,
-        revoked: voucher.revoked,
-        currentState: currentState,
-        validFromDate: new Date(voucher.validFromDate),
-        validToDate: new Date(voucher.validToDate),
-        notes: voucher.notes,
-        generatedVoucherTemplatePath: voucher.generatedVoucherTemplatePath == null ? null : adjustPathForDownload(voucher.generatedVoucherTemplatePath),
-        generatedAuthorizationTemplatePath: voucher.generatedAuthorizationTemplatePath == null ? null : adjustPathForDownload(voucher.generatedAuthorizationTemplatePath),
-        generatedVoucherPdfPath: voucher.generatedVoucherPdfPath == null ? null : adjustPathForDownload(voucher.generatedVoucherPdfPath),
-        generatedAuthorizationPdfPath: voucher.generatedAuthorizationPdfPath == null ? null : adjustPathForDownload(voucher.generatedAuthorizationPdfPath),
-        signedAuthorizationPath: voucher.signedAuthorizationPath == null ? null : adjustPathForDownload(voucher.signedAuthorizationPath),
-        permit: {
-            id: voucher.permit.id,
-            description: voucher.permit.description,
-            printedName: voucher.permit.printedName,
-            disabled: voucher.permit.disabled,
-            simultaneousPlatesAmount: voucher.permit.simultaneousPlatesAmount,
-            applicationPlatesAmount: voucher.permit.applicationPlatesAmount,
-            voucherDurationDays: voucher.permit.voucherDurationDays,
-
-        },
-        applications: voucher.applications.map(a => ({
-            id: a.id,
-            registerNumber: a.registerNumber,
-            registerDate: new Date(a.registerDate),
-            cf: a.cf ?? "",
-            firstname: a.firstname,
-            lastname: a.lastname,
-            email: a.email,
-            outcomeDate: a.outcomeDate == null ? null : new Date(a.outcomeDate),
-            outcomeDescription: a.outcome == null ? "" : a.outcome.description,
-            typeDescription: a.type == null ? "" : a.type.description,
-            targetHousePlace: a.targetHousePlace,
-            targetHouseLandRegistrySheet: a.targetHouseLandRegistrySheet,
-            targetHouseLandRegistryMap: a.targetHouseLandRegistryMap,
-            targetHouseLandRegistrySubaltern: a.targetHouseLandRegistrySubaltern,
-            targetHouseLandRegistryCategory: a.targetHouseLandRegistryCategory,
-            vehicles: a.vehicles == null ? [] : a.vehicles.map(v => ({
-                id: v.id,
-                createdAt: v.createdAt,
-                updatedAt: v.updatedAt,
-                plate: v.plate,
-                model: v.model,
-                brand: v.brand,
-            })),
-        })),
-        emails: voucher.emails.map(e => ({
-            id: e.id,
-            createdAt: new Date(e.createdAt),
-            sentDate: new Date(e.sentDate),
-            to: e.to,
-            subject: e.subject,
-            body: e.body,
-            attachments: e.attachments
-        })),
-        vehicles: voucher.vehicles.map(v => ({
-            id: v.id,
-            createdAt: v.createdAt,
-            updatedAt: v.updatedAt,
-            plate: v.plate,
-            model: v.model,
-            brand: v.brand,
-        })),
+const getInspectionPagedDetails = (inspectionData: DetailedInspectionPagedQueryResult) => {
+    if (inspectionData == null || inspectionData.inspection == null || inspectionData.pageData == null) {
+        throw new Error("Ispezione non trovata");
+    }
+    const inspectionDetails = getInspectionDetails(inspectionData.inspection);
+    return {
+        inspection: inspectionDetails,
+        pageData: inspectionData.pageData
     };
-    return voucherDetails;
 }
 
 const updateVoucherHistory = async (tx: DbTransactionType, voucher: VoucherQueryResult, vehicles: number[], modifiedByAuthUserId: number, permitLastHistoryID: number | null = null) => {

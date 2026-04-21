@@ -127,10 +127,10 @@ export const relations = defineRelations(schema, (r) => ({
     },
 
     inspections: {
-        authUsers: r.many.authUsers({
-            from: r.inspections.id.through(r.inspectionsToAuthUsers.inspectionId),
-            to: r.authUsers.id.through(r.inspectionsToAuthUsers.authUserId)
-        }),
+        // authUsers: r.many.authUsers({
+        //     from: r.inspections.id.through(r.inspectionsToAuthUsers.inspectionId),
+        //     to: r.authUsers.id.through(r.inspectionsToAuthUsers.authUserId)
+        // }),
         inspectionChecks: r.many.inspectionChecks(),
     },
 
@@ -140,7 +140,7 @@ export const relations = defineRelations(schema, (r) => ({
             to: r.roles.id
         }),
         logins: r.many.loginHistory(),
-        inspections: r.many.inspections(),
+        // inspections: r.many.inspections(),
         outcomeApplications: r.many.applications(),
         permitsHistoryModifications: r.many.permitsHistory(),
         outcomeApplicationsHistory: r.many.applicationsHistory({

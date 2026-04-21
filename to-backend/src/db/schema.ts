@@ -92,15 +92,18 @@ export const inspections = toSchema.table("inspections", {
     id: commonColumns.idAutoIncr(),
     startDate: commonColumns.createdAt(),
     endDate: timestamp(),
+    description: varchar({length: 128}).notNull(),
 })
 
-export const inspectionsToAuthUsers = toSchema.table("inspectionsToAuthUsers",
-    {
-        inspectionId: integer().notNull().references(() => inspections.id),
-        authUserId: integer().notNull().references(() => authUsers.id),
-    },
-    (t) => [primaryKey({columns: [t.inspectionId, t.authUserId]})]
-)
+// Rimosso perché non è più necessario individuare precisamente chi partecipa all'ispezione:
+//   di fatti basta riportare nei singoli rilievi chi li ha effettuati
+// export const inspectionsToAuthUsers = toSchema.table("inspectionsToAuthUsers",
+//     {
+//         inspectionId: integer().notNull().references(() => inspections.id),
+//         authUserId: integer().notNull().references(() => authUsers.id),
+//     },
+//     (t) => [primaryKey({columns: [t.inspectionId, t.authUserId]})]
+// )
 
 
 export const authUsers = toSchema.table("authUsers", {
