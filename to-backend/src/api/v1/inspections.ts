@@ -21,7 +21,7 @@ type InspectionListEntry = {
     currentState: InspectionCurrentState
 }
 
-export type VehicleHistory = {
+export type VoucherHistory = {
     voucherId: number,
     number: number,
     revoked: boolean,
@@ -47,7 +47,7 @@ export type InspectionCheck = {
         model: string,
         brand: string,
     },
-    voucherHistory: VehicleHistory,
+    voucherHistory: VoucherHistory,
     checkedByAuthUser: {
         username: string,
         firstname: string,
@@ -64,9 +64,7 @@ export type InspectionDetails = {
     inspectionChecks: InspectionCheck[]
 }
 
-type InspectionDetailsAnomalies = InspectionDetails & {
-    anomalyInspectionChecks: InspectionCheck[]
-}
+type Anomalies = CachedVoucher[];
 
 
 const getInspectionCurrentState = (startDate: Date, endDate: Date | null): InspectionCurrentState => {
@@ -357,8 +355,8 @@ inspectionsRouter.get("/detail/:inspectionID", middlewareAuthCheck(["admin", "op
         }
 
         return {
-            anomalies: anomalies,
             inspection: inspectionPagedDetails,
+            anomalies: anomalies,
             pageData: detailedPagedInspectionQuery.pageData
         };
     });

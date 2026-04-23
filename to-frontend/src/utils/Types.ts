@@ -621,3 +621,94 @@ export type VoucherSendEmailApiResponse = {
 
 //endregion
 
+
+//region Inspections
+export type InspectionCurrentState = "Pronta" | "In corso" | "Conclusa";
+
+export type InspectionListEntry = {
+    id: number,
+    startDate: Date,
+    endDate: Date | null,
+    description: string,
+    currentState: InspectionCurrentState
+}
+
+export type VehicleHistory = {
+    voucherId: number,
+    number: number,
+    revoked: boolean,
+    currentState: string,
+    validFromDate: Date,
+    validToDate: Date,
+    permitHistory: {
+        permitId: number,
+        description: string,
+        disabled: boolean,
+        simultaneousPlatesAmount: number,
+        applicationPlatesAmount: number,
+        voucherDurationDays: number
+    },
+};
+
+export type InspectionCheck = {
+    id: number,
+    createdAt: Date,
+    vehicleHistory: {
+        vehicleId: number,
+        plate: string,
+        model: string,
+        brand: string,
+    },
+    voucherHistory: VehicleHistory,
+    checkedByAuthUser: {
+        username: string,
+        firstname: string,
+        lastname: string
+    },
+};
+
+export type InspectionDetails = {
+    id: number,
+    startDate: Date,
+    endDate: Date | null,
+    description: string,
+    currentState: InspectionCurrentState,
+    inspectionChecks: InspectionCheck[]
+}
+
+type CachedVehicle = {
+    checkId: number,
+    vehicleId: number,
+    plate: string,
+    model: string,
+    brand: string
+}
+
+type CachedPermit = {
+    permitId: number,
+    description: string,
+    disabled: boolean,
+    simultaneousPlatesAmount: number,
+    applicationPlatesAmount: number,
+    voucherDurationDays: number
+}
+
+export type CachedVoucher = {
+    vehicles: CachedVehicle[],
+    permit: CachedPermit,
+}
+
+export type InspectionListApiResponse = {
+    message: string,
+    inspectionsList: InspectionListEntry[],
+    pageData: PagerPageData
+}
+
+export type InspectionPagedDetailsApiResponse = {
+    message: string,
+    inspection: InspectionDetails,
+    anomalies: CachedVoucher[],
+    pageData: PagerPageData
+}
+
+//endregion
