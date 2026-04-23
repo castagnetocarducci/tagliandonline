@@ -5,9 +5,11 @@ import {SmtpManager} from "./smtpManager.ts";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import {v1ApiRouter} from "./api/v1/v1ApiRouter.ts";
+import {InspectionsManager} from "./db/inspectionsManager.ts";
 
 const main = async () => {
     await DatabaseManager.instance.init();
+    await InspectionsManager.instance.init();
     await SmtpManager.instance.verifyConnection();
 
     const app = express();

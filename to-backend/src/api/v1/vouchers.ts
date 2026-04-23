@@ -1469,7 +1469,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
     }
     const modifiedByAuthUserId = req.user.id;
 
-    if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "") {
+    if (req.params.voucherID == null || ("" + req.params.voucherID).trim() == "" || isNaN(parseInt(req.params.voucherID as string))) {
         res.status(400).json({message: "Tagliando non trovato"});
         return;
     }
@@ -1660,7 +1660,7 @@ vouchersRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (
         });
         return;
     } catch (e) {
-        res.status(500).json({message: "Errore durante la creazione della tagliando: " + e});
+        res.status(500).json({message: "Errore durante la creazione del tagliando: " + e});
         return;
     }
 });
