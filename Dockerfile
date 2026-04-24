@@ -67,20 +67,24 @@ WORKDIR /app
 COPY . .
 
 
-
-WORKDIR /app/to-backend
-
+# frontend prepare
+WORKDIR /app/to-frontend
 # "npm install" but with build optimizations (maybe move under dev and prod, so we won't install devDependencies for production images)
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm ci --no-audit --no-fund && \
     npm cache clean --force
 
 
+# backend prepare
+WORKDIR /app/to-backend
+# "npm install" but with build optimizations (maybe move under dev and prod, so we won't install devDependencies for production images)
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm ci --no-audit --no-fund && \
+    npm cache clean --force
+
 # set owner
 RUN chown -R nodejs:nodejs /app
 
-
-# TODO: add frontend
 
 
 
@@ -89,9 +93,24 @@ FROM base AS development
 
 ENV NODE_ENV=development
 
+# frontend build
+WORKDIR /app/to-frontend
+RUN npm run build
+
+WORKDIR /app
+# move frontend dist in public
+RUN mkdir -p ./to-backend/public && mv ./to-frontend/dist/* ./to-backend/public/
+
+#backend build
+WORKDIR /app/to-backend
+RUN npm run build
+
+# set owner
+RUN chown -R nodejs:nodejs /app
+
 USER nodejs
 
-CMD ["npm", "run", "dev-run-test-conversion"]
+CMD ["npm", "run", "run-build"]
 
 
 #### PRODUCTION ####
@@ -99,12 +118,22 @@ FROM base AS production
 
 ENV NODE_ENV=production
 
+# frontend build
+WORKDIR /app/to-frontend
 RUN npm run build
 
+WORKDIR /app
+# move frontend dist in public
+RUN mkdir -p ./to-backend/public && mv ./to-frontend/dist/* ./to-backend/public/
+
+#backend build
+WORKDIR /app/to-backend
+RUN npm run build
+
+# set owner
 RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
-# TODO: add server execution from js ? maybe with npm ?
-
+CMD ["npm", "run", "run-build"]
 

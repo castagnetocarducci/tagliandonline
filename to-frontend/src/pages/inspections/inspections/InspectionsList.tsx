@@ -23,7 +23,7 @@ import {AutoPager, type PagerPageData} from "../../../components/AutoPager.tsx";
 import {validateEmail} from "../../../utils/CommonFunctions.ts";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
 
-export function VouchersList() {
+export function InspectionsList() {
     const navigate = useNavigate();
     const [vouchersList, setVouchersList] = useState<VoucherListEntry[]>([]);
     const {err, setErr, setSucc, loading, setLoading} = useErrSuccLoad();

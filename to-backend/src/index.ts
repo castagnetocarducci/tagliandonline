@@ -6,6 +6,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import {v1ApiRouter} from "./api/v1/v1ApiRouter.ts";
 import {InspectionsManager} from "./db/inspectionsManager.ts";
+import path from "node:path";
 
 const main = async () => {
     await DatabaseManager.instance.init();
@@ -31,6 +32,10 @@ const main = async () => {
     // });
 
     app.use("/api/v1", v1ApiRouter);
+    app.use(express.static("public"));
+    app.use((req, res) => {
+        res.sendFile(path.resolve("./public/index.html"));
+    });
 
     app.listen(ConfigProvider.instance.configs.port, () => {
         console.log(`Express server listening on port ${ConfigProvider.instance.configs.port}`);

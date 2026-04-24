@@ -1,12 +1,13 @@
 {
   "name": "tagliandonline-backend",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "npx tsc",
+    "build": "npx tsc --rewriteRelativeImportExtensions",
     "run-build": "npm run db:push && node dist/index.js",
+    "build-and-run": "npm run build && npm run run-build",
     "dev-watch": "npx tsx --watch src/index.ts",
     "dev-run": "npm run db:push && npx tsc --noEmit && npx tsx src/index.ts",
     "dev-run-test-conversion": "npx tsc --noEmit && npx tsx src/testing/testConversion.ts",

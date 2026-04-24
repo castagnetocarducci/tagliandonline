@@ -3,7 +3,8 @@
  * quando l'utente vuole setuppare il server fuori da docker.
  */
 export const configProvider = {
-    apiUrl: (import.meta.env.PROD ? "https://" : "http://") + import.meta.env.VITE_API_URL || window.location.host, // il valore di destra verrà usato in docker
+    // il valore window.location.protocol verrà usato su docker
+    apiUrl: (import.meta.env.PROD ? window.location.protocol + "//" : "http://") + (import.meta.env.VITE_API_URL || window.location.host), // il valore di destra verrà usato in docker
     apiRootPath: "/api/v1"
 }
 

@@ -2,10 +2,9 @@ import {Container} from "design-react-kit";
 import {Route, Routes, useLocation, useNavigate} from "react-router";
 import {useEffect} from "react";
 import {useUserDataContext} from "../../hooks/useUserDataContext.ts";
-import {VouchersList} from "./vouchers/VouchersList.tsx";
-import {NewVoucher} from "./vouchers/NewVoucher.tsx";
-import {EditInspection} from "./vouchers/EditInspection.tsx";
-import {VoucherHistory} from "./vouchers/VoucherHistory.tsx";
+import {EditInspection} from "./inspections/EditInspection.tsx";
+import {NewInspection} from "./inspections/NewInspection.tsx";
+import {InspectionsList} from "./inspections/InspectionsList.tsx";
 
 export const InspectionsManagement = () => {
     const userDataCtx = useUserDataContext();
@@ -30,8 +29,9 @@ export const InspectionsManagement = () => {
         <Container className={"mt-2"}>
             <Routes>
                 <Route path="/list/new" element={<NewInspection/>}/>
-                <Route path="/list/:inspectionID/new" element={<NewCheck/>}/>
-                <Route path="/list/:inspectionID/:checkID" element={<EditCheck/>}/>
+                {/*<Route path="/list/:inspectionID/check/new" element={<NewCheck/>}/>*/}
+                {/*<Route path="/list/:inspectionID/anomaly/:anomalyID" element={<EditInspection/>}/>*/}
+                {/*<Route path="/list/:inspectionID/check/:checkID" element={<EditInspection/>}/>*/}
                 <Route path="/list/:inspectionID" element={<EditInspection/>}/>
                 <Route path="/list" element={<InspectionsList/>}/>
             </Routes>

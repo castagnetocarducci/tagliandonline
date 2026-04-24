@@ -1,2 +1,12 @@
-docker build --target development --tag docker-tagliandonline-dev .
-docker build --target production --tag docker-tagliandonline .
+docker build --target development --tag cedcastagneto/tagliandonline-dev .
+
+
+docker build --target production --tag cedcastagneto/tagliandonline:latest .
+docker image tag cedcastagneto/tagliandonline:latest cedcastagneto/tagliandonline:0.1.0
+docker image push --all-tags cedcastagneto/tagliandonline
+
+
+dopo la predisposizione del volume tramite cartella serve fare:
+sudo chown -R 1001:1001 <volume_data_dir>
+
+

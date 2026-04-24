@@ -94,7 +94,7 @@ export const PasswordResetExecute = () => {
                         </Row>
                         <Row>
                             <ValidatedInput name={"password"} validationFunc={(newValue) => {
-                                const strValue = newValue.toString();
+                                const strValue = newValue == null ? "" : newValue.toString();
                                 return checkPasswordStrength(strValue);
                             }}
                                             validationText={"Inserisci una password valida"}
@@ -103,12 +103,12 @@ export const PasswordResetExecute = () => {
                                             errorMessage={"Compilare i campi obbligatori"}
                                             setNewValidation={setValidation}
                                             inputProps={{type: "password", label: "Nuova password"}}
-                                            valueChangedCallback={(newValue) => {setPassword(newValue.toString());}}
+                                            valueChangedCallback={(newValue) => {setPassword(newValue == null ? "" : newValue.toString());}}
                             />
                         </Row>
                         <Row>
                             <ValidatedInput name={"passwordRepeat"} validationFunc={(newValue) => {
-                                const strValue = newValue.toString();
+                                const strValue = newValue == null ? "" : newValue.toString();
                                 return strValue === password;
                             }}
                                             validationText={"Ripeti la nuova password"}

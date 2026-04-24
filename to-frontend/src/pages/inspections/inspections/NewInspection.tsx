@@ -15,7 +15,7 @@ import {useNavigate} from "react-router";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
 import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesList.tsx";
 
-export function NewVoucher() {
+export function NewInspection() {
     const navigate = useNavigate();
     const {err, setErr, succ, setSucc, loading, setLoading} = useErrSuccLoad();
     const {valid, setValidation, getValueObject, executeValidation} = useValidateFormInput(setErr, setSucc);
