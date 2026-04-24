@@ -134,7 +134,7 @@ numerationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asyn
             return;
         }
         if (req.body.description == null || req.body.description.trim() === "" ||
-            req.body.nextNumber == null || !isNaN(parseInt(req.body.nextNumber))) {
+            req.body.nextNumber == null || isNaN(parseInt(req.body.nextNumber))) {
             res.status(400).json({message: "Richiesta con campi mancanti"});
             return;
         }
