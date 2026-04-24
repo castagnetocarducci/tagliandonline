@@ -1353,7 +1353,8 @@ const getVoucherTemplateDataFromDetailedQuery = (voucher: DetailedVoucherQueryRe
         if (date.toString() === "Invalid Date") {
             return "";
         }
-        return date.toLocaleDateString();
+        //format date in dd/mm/yyy with 2 zero padding
+        return date.toLocaleDateString("it-IT", {day: "2-digit", month: "2-digit", year: "numeric"});
     }
 
     const voucherTemplateData: VoucherTemplateData = {
@@ -1903,9 +1904,10 @@ const generateEmail = (voucher: DetailedVoucherQueryResult): Email => {
     if (voucher.generatedVoucherPdfPath == null || voucher.generatedVoucherPdfPath.trim() === "") {
         throw new Error("PDF del tagliando non generato");
     }
-    if (voucher.signedAuthorizationPath == null || voucher.signedAuthorizationPath.trim() === "") {
-        throw new Error("Autorizzazione firmata non presente");
-    }
+    // facoltativa
+    // if (voucher.signedAuthorizationPath == null || voucher.signedAuthorizationPath.trim() === "") {
+    //     throw new Error("Autorizzazione firmata non presente");
+    // }
     const voucherTemplateData = getVoucherTemplateDataFromDetailedQuery(voucher);
 
     const currentState = getVoucherCurrentState(voucher.revoked, voucher.validFromDate, voucher.validToDate);
@@ -1916,11 +1918,14 @@ const generateEmail = (voucher: DetailedVoucherQueryResult): Email => {
             downloadPath: adjustPathForDownload(voucher.generatedVoucherPdfPath),
             path: voucher.generatedVoucherPdfPath
         });
-        emailAttachments.push({
-            filename: "Autorizzazione firmata" + path.extname(voucher.signedAuthorizationPath),
-            downloadPath: adjustPathForDownload(voucher.signedAuthorizationPath),
-            path: voucher.signedAuthorizationPath
-        });
+        if (voucher.signedAuthorizationPath != null) {
+            // autorizzazione facoltativa
+            emailAttachments.push({
+                filename: "Autorizzazione firmata" + path.extname(voucher.signedAuthorizationPath),
+                downloadPath: adjustPathForDownload(voucher.signedAuthorizationPath),
+                path: voucher.signedAuthorizationPath
+            });
+        }
     }
     const targetEmailTemplate = currentState === "Revocato" ? voucher.permit.revokeEmailTemplate : voucher.permit.approveEmailTemplate;
 
