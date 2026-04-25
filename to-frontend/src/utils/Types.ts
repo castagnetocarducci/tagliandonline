@@ -698,6 +698,10 @@ export type CachedVoucher = {
     permit: CachedPermit,
 }
 
+export type CachedAnomaly = CachedVoucher & {
+    reasons: string[],
+}
+
 export type InspectionListApiResponse = {
     message: string,
     inspectionsList: InspectionListEntry[],
@@ -707,7 +711,7 @@ export type InspectionListApiResponse = {
 export type InspectionPagedDetailsApiResponse = {
     message: string,
     inspection: InspectionDetails,
-    anomalies: CachedVoucher[],
+    anomalies: CachedAnomaly[],
     pageData: PagerPageData
 }
 

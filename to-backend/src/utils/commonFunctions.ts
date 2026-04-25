@@ -14,3 +14,19 @@ export const checkAndUpdateValueModificationsMap = (diffModificationEntries: His
         diffModificationEntries[key] = {...newEntry};
     }
 }
+
+export const dateToLocaleString = (date: Date): string => {
+    //format date in dd/mm/yyy with 2 zero padding
+    return date.toLocaleDateString("it-IT", {day: "2-digit", month: "2-digit", year: "numeric"});
+}
+
+export const dateToLocaleStringOrEmpty = (dateStr: string | null): string => {
+    if (dateStr == null || dateStr.trim() === "") {
+        return "";
+    }
+    const date = new Date(dateStr);
+    if (date.toString() === "Invalid Date") {
+        return "";
+    }
+    return dateToLocaleString(date);
+}

@@ -46,7 +46,7 @@ export const NavHeader = () => {
                                         </NavItem>
                                         <NavItem>
                                             <RouterDesignNavLink openNav={openNav} setOpenNav={setOpenNav}
-                                                                 to={"/inspections"}> Controlli </RouterDesignNavLink>
+                                                                 to={"/inspections"}> Ispezioni </RouterDesignNavLink>
                                         </NavItem>
                                         <NavItem>
                                             <RouterDesignNavLink openNav={openNav} setOpenNav={setOpenNav}

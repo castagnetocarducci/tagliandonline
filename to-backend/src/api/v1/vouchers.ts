@@ -1,7 +1,7 @@
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager, type DbTransactionType} from "../../db/databaseManager.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
-import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
+import {checkAndUpdateValueModificationsMap, dateToLocaleStringOrEmpty} from "../../utils/commonFunctions.ts";
 import {
     applications,
     applicationsToVehicles,
@@ -39,7 +39,7 @@ import {existsSync} from "node:fs";
 
 export const vouchersRouter = Router();
 
-type VoucherCurrentState = "Revocato" | "Scaduto" | "Non ancora valido" | "Valido";
+export type VoucherCurrentState = "Revocato" | "Scaduto" | "Non ancora valido" | "Valido";
 
 type VoucherPublicCheck = {
     id: number,
@@ -365,24 +365,24 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
         vouchersQueryConditions.push({number: {gte: numberFrom}});
     }
     if (numberTo != null && !isNaN(parseInt(numberTo))) {
-        vouchersCountConditions.push(gte(vouchers.number, parseInt(numberTo)));
-        vouchersQueryConditions.push({number: {gte: numberTo}});
+        vouchersCountConditions.push(lte(vouchers.number, parseInt(numberTo)));
+        vouchersQueryConditions.push({number: {lte: numberTo}});
     }
     if (validityStartedFromDate != null && !isNaN(parseInt(validityStartedFromDate))) {
         vouchersCountConditions.push(gte(vouchers.validFromDate, new Date(validityStartedFromDate).toISOString()));
         vouchersQueryConditions.push({validFromDate: {gte: new Date(validityStartedFromDate).toISOString()}});
     }
     if (validityStartedToDate != null && !isNaN(parseInt(validityStartedToDate))) {
-        vouchersCountConditions.push(gte(vouchers.validToDate, new Date(validityStartedToDate).toISOString()));
-        vouchersQueryConditions.push({validToDate: {gte: new Date(validityStartedToDate).toISOString()}});
+        vouchersCountConditions.push(lte(vouchers.validToDate, new Date(validityStartedToDate).toISOString()));
+        vouchersQueryConditions.push({validToDate: {lte: new Date(validityStartedToDate).toISOString()}});
     }
     if (expiresFromDate != null && !isNaN(parseInt(expiresFromDate))) {
         vouchersCountConditions.push(gte(vouchers.validFromDate, new Date(expiresFromDate).toISOString()));
         vouchersQueryConditions.push({validFromDate: {gte: new Date(expiresFromDate).toISOString()}});
     }
     if (expiresToDate != null && !isNaN(parseInt(expiresToDate))) {
-        vouchersCountConditions.push(gte(vouchers.validToDate, new Date(expiresToDate).toISOString()));
-        vouchersQueryConditions.push({validToDate: {gte: new Date(expiresToDate).toISOString()}});
+        vouchersCountConditions.push(lte(vouchers.validToDate, new Date(expiresToDate).toISOString()));
+        vouchersQueryConditions.push({validToDate: {lte: new Date(expiresToDate).toISOString()}});
     }
     if (permitId != null && !isNaN(parseInt(permitId))) {
         vouchersCountConditions.push(eq(vouchers.permitId, parseInt(permitId)));
@@ -395,20 +395,20 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
         applicationsQueryConditions.push({id: parseInt(applicationId)});
     }
     if (requestDate != null && new Date(requestDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate).toLocaleDateString()));
-        applicationsQueryConditions.push({requestDate: new Date(requestDate).toLocaleDateString()});
+        applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate).toISOString()));
+        applicationsQueryConditions.push({requestDate: new Date(requestDate).toISOString()});
     }
     if (outcomeDate != null && new Date(outcomeDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toLocaleDateString()));
-        applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toLocaleDateString()});
+        applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toISOString()));
+        applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toISOString()});
     }
     if (registerNumber != null && !isNaN(parseInt(registerNumber))) {
         applicationsCountConditions.push(eq(applications.registerNumber, parseInt(registerNumber)));
         applicationsQueryConditions.push({registerNumber: parseInt(registerNumber)});
     }
     if (registerDate != null && new Date(registerDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.registerDate, new Date(registerDate).toLocaleDateString()));
-        applicationsQueryConditions.push({registerDate: new Date(registerDate).toLocaleDateString()});
+        applicationsCountConditions.push(eq(applications.registerDate, new Date(registerDate).toISOString()));
+        applicationsQueryConditions.push({registerDate: new Date(registerDate).toISOString()});
     }
     if (cf != null && cf.trim() !== "") {
         applicationsCountConditions.push(ilike(applications.cf, `%${cf}%`));
@@ -1345,18 +1345,6 @@ const getVoucherTemplateDataFromDetailedQuery = (voucher: DetailedVoucherQueryRe
         throw new Error("Errore nel reperire la domanda associata al tagliando");
     }
 
-    const dateToLocaleStringOrEmpty = (dateStr: string | null): string => {
-        if (dateStr == null || dateStr.trim() === "") {
-            return "";
-        }
-        const date = new Date(dateStr);
-        if (date.toString() === "Invalid Date") {
-            return "";
-        }
-        //format date in dd/mm/yyy with 2 zero padding
-        return date.toLocaleDateString("it-IT", {day: "2-digit", month: "2-digit", year: "numeric"});
-    }
-
     const voucherTemplateData: VoucherTemplateData = {
         numeroTagliandoStr: "" + voucher.number,
         descrizionePermessoStr: voucher.permit.printedName,
@@ -1672,7 +1660,7 @@ vouchersRouter.get("/availableOptions", middlewareAuthCheck(["admin", "operatore
         }
         const db = DatabaseManager.instance.db;
         try {
-            const permitsList = await getPermitsList();
+            const permitsList = await getPermitsList(true);
             if (permitsList == null) {
                 res.status(500).json({message: "Errore nel reperire elenco dei permessi"});
                 return;

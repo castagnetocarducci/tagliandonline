@@ -43,9 +43,12 @@ type PermitDetails = {
     numerationRegisterId: number
 }
 
-export const getPermitsList = async (): Promise<PermitListEntry[] | null> => {
+export const getPermitsList = async (hideDisabled: boolean = false): Promise<PermitListEntry[] | null> => {
     const db = DatabaseManager.instance.db;
     const permitsArr = await db.query.permits.findMany({
+        where: {
+            ...(hideDisabled ? {disabled: false} : {})
+        },
         orderBy: {updatedAt: "desc"},
     });
     if (permitsArr == null) {
@@ -442,6 +445,7 @@ permitsRouter.get("/availableTemplates", middlewareAuthCheck(["admin", "operator
         try {
             const docTemplatesList: DocTemplateListEntry[] = [];
             const docTemplatesArr = await db.query.docTemplates.findMany({
+                where: {disabled: false},
                 orderBy: {updatedAt: "desc"},
             });
             for (const docTemplate of docTemplatesArr) {
@@ -457,6 +461,7 @@ permitsRouter.get("/availableTemplates", middlewareAuthCheck(["admin", "operator
 
             const emailTemplatesList: EmailTemplateListEntry[] = [];
             const emailTemplatesArr = await db.query.emailTemplates.findMany({
+                where: {disabled: false},
                 orderBy: {updatedAt: "desc"},
             });
             for (const emailTemplate of emailTemplatesArr) {
@@ -470,6 +475,7 @@ permitsRouter.get("/availableTemplates", middlewareAuthCheck(["admin", "operator
             }
 
             const numerationsRegistersArr = await db.query.numerationRegisters.findMany({
+                where: {disabled: false},
                 orderBy: {updatedAt: "desc"},
             });
             if (numerationsRegistersArr == null) {

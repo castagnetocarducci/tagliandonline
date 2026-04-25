@@ -261,20 +261,20 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
     }
 
     if (requestDate != null && new Date(requestDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate).toLocaleDateString()));
-        applicationsQueryConditions.push({requestDate: new Date(requestDate).toLocaleDateString()});
+        applicationsCountConditions.push(eq(applications.requestDate, new Date(requestDate).toISOString()));
+        applicationsQueryConditions.push({requestDate: new Date(requestDate).toISOString()});
     }
     if (outcomeDate != null && new Date(outcomeDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toLocaleDateString()));
-        applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toLocaleDateString()});
+        applicationsCountConditions.push(eq(applications.outcomeDate, new Date(outcomeDate).toISOString()));
+        applicationsQueryConditions.push({outcomeDate: new Date(outcomeDate).toISOString()});
     }
     if (registerNumber != null && !isNaN(parseInt(registerNumber))) {
         applicationsCountConditions.push(eq(applications.registerNumber, parseInt(registerNumber)));
         applicationsQueryConditions.push({registerNumber: parseInt(registerNumber)});
     }
     if (registerDate != null && new Date(registerDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.registerDate, new Date(registerDate).toLocaleDateString()));
-        applicationsQueryConditions.push({registerDate: new Date(registerDate).toLocaleDateString()});
+        applicationsCountConditions.push(eq(applications.registerDate, new Date(registerDate).toISOString()));
+        applicationsQueryConditions.push({registerDate: new Date(registerDate).toISOString()});
     }
     if (cf != null && cf.trim() !== "") {
         applicationsCountConditions.push(ilike(applications.cf, `%${cf}%`));
@@ -293,8 +293,8 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
         applicationsQueryConditions.push({email: {ilike: `%${email}%`}});
     }
     if (birthDate != null && new Date(birthDate).toString() !== "Invalid Date") {
-        applicationsCountConditions.push(eq(applications.birthDate, new Date(birthDate).toLocaleDateString()));
-        applicationsQueryConditions.push({birthDate: new Date(birthDate).toLocaleDateString()});
+        applicationsCountConditions.push(eq(applications.birthDate, new Date(birthDate).toISOString()));
+        applicationsQueryConditions.push({birthDate: new Date(birthDate).toISOString()});
     }
     if (birthCity != null && birthCity.trim() !== "") {
         applicationsCountConditions.push(ilike(applications.birthCity, `%${birthCity}%`));
@@ -1366,7 +1366,7 @@ applicationsRouter.get("/availableOptions", middlewareAuthCheck(["admin", "opera
                 });
             }
 
-            const permitsList = await getPermitsList();
+            const permitsList = await getPermitsList(true);
             if (permitsList == null) {
                 res.status(500).json({message: "Errore nel reperire elenco dei permessi"});
                 return;

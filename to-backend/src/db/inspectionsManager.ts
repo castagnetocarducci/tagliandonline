@@ -6,6 +6,8 @@ import {
     type InspectionDetails
 } from "../api/v1/inspections.ts";
 import {Mutex} from "../utils/mutex.ts";
+import type {VoucherCurrentState} from "../api/v1/vouchers.ts";
+import {dateToLocaleString, dateToLocaleStringOrEmpty} from "../utils/commonFunctions.ts";
 
 
 type CachedVehicle = {
@@ -26,8 +28,18 @@ type CachedPermit = {
 }
 
 export type CachedVoucher = {
+    voucherId: number,
+    number: number,
+    revoked: boolean,
+    currentState: VoucherCurrentState,
+    validFromDate: Date,
+    validToDate: Date,
     vehicles: CachedVehicle[],
     permit: CachedPermit,
+}
+
+export type CachedAnomaly = CachedVoucher & {
+    reasons: string[],
 }
 
 // map <id voucher, found vehicles>
@@ -96,19 +108,24 @@ export class InspectionsManager {
         for (const cachedVehicle of cachedVehicles) {
             if (cachedVehicle.vehicleId === toAddVehicle.vehicleId) {
                 found = true;
+                break;
             }
         }
         if (!found) {
             cachedVehicles.push(toAddVehicle);
         }
-        vouchersMap.set(voucherHistory.voucherId, {
+        const toSetVoucher: CachedVoucher = {
             vehicles: cachedVehicles,
             permit: cachedPermit,
-        });
-        if (cachedVehicles.length > cachedPermit.simultaneousPlatesAmount) {
-            return true;
+            currentState: voucherHistory.currentState,
+            voucherId: voucherHistory.voucherId,
+            number: voucherHistory.number,
+            revoked: voucherHistory.revoked,
+            validFromDate: voucherHistory.validFromDate,
+            validToDate: voucherHistory.validToDate,
         }
-        return false;
+        vouchersMap.set(voucherHistory.voucherId, toSetVoucher);
+        return InspectionsManager.getAnomalyFromVoucher(toSetVoucher);
     }
 
     static removeCheckFromVouchersMap(checkId: number, voucherId: number, vouchersMap: CachedVouchersMap) {
@@ -118,18 +135,48 @@ export class InspectionsManager {
             vouchersMap.set(voucherId, {
                 vehicles: cachedVehicles,
                 permit: cachedVoucher.permit,
+                currentState: cachedVoucher.currentState,
+                voucherId: cachedVoucher.voucherId,
+                number: cachedVoucher.number,
+                revoked: cachedVoucher.revoked,
+                validFromDate: cachedVoucher.validFromDate,
+                validToDate: cachedVoucher.validToDate,
             });
         } else {
             throw new Error("Voucher non trovato nella mappa");
         }
     }
 
-    static getAnomaliesFromVouchersMap(vouchersMap: CachedVouchersMap): CachedVoucher[] {
-        const anomalies: CachedVoucher[] = [];
+    static getAnomalyFromVoucher(voucher: CachedVoucher): CachedAnomaly | null {
+        const reasons: string[] = [];
+        if (voucher.currentState === "Revocato") {
+            reasons.push("Tagliando revocato");
+        }
+        if (voucher.currentState === "Scaduto") {
+            reasons.push("Tagliando scaduto il " + dateToLocaleString(voucher.validToDate));
+        }
+        if (voucher.currentState === "Non ancora valido") {
+            reasons.push("Il tagliando sarà valido a partire dal giorno " + dateToLocaleString(voucher.validFromDate));
+        }
+        if (voucher.permit.disabled) {
+            reasons.push("Permesso disabilitato o decaduto");
+        }
+        if (voucher.vehicles.length > voucher.permit.simultaneousPlatesAmount) {
+            reasons.push("Sono consentiti solo " + voucher.permit.simultaneousPlatesAmount + " veicoli per volta, ma ne sono stati trovati " + voucher.vehicles.length);
+        }
+        if (reasons.length > 0) {
+            return {...voucher, reasons: reasons};
+        }
+        return null;
+    }
+
+    static getAnomaliesFromVouchersMap(vouchersMap: CachedVouchersMap): CachedAnomaly[] {
+        const anomalies: CachedAnomaly[] = [];
         const vouchers = Array.from(vouchersMap.values());
         for (const voucher of vouchers) {
-            if (voucher.vehicles.length > voucher.permit.simultaneousPlatesAmount) {
-                anomalies.push(voucher);
+            const anomaly: CachedAnomaly | null = InspectionsManager.getAnomalyFromVoucher(voucher);
+            if (anomaly != null) {
+                anomalies.push(anomaly);
             }
         }
         return anomalies;

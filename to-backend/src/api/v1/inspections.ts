@@ -1,12 +1,12 @@
 import {type AuthRequest, middlewareAuthCheck} from "./auth.ts";
 import {DatabaseManager, type DbTransactionType} from "../../db/databaseManager.ts";
 import {inspectionChecks, inspections} from "../../db/schema.ts";
-import {count, eq} from "drizzle-orm";
+import {and, count, eq, gte, ilike, lte} from "drizzle-orm";
 import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 import {getLastVehicleHistoryId} from "./vehicles.ts";
 import {Mutex} from "../../utils/mutex.ts";
-import {getLastVoucherHistoryId, getVoucherCurrentState} from "./vouchers.ts";
+import {getLastVoucherHistoryId, getVoucherCurrentState, type VoucherCurrentState} from "./vouchers.ts";
 import {type CachedVoucher, InspectionsManager} from "../../db/inspectionsManager.ts";
 
 export const inspectionsRouter = Router();
@@ -25,7 +25,7 @@ export type VoucherHistory = {
     voucherId: number,
     number: number,
     revoked: boolean,
-    currentState: string,
+    currentState: VoucherCurrentState,
     validFromDate: Date,
     validToDate: Date,
     permitHistory: {
@@ -64,9 +64,6 @@ export type InspectionDetails = {
     inspectionChecks: InspectionCheck[]
 }
 
-type Anomalies = CachedVoucher[];
-
-
 const getInspectionCurrentState = (startDate: Date, endDate: Date | null): InspectionCurrentState => {
     if (endDate != null) {
         return "Conclusa";
@@ -83,18 +80,61 @@ inspectionsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigi
     }
 
     const {
+        idFrom,
+        idTo,
+        description,
+        startDateFrom,
+        startDateTo,
+        endDateFrom,
+        endDateTo,
+
         page,
     } = req.body;
     const db = DatabaseManager.instance.db;
     const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
 
-    const totalAmount = await db.select({count: count()}).from(inspections);
+    const inspectionsCountConditions = [], inspectionsQueryConditions = [];
+
+    // inspections filters
+    if (idFrom != null && !isNaN(parseInt(idFrom))) {
+        inspectionsCountConditions.push(gte(inspections.id, parseInt(idFrom)));
+        inspectionsQueryConditions.push({id: {gte: idFrom}});
+    }
+    if (idTo != null && !isNaN(parseInt(idTo))) {
+        inspectionsCountConditions.push(lte(inspections.id, parseInt(idTo)));
+        inspectionsQueryConditions.push({id: {lte: idTo}});
+    }
+    if (description != null && description.trim() !== "") {
+        inspectionsCountConditions.push(ilike(inspections.description, `%${description}%`));
+        inspectionsQueryConditions.push({description: {ilike: `%${description}%`}});
+    }
+    if (startDateFrom != null && !isNaN(parseInt(startDateFrom))) {
+        inspectionsCountConditions.push(gte(inspections.startDate, new Date(startDateFrom)));
+        inspectionsQueryConditions.push({startDate: {gte: new Date(startDateFrom)}});
+    }
+    if (startDateTo != null && !isNaN(parseInt(startDateTo))) {
+        inspectionsCountConditions.push(lte(inspections.startDate, new Date(startDateTo)));
+        inspectionsQueryConditions.push({startDate: {lte: new Date(startDateTo)}});
+    }
+    if (endDateFrom != null && !isNaN(parseInt(endDateFrom))) {
+        inspectionsCountConditions.push(gte(inspections.endDate, new Date(endDateFrom)));
+        inspectionsQueryConditions.push({endDate: {gte: new Date(endDateFrom)}});
+    }
+    if (endDateTo != null && !isNaN(parseInt(endDateTo))) {
+        inspectionsCountConditions.push(lte(inspections.endDate, new Date(endDateTo)));
+        inspectionsQueryConditions.push({endDate: {lte: new Date(endDateTo)}});
+    }
+
+    // counting section
+    const totalAmount = await db.select({count: count()}).from(inspections)
+        .where(and(...inspectionsCountConditions));
     if (totalAmount == null || totalAmount.length !== 1 || totalAmount[0] == null) {
         return res.status(500).json({message: "Errore nel conteggio dei risultati"});
     }
 
     // query section
     const inspectionsArr = await db.query.inspections.findMany({
+        where: {AND: [...inspectionsQueryConditions]},
         orderBy: {id: "desc"},
         offset: page != null ? (page - 1) * resultsPerPage : 0,
         limit: resultsPerPage,
@@ -164,7 +204,7 @@ type DetailedInspectionPagedQueryResult = Awaited<ReturnType<typeof getDetailedI
 export const getDetailedOngoingInspectionsFull = async (tx: DbTransactionType) => {
     const inspections = await tx.query.inspections.findMany({
         where: {
-            endDate: {isNotNull: true},
+            endDate: {isNull: true},
         },
         with: {
             inspectionChecks: {
@@ -320,7 +360,7 @@ export const getOngoingInspectionsDetails = (inspections: DetailedOngoingInspect
     return inspectionsDetails;
 }
 
-inspectionsRouter.get("/detail/:inspectionID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+inspectionsRouter.post("/detail/:inspectionID", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
     if (req.user == null) {
         res.status(401).json({message: "Non autorizzato"});
         return;
@@ -383,17 +423,19 @@ inspectionsRouter.post("/edit/:inspectionID", middlewareAuthCheck(["admin", "ope
     const inspectionID = parseInt(req.params.inspectionID as string);
 
     if (req.body.description == null || req.body.description.trim() === "" ||
-        req.body.reopen == null || ("" + req.body.reopen).trim() === "" ||
-        req.body.close == null || ("" + req.body.close).trim() === "") {
+        (req.body.reopen != null && ("" + req.body.reopen).trim() === "") ||
+        (req.body.close != null && ("" + req.body.close).trim() === "")) {
         res.status(400).json({message: "Parametri di modifica non validi"});
         return;
     }
-    if (req.body.reopen != null && typeof req.body.reopen === "string") {
-        req.body.reopen = req.body.reopen === true;
+    if (req.body.reopen == null) {
+        req.body.reopen = "false";
     }
-    if (req.body.close != null && typeof req.body.close === "string") {
-        req.body.close = req.body.close === true;
+    if (req.body.close == null) {
+        req.body.close = "false";
     }
+    req.body.reopen = req.body.reopen === true;
+    req.body.close = req.body.close === true;
 
     const {
         description,
@@ -557,10 +599,10 @@ inspectionsRouter.post("/addCheck/:inspectionID", middlewareAuthCheck(["admin", 
                 }
                 const inspectionCheckQuery = await getInspectionCheck(tx, createdInspectionCheck[0].id);
                 const inspectionCheckDetails = getInspectionCheckDetails(inspectionCheckQuery);
-                const isAnomaly = await InspectionsManager.instance.addCheckToInspection(inspectionCheckDetails, createdInspectionCheck[0].id);
+                const anomaly = await InspectionsManager.instance.addCheckToInspection(inspectionCheckDetails, createdInspectionCheck[0].id);
                 return {
                     createdInspectionId: createdInspectionCheck[0].id,
-                    isAnomaly: isAnomaly
+                    anomaly: anomaly
                 };
             });
         });
@@ -571,7 +613,7 @@ inspectionsRouter.post("/addCheck/:inspectionID", middlewareAuthCheck(["admin", 
         res.status(200).json({
             message: "Rilievo inserito con successo",
             id: createdInspectionInfo.createdInspectionId,
-            isAnomaly: createdInspectionInfo.isAnomaly
+            anomaly: createdInspectionInfo.anomaly
         });
         return;
     } catch (e) {

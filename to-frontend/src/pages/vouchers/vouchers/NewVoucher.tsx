@@ -166,16 +166,6 @@ export function NewVoucher() {
                                        labelText={"Veicoli associati"} amount={vehiclesAmount} exactAmount={true}/>
 
             </Row>
-
-            {/*{import.meta.env.DEV && (*/}
-            {/*    <Row className={"mt-4"}>*/}
-            {/*        <Col md={4}>*/}
-            {/*            <Button color={"primary"} onClick={() => createFakeVehicles()} outline> Crea veicoli*/}
-            {/*                fittizi </Button>*/}
-            {/*        </Col>*/}
-            {/*    </Row>*/}
-            {/*)}*/}
-
         </Container>
     );
 }

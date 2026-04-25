@@ -91,7 +91,7 @@ export const numerationRegisters = toSchema.table("numerationRegisters", {
 export const inspections = toSchema.table("inspections", {
     id: commonColumns.idAutoIncr(),
     startDate: commonColumns.createdAt(),
-    endDate: timestamp(),
+    endDate: timestamp({withTimezone: true}),
     description: varchar({length: 128}).notNull(),
 })
 
@@ -147,9 +147,9 @@ export const vehicles = toSchema.table("vehicles", {
     id: commonColumns.idAutoIncr(),
     createdAt: commonColumns.createdAt(),
     updatedAt: commonColumns.updatedAt(),
-    plate: varchar({length: 10}).notNull(),
-    model: varchar({length: 10}).notNull(),
-    brand: varchar({length: 10}).notNull(),
+    plate: varchar({length: 16}).notNull(),
+    model: varchar({length: 40}).notNull(),
+    brand: varchar({length: 24}).notNull(),
     lastVehiclesHistoryId: integer().references((): AnyPgColumn => vehiclesHistory.id),
 }, (t) => [
     index("vehiclesPlateIndex").on(t.plate),
@@ -163,9 +163,9 @@ export const vehiclesHistory = toSchema.table("vehiclesHistory", {
     createdAt: commonColumns.createdAt(),
     modifiedByAuthUserId: integer().notNull().references(() => authUsers.id),
 
-    plate: varchar({length: 10}).notNull(),
-    model: varchar({length: 10}).notNull(),
-    brand: varchar({length: 10}).notNull(),
+    plate: varchar({length: 16}).notNull(),
+    model: varchar({length: 40}).notNull(),
+    brand: varchar({length: 24}).notNull(),
 }, (t) => [
     index("vehiclesHistoryVehicleIdIndex").on(t.vehicleId),
     index("vehiclesHistoryPlateIndex").on(t.plate),
@@ -292,7 +292,7 @@ export const applicationTypes = toSchema.table("applicationType", {
 export const applicationsEmailsHistory = toSchema.table("applicationsEmailsHistory", {
     id: commonColumns.idAutoIncr(),
     createdAt: commonColumns.createdAt(),
-    sentDate: timestamp(),
+    sentDate: timestamp({withTimezone: true}),
     to: varchar({length: 512}).notNull(),
     subject: varchar({length: 512}).notNull(),
     body: text().notNull(),

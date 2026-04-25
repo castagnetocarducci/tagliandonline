@@ -1,9 +1,9 @@
 import {boolean, integer, timestamp, varchar} from "drizzle-orm/pg-core";
 
 export const commonColumns = {
-    updatedAt: () => timestamp().defaultNow().notNull().$onUpdate(() => new Date()),
-    createdAt: () => timestamp().defaultNow().notNull(),
-    deletedAt: () => timestamp(),
+    updatedAt: () => timestamp({withTimezone: true}).defaultNow().notNull().$onUpdate(() => new Date()),
+    createdAt: () => timestamp({withTimezone: true}).defaultNow().notNull(),
+    deletedAt: () => timestamp({withTimezone: true}),
     disabled: () => boolean().default(false).notNull(),
     cfVarchar: () => varchar({length: 16}).notNull(),
     firstnameVarchar: () => varchar({length: 32}).notNull(),
