@@ -20,6 +20,8 @@ const breadcrumbPathMap = new Map<string, string>([
     ["documents", "Documenti"],
     ["emails", "Email"],
     ["edit", "Modifica"],
+    ["checks", "Rilievi"],
+    ["anomalies", "Anomalie"],
 ]);
 
 type SingleBreadcrumb = {

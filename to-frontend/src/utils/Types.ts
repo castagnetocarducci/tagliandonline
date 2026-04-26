@@ -633,7 +633,7 @@ export type InspectionListEntry = {
     currentState: InspectionCurrentState
 }
 
-export type VehicleHistory = {
+export type VoucherHistory = {
     voucherId: number,
     number: number,
     revoked: boolean,
@@ -659,7 +659,7 @@ export type InspectionCheck = {
         model: string,
         brand: string,
     },
-    voucherHistory: VehicleHistory,
+    voucherHistory: VoucherHistory,
     checkedByAuthUser: {
         username: string,
         firstname: string,
@@ -694,6 +694,12 @@ type CachedPermit = {
 }
 
 export type CachedVoucher = {
+    voucherId: number,
+    number: number,
+    revoked: boolean,
+    currentState: string,
+    validFromDate: Date,
+    validToDate: Date,
     vehicles: CachedVehicle[],
     permit: CachedPermit,
 }
@@ -713,6 +719,17 @@ export type InspectionPagedDetailsApiResponse = {
     inspection: InspectionDetails,
     anomalies: CachedAnomaly[],
     pageData: PagerPageData
+}
+
+export type InspectionAddCheckApiResponse = {
+    message: string,
+    id: number,
+    anomaly: CachedAnomaly
+}
+
+export type InspectionAvailableOptionsApiResponse = {
+    message: string,
+    permits: PermitListEntry[]
 }
 
 //endregion

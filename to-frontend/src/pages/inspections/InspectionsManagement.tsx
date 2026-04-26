@@ -5,7 +5,6 @@ import {useUserDataContext} from "../../hooks/useUserDataContext.ts";
 import {EditInspection} from "./inspections/EditInspection.tsx";
 import {NewInspection} from "./inspections/NewInspection.tsx";
 import {InspectionsList} from "./inspections/InspectionsList.tsx";
-import {NewInspectionCheck} from "./inspections/checks/NewInspectionCheck.tsx";
 
 export const InspectionsManagement = () => {
     const userDataCtx = useUserDataContext();
@@ -34,7 +33,8 @@ export const InspectionsManagement = () => {
                 {/*<Route path="/list/:inspectionID/anomaly/:anomalyID" element={<EditInspection/>}/>*/}
                 {/*<Route path="/list/:inspectionID/check/:checkID" element={<EditInspection/>}/>*/}
                 <Route path="/list/:inspectionID" element={<EditInspection/>}/>
-                <Route path="/list/:inspectionID/new" element={<NewInspectionCheck/>}/>
+                <Route path="/list/:inspectionID/:tab" element={<EditInspection/>}/>
+                <Route path="/list/:inspectionID/:tab/:tab2" element={<EditInspection/>}/>
                 <Route path="/list" element={<InspectionsList/>}/>
             </Routes>
         </Container>

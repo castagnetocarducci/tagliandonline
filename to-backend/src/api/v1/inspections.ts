@@ -6,8 +6,9 @@ import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 import {getLastVehicleHistoryId} from "./vehicles.ts";
 import {Mutex} from "../../utils/mutex.ts";
-import {getLastVoucherHistoryId, getVoucherCurrentState, type VoucherCurrentState} from "./vouchers.ts";
+import {getLastVoucherHistoryId, getVoucherCurrentState, type VoucherCurrentState, vouchersRouter} from "./vouchers.ts";
 import {type CachedVoucher, InspectionsManager} from "../../db/inspectionsManager.ts";
+import {getPermitsList} from "./permits.ts";
 
 export const inspectionsRouter = Router();
 
@@ -599,7 +600,7 @@ inspectionsRouter.post("/addCheck/:inspectionID", middlewareAuthCheck(["admin", 
                 }
                 const inspectionCheckQuery = await getInspectionCheck(tx, createdInspectionCheck[0].id);
                 const inspectionCheckDetails = getInspectionCheckDetails(inspectionCheckQuery);
-                const anomaly = await InspectionsManager.instance.addCheckToInspection(inspectionCheckDetails, createdInspectionCheck[0].id);
+                const anomaly = await InspectionsManager.instance.addCheckToInspection(inspectionCheckDetails, inspectionID);
                 return {
                     createdInspectionId: createdInspectionCheck[0].id,
                     anomaly: anomaly
@@ -659,9 +660,33 @@ inspectionsRouter.get("/deleteCheck/:inspectionCheckID", middlewareAuthCheck(["a
         });
         return;
     } catch (e) {
-        res.status(500).json({message: "Errore durante la creazione del rilievo: " + e});
+        res.status(500).json({message: "Errore durante l'eliminazione del rilievo: " + e});
         return;
     }
 });
 
 const inspectionsApiMutex = new Mutex();
+
+inspectionsRouter.get("/availableOptions", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
+        if (req.user == null) {
+            return res.status(401).json({message: "Non autorizzato"});
+        }
+        const db = DatabaseManager.instance.db;
+        try {
+            const permitsList = await getPermitsList(false);
+            if (permitsList == null) {
+                res.status(500).json({message: "Errore nel reperire elenco dei permessi"});
+                return;
+            }
+
+            res.status(200).json({
+                message: "Permessi acquisiti con successo",
+                permits: permitsList
+            });
+        } catch (e) {
+            res.status(500).json({message: "Errore nel reperire permessi: " + e});
+        }
+    }
+);
+
+

@@ -83,6 +83,21 @@ export class InspectionsManager {
         await this.loadInspections();
     }
 
+    static isAlreadyChecked(check: InspectionCheck, vouchersMap: CachedVouchersMap) {
+        const voucherHistory = check.voucherHistory;
+        let cachedVehicles: CachedVehicle[] = [];
+        if (vouchersMap.has(voucherHistory.voucherId)) {
+            cachedVehicles = (vouchersMap.get(voucherHistory.voucherId) as CachedVoucher).vehicles;
+        }
+        const vehicleId = check.vehicleHistory.vehicleId;
+        for (const cachedVehicle of cachedVehicles) {
+            if (cachedVehicle.vehicleId === vehicleId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static addCheckToVouchersMap(check: InspectionCheck, vouchersMap: CachedVouchersMap) {
         const voucherHistory = check.voucherHistory;
         let cachedVehicles: CachedVehicle[] = [];
@@ -104,14 +119,7 @@ export class InspectionsManager {
             applicationPlatesAmount: check.voucherHistory.permitHistory.applicationPlatesAmount,
             voucherDurationDays: check.voucherHistory.permitHistory.voucherDurationDays,
         }
-        let found = false;
-        for (const cachedVehicle of cachedVehicles) {
-            if (cachedVehicle.vehicleId === toAddVehicle.vehicleId) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
+        if (!InspectionsManager.isAlreadyChecked(check, vouchersMap)) {
             cachedVehicles.push(toAddVehicle);
         }
         const toSetVoucher: CachedVoucher = {
@@ -132,16 +140,20 @@ export class InspectionsManager {
         if (vouchersMap.has(voucherId)) {
             const cachedVoucher = vouchersMap.get(voucherId) as CachedVoucher;
             let cachedVehicles: CachedVehicle[] = cachedVoucher.vehicles.filter(v => v.checkId !== checkId);
-            vouchersMap.set(voucherId, {
-                vehicles: cachedVehicles,
-                permit: cachedVoucher.permit,
-                currentState: cachedVoucher.currentState,
-                voucherId: cachedVoucher.voucherId,
-                number: cachedVoucher.number,
-                revoked: cachedVoucher.revoked,
-                validFromDate: cachedVoucher.validFromDate,
-                validToDate: cachedVoucher.validToDate,
-            });
+            if (cachedVehicles.length === 0) {
+                vouchersMap.delete(voucherId);
+            } else {
+                vouchersMap.set(voucherId, {
+                    vehicles: cachedVehicles,
+                    permit: cachedVoucher.permit,
+                    currentState: cachedVoucher.currentState,
+                    voucherId: cachedVoucher.voucherId,
+                    number: cachedVoucher.number,
+                    revoked: cachedVoucher.revoked,
+                    validFromDate: cachedVoucher.validFromDate,
+                    validToDate: cachedVoucher.validToDate,
+                });
+            }
         } else {
             throw new Error("Voucher non trovato nella mappa");
         }
@@ -182,20 +194,37 @@ export class InspectionsManager {
         return anomalies;
     }
 
-    private async addCheckToMap(check: InspectionCheck, inspectionId: number, acquireMutex: boolean) {
+    private async addCheckToMap(check: InspectionCheck, inspectionId: number, acquireMutex: boolean, errorIfPresent: boolean) {
         let unlock: (() => void) | null = null;
         if (acquireMutex) {
             unlock = await this.#inspectionMutex.lock();
         }
-        const vouchersMap: CachedVouchersMap | undefined = this.#inspectionsCache[inspectionId];
-        if (vouchersMap == null) {
-            throw new Error("Ispezione non presente in cache");
+        let err: Error | null = null;
+        try {
+            if (errorIfPresent) {
+                const vouchersMap: CachedVouchersMap | undefined = this.#inspectionsCache[inspectionId];
+                if (vouchersMap != null && vouchersMap.has(check.voucherHistory.voucherId)) {
+                    if (InspectionsManager.isAlreadyChecked(check, vouchersMap)) {
+                        throw new Error("Veicolo già rilevato");
+                    }
+                }
+            }
+            const vouchersMap: CachedVouchersMap | undefined = this.#inspectionsCache[inspectionId];
+            if (vouchersMap == null) {
+                throw new Error("Ispezione non presente in cache");
+            }
+            const anomaly = InspectionsManager.addCheckToVouchersMap(check, vouchersMap);
+            return anomaly;
+        } catch (e) {
+            err = (e as Error) ?? new Error("Errore durante l'aggiunta del rilievo");
+        } finally {
+            if (unlock != null) {
+                unlock();
+            }
         }
-        const anomaly = InspectionsManager.addCheckToVouchersMap(check, vouchersMap);
-        if (unlock != null) {
-            unlock();
+        if (err) {
+            throw err;
         }
-        return anomaly;
     }
 
     private async removeCheckFromMap(checkId: number, voucherId: number, inspectionId: number, acquireMutex: boolean) {
@@ -203,18 +232,23 @@ export class InspectionsManager {
         if (acquireMutex) {
             unlock = await this.#inspectionMutex.lock();
         }
-        const vouchersMap: CachedVouchersMap | undefined = this.#inspectionsCache[inspectionId];
-        if (vouchersMap == null) {
-            throw new Error("Ispezione non presente in cache");
-        }
-        InspectionsManager.removeCheckFromVouchersMap(checkId, voucherId, vouchersMap);
-        if (unlock != null) {
-            unlock();
+        try {
+            const vouchersMap: CachedVouchersMap | undefined = this.#inspectionsCache[inspectionId];
+            if (vouchersMap == null) {
+                throw new Error("Ispezione non presente in cache");
+            }
+            InspectionsManager.removeCheckFromVouchersMap(checkId, voucherId, vouchersMap);
+        } catch (e) {
+            throw e;
+        } finally {
+            if (unlock != null) {
+                unlock();
+            }
         }
     }
 
     public async addCheckToInspection(check: InspectionCheck, inspectionId: number) {
-        return await this.addCheckToMap(check, inspectionId, true);
+        return await this.addCheckToMap(check, inspectionId, true, true);
     }
 
     public async removeCheckFromInspection(checkId: number, voucherId: number, inspectionId: number) {
@@ -225,7 +259,7 @@ export class InspectionsManager {
         await this.#inspectionMutex.runExclusive(async () => {
             const vouchersMap: CachedVouchersMap = new Map();
             for (const check of inspection.inspectionChecks) {
-                await this.addCheckToMap(check, inspection.id, false);
+                InspectionsManager.addCheckToVouchersMap(check, vouchersMap);
             }
             this.#inspectionsCache[inspection.id] = vouchersMap;
         });

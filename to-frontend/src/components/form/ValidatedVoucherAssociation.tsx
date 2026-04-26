@@ -24,7 +24,7 @@ import {validateEmail} from "../../utils/CommonFunctions.ts";
 import {Link} from "react-router";
 
 
-type ValidatedVehiclesListProps = {
+type ValidatedVoucherListProps = {
     name: string,
     createName: string,
     updateName: string,
@@ -53,7 +53,7 @@ export function ValidatedVoucherAssociation(
         setNewValidation,
         labelText,
         valueChangedCallback,
-    }: ValidatedVehiclesListProps) {
+    }: ValidatedVoucherListProps) {
 
     const [value, setValue] = useState<number | null>(null);
     const [selectedVoucher, setSelectedVoucher] = useState<VoucherListEntry | null>(null);
@@ -108,8 +108,8 @@ export function ValidatedVoucherAssociation(
     const labelContent = labelText || titleCase(name);
 
 
-    const isVoucherSelected = (vehicleId: number) => {
-        return value === vehicleId;
+    const isVoucherSelected = (voucherId: number) => {
+        return value === voucherId;
     }
 
     const addVoucher = (voucher: VoucherListEntry) => {
