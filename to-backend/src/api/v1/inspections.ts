@@ -435,8 +435,8 @@ inspectionsRouter.post("/edit/:inspectionID", middlewareAuthCheck(["admin", "ope
     if (req.body.close == null) {
         req.body.close = "false";
     }
-    req.body.reopen = req.body.reopen === true;
-    req.body.close = req.body.close === true;
+    req.body.reopen = req.body.reopen === "true";
+    req.body.close = req.body.close === "true";
 
     const {
         description,
@@ -471,7 +471,6 @@ inspectionsRouter.post("/edit/:inspectionID", middlewareAuthCheck(["admin", "ope
             return;
         }
 
-        // const inspectionDetails =
         await db.transaction(async (tx) => {
             return await inspectionsApiMutex.runExclusive(async () => {
                 const updatedInspection = await tx.update(inspections).set({
@@ -481,17 +480,13 @@ inspectionsRouter.post("/edit/:inspectionID", middlewareAuthCheck(["admin", "ope
                 if (updatedInspection == null || updatedInspection.length !== 1 || updatedInspection[0] == null) {
                     throw new Error("Errore durante l'aggiornamento dell'ispezione");
                 }
-                const inspectionBase = await getInspection(tx, inspectionID);
-                if (inspectionBase == null) {
-                    throw new Error("Ispezione non trovata");
-                }
                 if (toggleEndStatus) {
-                    if (inspectionBase.endDate == null) {
-                        await InspectionsManager.instance.removeInspectionFromMap(toUpdateInspection.id);
-                    } else {
+                    if (updatedInspection[0].endDate == null) {
                         const inspectionQuery = await getDetailedInspectionFull(tx, inspectionID);
                         const inspectionDetails = getInspectionDetails(inspectionQuery);
                         await InspectionsManager.instance.addInspectionToMap(inspectionDetails);
+                    } else {
+                        await InspectionsManager.instance.removeInspectionFromMap(toUpdateInspection.id);
                     }
                 }
             });
@@ -589,6 +584,10 @@ inspectionsRouter.post("/addCheck/:inspectionID", middlewareAuthCheck(["admin", 
             const lastVoucherHistoryId = await getLastVoucherHistoryId(tx, voucherId);
 
             return await inspectionsApiMutex.runExclusive(async () => {
+                const inspection = await getInspection(tx, inspectionID);
+                if (inspection == null || inspection.endDate != null) {
+                    throw new Error("Ispezione non trovata o già conclusa");
+                }
                 const createdInspectionCheck = await tx.insert(inspectionChecks).values({
                     inspectionId: inspectionID,
                     vehicleHistoryId: lastVehicleHistoryId,
@@ -640,9 +639,13 @@ inspectionsRouter.get("/deleteCheck/:inspectionCheckID", middlewareAuthCheck(["a
         await db.transaction(async (tx) => {
             return await inspectionsApiMutex.runExclusive(async () => {
                 const toDeleteInspectionCheck = await getInspectionCheck(tx, inspectionCheckID);
-                const toDeleteInspectionCheckDetails = await getInspectionCheckDetails(toDeleteInspectionCheck);
+                const toDeleteInspectionCheckDetails = getInspectionCheckDetails(toDeleteInspectionCheck);
                 if (toDeleteInspectionCheck == null) {
                     throw new Error("Impossibile trovare il rilievo");
+                }
+                const inspection = await getInspection(tx, toDeleteInspectionCheck.inspectionId);
+                if (inspection == null || inspection.endDate != null) {
+                    throw new Error("Ispezione non trovata o già conclusa");
                 }
                 const deleteResult = await tx.delete(inspectionChecks).where(eq(inspectionChecks.id, inspectionCheckID));
                 if (deleteResult == null || deleteResult.rowCount !== 1) {

@@ -10,7 +10,7 @@ import {titleCase} from "../../utils/StringUtils.ts";
 import {Button, Col, Form, Icon, Row} from "design-react-kit";
 import type {
     InspectionAvailableOptionsApiResponse,
-    PermitListEntry,
+    PermitListEntry, VoucherByIDApiResponse,
     VoucherListApiResponse,
     VoucherListEntry
 } from "../../utils/Types.ts";
@@ -22,6 +22,8 @@ import {LoadingSpinner} from "../LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../SuccessErrorAlert.tsx";
 import {Link} from "react-router";
 import {type SelectOption, ValidatedSelect} from "./ValidatedSelect.tsx";
+import {Scanner} from "@yudiel/react-qr-scanner";
+import type {IDetectedBarcode} from "@yudiel/react-qr-scanner/dist/types/IDetectedBarcode";
 
 
 type ValidatedVoucherVehicleSelectionListProps = {
@@ -67,6 +69,7 @@ export function ValidatedVoucherVehicleSelection(
     const [pageData, setPageData] = useState<PagerPageData>({currentPage: 1, totalPages: 0});
     const [formSearchParams, setFormSearchParams] = useState<ValidatedFormValuesMap>({});
     const [resetTriggered, setResetTriggered] = useState<boolean>(true);
+    const [cameraEnabled, setCameraEnabled] = useState<boolean>(false);
 
     const [permitsList, setPermitsList] = useState<PermitListEntry[]>([]);
 
@@ -254,6 +257,37 @@ export function ValidatedVoucherVehicleSelection(
         return abort;
     }, [setErr, setLoading, setSucc, setVouchersList, formSearchParams, pageData.currentPage, setPageData]);
 
+    const onQrCodeScanned = (results: IDetectedBarcode[]) => {
+        if (results == null || loading) {
+            return;
+        }
+        for (const result of results) {
+            if (result.rawValue == null) {
+                continue;
+            }
+            const voucherIdStrValue = result.rawValue.trim().split("/").at(-1);
+            if (voucherIdStrValue == null || voucherIdStrValue.trim().length === 0 || isNaN(parseInt(voucherIdStrValue))) {
+                continue;
+            }
+            const voucherId = parseInt(voucherIdStrValue);
+            if (voucherId <= 0) {
+                continue;
+            }
+            fetchApiAsync<VoucherByIDApiResponse>({
+                urlFromApiRoot: "/vouchers/byID/" + voucherId,
+                errSuccLoading: {setErr, setSucc, setLoading},
+                requestInit: {...defaultGETRequestInit},
+                callback: (data) => {
+                    console.log(data);
+                    if (data != null && data.voucher != null) {
+                        selectVoucher(data.voucher);
+                    }
+                }
+            });
+            setCameraEnabled(false);
+        }
+    }
+
 
     return (
         <>
@@ -411,12 +445,60 @@ export function ValidatedVoucherVehicleSelection(
                             </Row>
                             <Button color={"primary"} type={"submit"} disabled={!valid || loading}
                                     className={"mb-4"} icon={true} title={"Cerca"}>
-                    <span className={"rounded-icon me-2"}>
-                        <Icon icon={"it-search"}/>
-                    </span>
+                                    <span className={"rounded-icon me-2"}>
+                                        <Icon icon={"it-search"}/>
+                                    </span>
                                 Cerca
                             </Button>
+                            <Button color={"primary"} type={"button"} disabled={!valid || loading}
+                                    className={"mb-4 ms-4"} icon={true} title={"Scansiona QR"}
+                                    outline={cameraEnabled}
+                                    onClick={() => setCameraEnabled(!cameraEnabled)}>
+                                    <span className={"rounded-icon me-2"}>
+                                        <Icon icon={"it-camera"}/>
+                                    </span>
+                                {cameraEnabled ? "Disattiva" : "Abilita"} scansione QR
+                            </Button>
                         </Form>
+
+                        {cameraEnabled && (
+                            <Row className={"mb-4"}>
+                                <Scanner
+                                    formats={['qr_code']}
+                                    sound={true}
+                                    onScan={onQrCodeScanned}
+                                    components={{
+                                        torch: true,
+                                        zoom: true,
+                                        finder: true,
+                                        tracker: (detectedCodes, ctx) => {
+                                            detectedCodes.forEach((detectedCode) => {
+                                                const {cornerPoints} = detectedCode;
+                                                // outline
+                                                ctx.fillStyle = '#FF0000';
+                                                ctx.strokeStyle = '#0066cc';
+                                                ctx.lineWidth = 4;
+                                                ctx.beginPath();
+                                                for (let i = 0; i < cornerPoints.length; i++) {
+                                                    if (i === 0) {
+                                                        ctx.moveTo(cornerPoints[i].x, cornerPoints[i].y);
+                                                    } else {
+                                                        ctx.lineTo(cornerPoints[i].x, cornerPoints[i].y);
+                                                    }
+                                                    if (i === cornerPoints.length - 1) {
+                                                        ctx.lineTo(cornerPoints[0].x, cornerPoints[0].y);
+                                                    }
+                                                    ctx.stroke();
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    constraints={{
+                                        facingMode: 'environment', // Use rear camera
+                                    }}
+                                />
+                            </Row>
+                        )}
 
                         <h3>Scegli tagliando</h3>
                         {!isValid && (

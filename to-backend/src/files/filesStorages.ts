@@ -34,7 +34,7 @@ export const uploadModelsMulter = multer({
         files: 1
     },
     fileFilter: (req, file, cb) => {
-        if (file.path.endsWith(".docx")) {
+        if (file.originalname.endsWith(".docx")) {
             cb(null, true);
         } else {
             cb(null, false);

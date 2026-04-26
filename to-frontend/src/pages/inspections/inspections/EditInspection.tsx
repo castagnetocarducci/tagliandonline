@@ -49,8 +49,6 @@ export function EditInspection() {
     const [expandedCheck, setExpandedCheck] = useState<number | null>(null);
     const [expandedAnomaly, setExpandedAnomaly] = useState<number | null>(null);
 
-    console.log("rerender");
-
     useEffect(() => {
         if (urlParams.inspectionID == null || urlParams.inspectionID == "") {
             navigate("/inspections/list", {replace: true});
@@ -66,20 +64,11 @@ export function EditInspection() {
             navigate("/inspections/list/" + urlParams.inspectionID + "/edit", {replace: true});
             return;
         }
-        // if (urlParams.tab === "anomalies" && urlParams.tab2 != null) {
-        //     const voucherId = parseInt(urlParams.tab2);
-        //     if (voucherId == null || isNaN(voucherId)) {
-        //         return;
-        //     }
-        //     for (const anomaly of anomalies) {
-        //         if (anomaly.voucherId === voucherId) {
-        //             const expandAnomaly = async () => ;
-        //             expandAnomaly()
-        //             break;
-        //         }
-        //     }
-        // }
-    }, [anomalies, navigate, urlParams, setExpandedAnomaly]);
+        if (urlParams.tab === "checks" && urlParams.tab2 === "new" && inspectionDetails != null && inspectionDetails.currentState !== "In corso") {
+            navigate("/inspections/list/" + urlParams.inspectionID + "/checks", {replace: true});
+            return;
+        }
+    }, [anomalies, navigate, urlParams, setExpandedAnomaly, inspectionDetails]);
 
     //
     // const onSearchFormSubmit: FormEventHandler<HTMLFormElement> = (e: FormEvent) => {
@@ -321,14 +310,16 @@ export function EditInspection() {
                             ) : (
                                 <>
                                     <h2 className={"mb-4"}>Rilievi</h2>
-                                    <Button className={"mb-4 me-2"}
-                                            onClick={() => navigate(`/inspections/list/${inspectionDetails.id}/checks/new`)}
-                                            color={"primary"} icon={true} title={"Aggiungi nuovo rilievo"}>
-                                    <span className={"rounded-icon me-2"}>
-                                        <Icon icon={"it-plus"}/>
-                                    </span>
-                                        Nuovo
-                                    </Button>
+                                    {inspectionDetails.currentState === "In corso" && (
+                                        <Button className={"mb-4 me-2"}
+                                                onClick={() => navigate(`/inspections/list/${inspectionDetails.id}/checks/new`)}
+                                                color={"primary"} icon={true} title={"Aggiungi nuovo rilievo"}>
+                                            <span className={"rounded-icon me-2"}>
+                                                <Icon icon={"it-plus"}/>
+                                            </span>
+                                            Nuovo
+                                        </Button>
+                                    )}
 
                                     {inspectionDetails.inspectionChecks == null || inspectionDetails.inspectionChecks.length === 0 ? (
                                         <Row>
@@ -381,16 +372,17 @@ export function EditInspection() {
                                                                 <strong>{check.voucherHistory.permitHistory.disabled && "Decaduto"}</strong>
                                                                 <br/>
                                                                 Rilevato il {new Date(check.createdAt).toLocaleString()}<br/><br/>
-
-                                                                <Button onClick={() => deleteCheckSubmit(check.id)}
-                                                                        color={"danger"} icon={true}
-                                                                        title={"Elimina rilievo"}
-                                                                        size={"xs"}>
-                                                                        <span className={"rounded-icon me-2"}>
-                                                                            <Icon icon={"it-delete"}/>
-                                                                        </span>
-                                                                    Elimina
-                                                                </Button>
+                                                                {inspectionDetails.currentState === "In corso" && (
+                                                                    <Button onClick={() => deleteCheckSubmit(check.id)}
+                                                                            color={"danger"} icon={true}
+                                                                            title={"Elimina rilievo"}
+                                                                            size={"xs"}>
+                                                                            <span className={"rounded-icon me-2"}>
+                                                                                <Icon icon={"it-delete"}/>
+                                                                            </span>
+                                                                        Elimina
+                                                                    </Button>
+                                                                )}
                                                             </AccordionBody>
                                                         </AccordionItem>
                                                     </div>
@@ -453,17 +445,19 @@ export function EditInspection() {
                                                     {anomaly.vehicles.map((vehicle, index) => (
                                                         <div key={index}>
                                                             <Row className={"mt-1 mb-1 d-flex align-items-center"}>
-                                                                <Col xs={4}>
-                                                                    <Button onClick={() => deleteCheckSubmit(vehicle.checkId)}
-                                                                            color={"danger"} icon={true}
-                                                                            title={"Elimina rilievo"}
-                                                                            size={"xs"}>
-                                                                        <span className={"rounded-icon me-2"}>
-                                                                            <Icon icon={"it-delete"}/>
-                                                                        </span>
-                                                                        Elimina
-                                                                    </Button>
-                                                                </Col>
+                                                                {inspectionDetails.currentState === "In corso" && (
+                                                                    <Col xs={4}>
+                                                                        <Button onClick={() => deleteCheckSubmit(vehicle.checkId)}
+                                                                                color={"danger"} icon={true}
+                                                                                title={"Elimina rilievo"}
+                                                                                size={"xs"}>
+                                                                            <span className={"rounded-icon me-2"}>
+                                                                                <Icon icon={"it-delete"}/>
+                                                                            </span>
+                                                                            Elimina
+                                                                        </Button>
+                                                                    </Col>
+                                                                )}
                                                                 <Col xs={8}>
                                                                     <Link
                                                                         to={"/vehicles/list/" + vehicle.vehicleId}
@@ -473,8 +467,6 @@ export function EditInspection() {
                                                                     {": "}<i>acquisito con rilievo #{vehicle.checkId}</i>
                                                                 </Col>
                                                             </Row>
-
-
                                                         </div>
                                                     ))}
 

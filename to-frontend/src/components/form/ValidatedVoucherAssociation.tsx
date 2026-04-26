@@ -72,7 +72,6 @@ export function ValidatedVoucherAssociation(
         if (defaultValue == null || typeof defaultValue !== "number") {
             return;
         }
-        console.log(defaultValue);
 
         const abort = fetchApiAsync<VoucherByIDApiResponse>({
             urlFromApiRoot: "/vouchers/byID/" + defaultValue,
