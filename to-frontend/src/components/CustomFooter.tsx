@@ -1,7 +1,10 @@
 import {Col, Container, Icon, LinkList, Row} from "design-react-kit";
 import {RouterDesignLink} from "./links/RouterDesignLink.tsx";
+import {useFrontendConfigs} from "../hooks/useFrontendConfigs.ts";
 
 export const CustomFooter = () => {
+    const frontendConfig = useFrontendConfigs();
+
     return (
         <footer className="it-footer mt-5">
             <div className="it-footer-main">
@@ -25,10 +28,10 @@ export const CustomFooter = () => {
                             <Col className="pb-2" lg={4} md={4}>
                                 <h4> Contatti </h4>
                                 <LinkList className="footer-list clearfix">
-                                    <RouterDesignLink to={"https://www.comune.castagneto-carducci.li.it/"}
+                                    <RouterDesignLink to={frontendConfig.paLink}
                                                       className={"list-item"} target={"_blank"}
-                                                      title={"Vai al sito del Comune di Castagneto Carducci"}>
-                                        Comune di Castagneto Carducci
+                                                      title={"Vai al sito del " + frontendConfig.paName}>
+                                        {frontendConfig.paName}
                                     </RouterDesignLink>
                                 </LinkList>
 

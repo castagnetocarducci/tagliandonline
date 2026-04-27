@@ -11,3 +11,7 @@ export const configProvider = {
 export const getApiUrl = (): string => {
     return configProvider.apiUrl + configProvider.apiRootPath
 };
+
+export const getApiUrlBase = (): string => {
+    return configProvider.apiUrl
+};

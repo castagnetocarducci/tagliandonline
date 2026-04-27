@@ -35,6 +35,17 @@ export function ValidatedTextArea(
     }: ValidatedTextAreaProps) {
 
     const [value, setValue] = useState("" + defaultValue);
+    const [lastDefaultValue, setLastDefaultValue] = useState("" + defaultValue);
+
+    useEffect(() => {
+        if (defaultValue !== lastDefaultValue) {
+            const replaceValue = async () => {
+                setValue("" + defaultValue);
+                setLastDefaultValue("" + defaultValue);
+            }
+            replaceValue();
+        }
+    }, [defaultValue, lastDefaultValue]);
 
     const textAreaNN = textAreaProps || {};
 

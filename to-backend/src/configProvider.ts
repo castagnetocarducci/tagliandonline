@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 import {randomBytes} from "node:crypto";
 import {join} from "node:path";
-import {mkdirSync} from "node:fs";
+import {mkdirSync, writeFileSync} from "node:fs";
 
 type Configs = {
     port: number,
@@ -25,6 +25,12 @@ type Configs = {
     smtpUser: string,
     smtpPassword: string,
     smtpSecure: boolean,
+    frontend: {
+        paName: string,
+        paLink: string,
+        pa2Name: string,
+        pa2Link: string,
+    }
 }
 
 /**
@@ -67,9 +73,16 @@ export class ConfigProvider {
             smtpUser: ConfigProvider.loadString(process.env.SMTP_USER, "email@example.com"),
             smtpPassword: ConfigProvider.loadString(process.env.SMTP_PASSWORD, "examplepassword"),
             smtpSecure: ConfigProvider.loadBoolean(process.env.SMTP_SECURE, true),
+            frontend: {
+                paName: ConfigProvider.loadString(process.env.PA_NAME, ""),
+                paLink: ConfigProvider.loadString(process.env.PA_LINK, ""),
+                pa2Name: ConfigProvider.loadString(process.env.PA2_NAME, ""),
+                pa2Link: ConfigProvider.loadString(process.env.PA2_LINK, "")
+            }
         }
         this.prepareDataPath();
         this.checkBaseUrl();
+        this.createConfig();
     }
 
     private prepareDataPath() {
@@ -87,6 +100,12 @@ export class ConfigProvider {
         if (!this.configs.baseUrl.startsWith("http://") && !this.configs.baseUrl.startsWith("https://")) {
             this.configs.baseUrl = "http://" + this.configs.baseUrl;
         }
+    }
+
+    private createConfig() {
+        const toWrite = JSON.stringify({...this.configs.frontend});
+        writeFileSync("./public/config.json", toWrite);
+        console.log("Frontend config file created");
     }
 
     public getDBUrl(): string {

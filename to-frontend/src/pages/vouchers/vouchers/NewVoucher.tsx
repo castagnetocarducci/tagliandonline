@@ -163,7 +163,7 @@ export function NewVoucher() {
                                        validationText={"Campo obbligatorio"} defaultValue={[]} isMandatory={true}
                                        errorMessage={"Devi associare un numero corretto di veicoli"}
                                        setNewValidation={setValidation}
-                                       labelText={"Veicoli associati"} amount={vehiclesAmount} exactAmount={true}/>
+                                       labelText={"Veicoli associati"} amount={vehiclesAmount} exactAmount={false}/>
 
             </Row>
         </Container>

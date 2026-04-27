@@ -19,10 +19,12 @@ import type {MouseEventHandler} from "react";
 import {defaultGETRequestInit, fetchApiAsync} from "../../utils/fetching.ts";
 import type {DataMessage, UserData} from "../../utils/Types.ts";
 import {useNavigate} from "react-router";
+import {useFrontendConfigs} from "../../hooks/useFrontendConfigs.ts";
 
 const SlimHeader = () => {
     const userDataCtx = useUserDataContext();
     const navigate = useNavigate();
+    const frontendConfig = useFrontendConfigs();
 
     const onLogoutClick: MouseEventHandler<HTMLAnchorElement> = (e) => {
         e.preventDefault();
@@ -44,15 +46,15 @@ const SlimHeader = () => {
     return (
         <Header type="slim">
             <HeaderContent>
-                <HeaderBrand href={"https://www.regione.toscana.it/"} target={"_blank"} responsive>
-                    Regione Toscana
+                <HeaderBrand href={frontendConfig.pa2Link} target={"_blank"} responsive>
+                    {frontendConfig.pa2Name}
                 </HeaderBrand>
 
                 <HeaderLinkZone>
                     <Collapse>
                         <LinkList>
-                            <LinkListItem href={"https://www.comune.castagneto-carducci.li.it/"} target={"_blank"}>
-                                Comune di Castagneto Carducci
+                            <LinkListItem href={frontendConfig.paLink} target={"_blank"}>
+                                {frontendConfig.paName}
                             </LinkListItem>
                         </LinkList>
                     </Collapse>

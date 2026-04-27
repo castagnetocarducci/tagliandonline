@@ -586,7 +586,7 @@ export function EditVoucher() {
                                                            setNewValidation={setValidation}
                                                            labelText={"Veicoli associati"}
                                                            amount={vehiclesAmount}
-                                                           exactAmount={true}/>
+                                                           exactAmount={false}/>
 
                                 </Row>
 

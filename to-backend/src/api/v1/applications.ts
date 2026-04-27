@@ -969,7 +969,7 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 const permit = await getPermit(tx, permitId);
                 const permitHistoryId = permit.lastPermitHistoryId as number;
 
-                if (permit.applicationPlatesAmount != vehicles.length) {
+                if (vehicles.length > permit.applicationPlatesAmount) {
                     throw new Error("Numero di veicoli non valido");
                 }
 
@@ -1179,7 +1179,7 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 const permit = await getPermit(tx, permitId);
                 const permitHistoryId = permit.lastPermitHistoryId as number;
 
-                if (permit.applicationPlatesAmount != vehicles.length) {
+                if (vehicles.length > permit.applicationPlatesAmount) {
                     throw new Error("Numero di veicoli non valido");
                 }
 

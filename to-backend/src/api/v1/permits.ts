@@ -176,6 +176,7 @@ permitsRouter.get("/history/:permitID", middlewareAuthCheck(["admin", "operatore
             const diffModificationEntries: HistoryModificationMap = {};
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "description", {description: "Descrizione", value: historyElem.description});
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "printedName", {description: "Nome nel modello", value: historyElem.printedName});
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "disabled", {description: "Disabilitato", value: "" + historyElem.disabled});
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "simultaneousPlatesAmount", {description: "Targhe simultanee", value: "" + historyElem.simultaneousPlatesAmount});
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "applicationPlatesAmount", {description: "Targhe in domanda", value: "" + historyElem.applicationPlatesAmount});
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "notes", {description: "Note", value: historyElem.notes});
@@ -220,6 +221,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
 
     if (req.body.description == null || req.body.description.trim() === "" ||
         req.body.printedName == null || req.body.printedName.trim() === "" ||
+        req.body.disabled == null || ("" + req.body.disabled).trim() === "" ||
         req.body.simultaneousPlatesAmount == null || isNaN(parseInt(req.body.simultaneousPlatesAmount)) ||
         req.body.applicationPlatesAmount == null || isNaN(parseInt(req.body.applicationPlatesAmount)) ||
         req.body.notes == null ||
@@ -233,9 +235,13 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
         res.status(400).json({message: "Richiesta con campi mancanti"});
         return;
     }
+    if (req.body.disabled != null && typeof req.body.disabled === "string") {
+        req.body.disabled = req.body.disabled === "true";
+    }
     const {
         description,
         printedName,
+        disabled,
         simultaneousPlatesAmount,
         applicationPlatesAmount,
         notes,
@@ -259,6 +265,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
         }
         if (description === toUpdatePermit.description &&
             printedName === toUpdatePermit.printedName &&
+            disabled === toUpdatePermit.disabled &&
             simultaneousPlatesAmount === toUpdatePermit.simultaneousPlatesAmount &&
             applicationPlatesAmount === toUpdatePermit.applicationPlatesAmount &&
             notes === toUpdatePermit.notes &&
@@ -277,6 +284,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
             const updatedPermit = await tx.update(permits).set({
                 description,
                 printedName,
+                disabled,
                 simultaneousPlatesAmount,
                 applicationPlatesAmount,
                 notes,
@@ -297,6 +305,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
 
                 description: updatedPermit[0].description,
                 printedName: updatedPermit[0].printedName,
+                disabled: updatedPermit[0].disabled,
                 simultaneousPlatesAmount: updatedPermit[0].simultaneousPlatesAmount,
                 applicationPlatesAmount: updatedPermit[0].applicationPlatesAmount,
                 notes: updatedPermit[0].notes,

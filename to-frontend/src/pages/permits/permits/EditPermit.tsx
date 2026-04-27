@@ -220,6 +220,21 @@ export function EditPermit() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "number"}}/>
                             </Col>
+                            <Col md={2}>
+                                <ValidatedInput name={"disabled"} validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"}
+                                                persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={permitDetails.disabled}
+                                                isMandatory={true}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                labelText={"Disabilitato"}
+                                                inputProps={{
+                                                    type: "checkbox",
+                                                    className: "form-check-input"
+                                                }}/>
+                            </Col>
                         </Row>
                         <Row>
                             <Col md={4}>

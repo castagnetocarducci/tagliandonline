@@ -1474,7 +1474,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
         return;
     }
     if (req.body.revoked != null && typeof req.body.revoked === "string") {
-        req.body.revoked = req.body.revoked === true;
+        req.body.revoked = req.body.revoked === "true";
     }
     if (new Date(req.body.validToDate) < new Date(req.body.validFromDate)) {
         res.status(400).json({message: "Data di scadenza antecedente alla data di inizio validità"});
@@ -1527,7 +1527,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
             const permit = await getPermit(tx, permitId);
             const permitHistoryId = permit.lastPermitHistoryId as number;
 
-            if (permit.applicationPlatesAmount != vehicles.length) {
+            if (vehicles.length > permit.applicationPlatesAmount) {
                 throw new Error("Numero di veicoli non valido");
             }
 
@@ -1622,7 +1622,7 @@ vouchersRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (
                 const permit = await getPermit(tx, permitId);
                 const permitHistoryId = permit.lastPermitHistoryId as number;
 
-                if (permit.applicationPlatesAmount != vehicles.length) {
+                if (vehicles.length > permit.applicationPlatesAmount) {
                     throw new Error("Numero di veicoli non valido");
                 }
 
@@ -1693,8 +1693,8 @@ export const createNewVoucher = async (tx: DbTransactionType, creationData: Vouc
     newVoucherId: number,
     newVoucherHistoryId: number
 }> => {
-    if (creationData.permitApplicationPlatesAmount !== creationData.vehicles.length) {
-        throw new Error("Numero di targhe nel permesso non corrispondente al numero di veicoli");
+    if (creationData.vehicles.length > creationData.permitApplicationPlatesAmount) {
+        throw new Error("Numero di veicoli superiore al numero di targhe consentite in domanda nel permesso");
     }
     let validFromDateT: Date = new Date();
     if (creationData.validFromDate != null && creationData.validFromDate.trim() !== "") {

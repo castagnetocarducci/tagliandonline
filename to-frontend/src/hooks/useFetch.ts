@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 
-export function useFetch<Type> (url: string) {
+export function useFetch<Type> (url: string, requestInit: RequestInit) {
     const [data, setData] = useState<Type | null>(null);
     const [isPending, setIsPending] = useState<boolean>(true);
     const [error, setError] = useState(null);
@@ -9,7 +9,7 @@ export function useFetch<Type> (url: string) {
 
         const abortController = new AbortController();
 
-        fetch(url, { signal: abortController.signal })
+        fetch(url, { signal: abortController.signal, ...requestInit })
             .then(res => {
                 if (!res.ok) {
                     throw Error('could not fetch the data for that resource');
