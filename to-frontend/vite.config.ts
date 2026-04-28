@@ -47,6 +47,7 @@ export default defineConfig({
             },
             workbox: {
                 navigateFallback: '/index.html',
+                navigateFallbackDenylist: [/\.(pdf|docx)$/],
                 runtimeCaching: [
                     //CacheFirst per font, immagini e json statici con 5 giorni di validità
                     {
@@ -57,9 +58,15 @@ export default defineConfig({
                             expiration: {maxEntries: 50, maxAgeSeconds: 5 * 24 * 60 * 60}
                         }
                     },
+                    // //NetworkOnly per i file scaricati .docx e .pdf
+                    // {
+                    //     urlPattern: /\.(pdf|docx)$/,
+                    //     handler: 'NetworkOnly'
+                    // },
                     //NetworkFirst per le pagine HTML per 5 giorni
                     {
                         urlPattern: ({request}) => request.destination === 'document',
+                        // urlPattern: /\.(html|htm)$/,
                         handler: 'NetworkFirst',
                         options: {
                             cacheName: 'document-cache',

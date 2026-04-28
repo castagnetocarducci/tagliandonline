@@ -97,7 +97,7 @@ PA2_LINK=https://www.regione._______.it/
 cd tagliandonline
 sudo docker compose pull
 ```
-5. Start the containers
+6. Start the containers
 ```sh
 sudo docker compose up -D
 ```
