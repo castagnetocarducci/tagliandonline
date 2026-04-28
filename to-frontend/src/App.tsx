@@ -9,12 +9,14 @@ import {CompleteHeader} from "./components/header/CompleteHeader.tsx";
 import {RouterBreadcrumb} from "./components/RouterBreadcrumb.tsx";
 import {CustomFooter} from "./components/CustomFooter.tsx";
 import {UserDataProvider} from "./contexts/UserDataProvider.tsx";
+import {ScrollToTop} from "./components/ScrollToTop.tsx";
 
 function App() {
 
     return (
         <UserDataProvider>
             <BrowserRouter>
+                <ScrollToTop/>
                 <CompleteHeader/>
                 <div className={"min-vh-100 pt-2"}>
                     <RouterBreadcrumb/>

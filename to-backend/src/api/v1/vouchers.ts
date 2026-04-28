@@ -1983,8 +1983,6 @@ vouchersRouter.post("/sendEmail/:voucherID", middlewareAuthCheck(["admin", "oper
         // salvataggio in emailHistory
         const db = DatabaseManager.instance.db;
         const voucherDetails = await db.transaction(async (tx) => {
-            const detailedVoucherQuery = await getDetailedVoucher(tx, voucherID);
-            const voucherDetails = await getVoucherDetails(detailedVoucherQuery);
             // invio della mail
             const sendResult = await SmtpManager.instance.sendMail({
                 from: ConfigProvider.instance.configs.smtpUser,
@@ -2010,6 +2008,8 @@ vouchersRouter.post("/sendEmail/:voucherID", middlewareAuthCheck(["admin", "oper
             if (updatedVoucherEmailHistory == null || updatedVoucherEmailHistory.length !== 1 || updatedVoucherEmailHistory[0] == null) {
                 throw new Error("Errore durante l'aggiornamento dello storico del tagliando");
             }
+            const detailedVoucherQuery = await getDetailedVoucher(tx, voucherID);
+            const voucherDetails = await getVoucherDetails(detailedVoucherQuery);
             return voucherDetails;
         });
         res.json({
