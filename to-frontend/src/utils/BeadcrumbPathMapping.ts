@@ -9,6 +9,7 @@ const breadcrumbPathMap = new Map<string, string>([
     ["login", "Login"],
     ["profile", "Profilo"],
     ["password-reset", "Reimposta password"],
+    ["password-reset-request", "Recupera password"],
     ["new", "Nuovo"],
     ["numerations", "Numerazioni"],
     ["list", "Lista"],

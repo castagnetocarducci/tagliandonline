@@ -1,18 +1,28 @@
 # TagliandOnline
 
+## Funzionalità
+- Multiutente con gestione di permessi basati su livello
+- Recupero password tramite email
+- Configurazione di più tipologie di permesso
+- Ispezioni sul campo per rilevare discrepanze, anche per il numero di veicoli che espone lo stesso tagliando
+- Modelli completamente personalizzabili basati su variabili
+- Generazione automatica dei PDF dei tagliandi
+- Modelli di email personalizzabili per ogni tipologia di permesso
+- Generazione e invio di email direttamente da programma
+- Storicizzazione dettagliata dei campi
 
 ## Docker setup
 
-1. Install Docker\
+1. Install Docker
 https://docs.docker.com/engine/install/
 
 2. Create the following folder three
 ```
 tagliandonline/
-├─ storage_data/
-├─ db_data/
-├─ docker-compose.yml
-├─ .env
+├── storage_data/
+├── db_data/
+├── docker-compose.yml
+└── .env
 ```
 3. Set permissions for the `storage_data` folder
 ```sh
@@ -76,7 +86,7 @@ DB_PORT=5432
 # secret used for session management. Please generate your own.
 JWT_SECRET=CHANGEMECHANGEMECHANGEME
 # If it's the first time you login or you forgot the password of the "admin" user you can put a new one here and it will forcefully replace it in the DB. After that it's suggested to remove this variable entirely.
-REPLACING_ADMIN_PASSWORD=DEFAULTPASSWORDFORADMINUSER
+REPLACING_ADMIN_PASSWORD=dEfAuLtPaSsWoRdFoRaDmiNuSeR
 # public URL from which the application will be reachable. You can optionally specify a port (:8080)
 BASE_URL=https://yourdomain.example.com
 # SMTP connections info. The app uses SMTP to send mails for password recovery and vouchers.
@@ -99,5 +109,21 @@ sudo docker compose pull
 ```
 6. Start the containers
 ```sh
-sudo docker compose up -D
+sudo docker compose up -d
 ```
+
+
+## Screenshots
+
+### Gestione utente
+- Multiutente con gestione di permessi basati su livello
+- Recupero password tramite email
+- Configurazione di più tipologie di permesso
+- Ispezioni sul campo per rilevare discrepanze, anche per il numero di veicoli che espone lo stesso tagliando
+- Modelli completamente personalizzabili basati su variabili
+- Generazione automatica dei PDF dei tagliandi
+- Modelli di email personalizzabili per ogni tipologia di permesso
+- Generazione e invio di email direttamente da programma
+- Storicizzazione dettagliata dei campi
+
+

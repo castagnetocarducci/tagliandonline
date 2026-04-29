@@ -731,7 +731,7 @@ applicationsRouter.get("/history/:applicationID", middlewareAuthCheck(["admin", 
                 value: historyElem.birthCity != null ? historyElem.birthCity : ""
             });
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "residenceCity", {
-                description: "Luogo di residenza",
+                description: "Comune di residenza",
                 value: historyElem.residenceCity != null ? historyElem.residenceCity : ""
             });
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "residencePlace", {
