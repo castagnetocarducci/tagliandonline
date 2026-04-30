@@ -17,6 +17,12 @@ Se si utilizza la stampa in PDF è necessario almeno personalizzare il modello d
 ## Modificare modelli
 Per modificare i modelli basa andare su Permessi > Modelli documento (o Modelli email)
 
+Per modificare i modelli di documento:
+1. premere Scarica
+2. modificarli sul proprio PC
+3. ricaricare il documento modificato nel box sulla destra
+4. premere Salva
+
 ## Variabili disponibili
 
 ```yml

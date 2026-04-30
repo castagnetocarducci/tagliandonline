@@ -166,6 +166,9 @@ export const getVoucherNumerationNewData = async (tx: DbTransactionType, permitI
         throw new Error("Errore: registro numerazione non trovato");
     }
     const numeration = numerationRes[0].numerationRegisters;
+    if (numeration.disabled) {
+        throw new Error("Errore: numerazione disabilitata");
+    }
     const permit = numerationRes[0].permits;
     const nextNumber = numeration.nextNumber;
     const durationDays = permit.voucherDurationDays;

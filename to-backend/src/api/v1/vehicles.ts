@@ -203,7 +203,9 @@ vehiclesRouter.get("/history/:vehicleID", middlewareAuthCheck(["admin", "operato
             {
                 where: {vehicleId: vehicleID},
                 with: {
-                    modifiedByAuthUser: true
+                    modifiedByAuthUser: true,
+                    applicationsHistory: true,
+                    vouchersHistory: true
                 },
                 orderBy: {createdAt: "asc"},
             });
@@ -228,6 +230,15 @@ vehiclesRouter.get("/history/:vehicleID", middlewareAuthCheck(["admin", "operato
                 description: "Modello",
                 value: historyElem.model
             });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "vouchers", {
+                description: "Tagliandi",
+                value: historyElem.vouchersHistory != null ? ("[" + historyElem.vouchersHistory.map((v) => v.number + " " + "(" + v.voucherId + ")").join("; ") + "]") : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "applications", {
+                description: "Domande",
+                value: historyElem.applicationsHistory != null ? ("[" + historyElem.applicationsHistory.map((a) => a.applicationId + " " + "(" + a.cf + ")").join("; ") + "]") : ""
+            });
+
             vehicleHistoryRes.push({
                 userId: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.id : 0,
                 username: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.username : "unknown",

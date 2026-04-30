@@ -121,12 +121,17 @@ sudo docker compose pull
 ```sh
 sudo docker compose up -d
 ```
+### Inizia ad usarlo
+Consulta la guida dedicata: [Geting started](docs/get_started.md)
+
 
 ## Documentazione
 - [Utenti](docs/users.md)
 - [Permessi e numerazione](docs/permits_numerations.md)
 - [Modelli](docs/templates.md)
-- [Domande e tagliandi](docs/applications_vouchers.md)
+- [Veicoli](docs/vehicles.md)
+- [Domande](docs/applications.md)
+- [Tagliandi](docs/vouchers.md)
 - [Ispezioni](docs/inspections.md)
 
 ## Contribuire
