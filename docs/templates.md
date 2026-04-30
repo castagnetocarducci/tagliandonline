@@ -19,7 +19,7 @@ Per modificare i modelli basa andare su Permessi > Modelli documento (o Modelli 
 
 ## Variabili disponibili
 
-```properties
+```yml
 # Acquisiti dal tagliando
 numeroTagliandoStr: {#numeroTagliandoStr#}
 dataInizioValiditaStr: {#dataInizioValiditaStr#}
