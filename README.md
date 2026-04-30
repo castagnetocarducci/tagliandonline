@@ -1,22 +1,29 @@
 # TagliandOnline
 
+<p align="center">
+  <img src="media/logo_tagliandonline.png"/>
+</p>
+
 ## Funzionalità
-- Multiutente con gestione di permessi basati su livello
+- Multiutente con gestione di permessi basati su ruolo
 - Recupero password tramite email
 - Configurazione di più tipologie di permesso
+- PWA per smartphone
 - Ispezioni sul campo per rilevare discrepanze, anche per il numero di veicoli che espone lo stesso tagliando
 - Modelli completamente personalizzabili basati su variabili
 - Generazione automatica dei PDF dei tagliandi
 - Modelli di email personalizzabili per ogni tipologia di permesso
 - Generazione e invio di email direttamente da programma
-- Storicizzazione dettagliata dei campi
+- Storicizzazione dettagliata delle modifiche
+- Numerazione automatica dei tagliandi personalizzabile
+- Basato su [Design React Kit](https://github.com/italia/design-react-kit)
+- Immagine Docker con variabili d'ambiente
 
 ## Docker setup
+### Setup server
+1. Installare Docker: https://docs.docker.com/engine/install/
 
-1. Install Docker
-https://docs.docker.com/engine/install/
-
-2. Create the following folder three
+2. Creare il seguente albero di cartelle
 ```
 tagliandonline/
 ├── storage_data/
@@ -24,21 +31,22 @@ tagliandonline/
 ├── docker-compose.yml
 └── .env
 ```
-3. Set permissions for the `storage_data` folder
+3. Impostare i permessi per la cartella `storage_data`
 ```sh
 sudo chown -R 1001:1001 tagliandonline/storage_data
 ```
-4. Add the following configuration to the docker-compose.yml file
+### Configurazione docker compose
+4. Inserire le seguenti configurazioni nel file `docker-compose.yml`
 ```YML
 # docker-compose.yml
 services:
   tagliandonline:
-    # may want to choose a fixed version number to avoid compatibility issues when updating
+    # valutare la possibilità di forzare la versione ad un numero specifico, in modo da evitare problemi durante l'aggiornamento
     image: cedcastagneto/tagliandonline:latest
     env_file:
       - .env
     ports:
-    # exposes port 8080 on host machine: change this based on your needings
+    # espone la porta 8080 nella macchina host: cambiare in base alle necessità
       - 8080:3000
     volumes:
       - ./storage_data:/app/data
@@ -69,61 +77,85 @@ services:
       POSTGRES_DB: ${DB_NAME}
     restart: unless-stopped
 ```
-4. Setup the `.env` file with the following:
+### Environment 
+5. Compilare il file `.env`:
 ```properties
-# Exposed port in docker container
+# Porta esposta nel container docker
 PORT=3000
-# DB psw. Please generate your own.
+# DB psw. Cambiare la propria: meglio generata casualmente
 DB_PASSWORD=CHANGEMECHANGEMECHANGEME
 # DB user
 DB_USER=postgres
 # DB name
 DB_NAME=tagliandonline
-# DB host: if using docker you can just put here the db container name
+# DB host: se si utilizza docker compose, basta indicare il nome del servizio del database
 DB_HOST=postgres
 # DB port
 DB_PORT=5432
-# secret used for session management. Please generate your own.
+# Segreto utilizzato per la gestione delle sessioni. Cambiare la propria: meglio generata casualmente
 JWT_SECRET=CHANGEMECHANGEMECHANGEME
-# If it's the first time you login or you forgot the password of the "admin" user you can put a new one here and it will forcefully replace it in the DB. After that it's suggested to remove this variable entirely.
+# Se è la prima volta che si effettua il login o se è stata dimenticata la password dell'utente "admin", inserire qui la nuova password che verrà sostituita forzatamente nel database al prossimo avvio. Per gli avvi successivi si consiglia di rimuovere questa variabile.
 REPLACING_ADMIN_PASSWORD=dEfAuLtPaSsWoRdFoRaDmiNuSeR
-# public URL from which the application will be reachable. You can optionally specify a port (:8080)
+# URL pubblico dal quale è possibile raggiungere l'applicativo. Facoltativamente si può specificare la porta (:8080)
 BASE_URL=https://yourdomain.example.com
-# SMTP connections info. The app uses SMTP to send mails for password recovery and vouchers.
+# Informazioni di connessione SMTP. L'applicazione usa SMTP per inviare mail per recupero della password e per trasmettere i tagliandi.
 SMTP_HOST=smtp.example.com
 SMTP_PORT=465
 SMTP_USER=mailusername@example.com
 SMTP_PASSWORD=YOURSMTPACCOUNTPASSWORD
-# enable this to make a secure connection. Check this for more informations: https://nodemailer.com/smtp#general-options
+# Abilita questa opzione per abilitare la connessione sicura al SMTP. Per maggiori informazioni: https://nodemailer.com/smtp#general-options
 SMTP_SECURE=true
-# Informations that will appear in TagliandOnline header and footer, that link back to your official website.
+# Informazioni che compariranno nel footer e nell'header dell'applicazione, che riportano al vostro sito ufficiale.
 PA_NAME=Comune di ________
 PA_LINK=https://www.comune.______.__.it/
 PA2_NAME=Regione _______
 PA2_LINK=https://www.regione._______.it/
 ```
-5. Pull the containers
+### Avvio docker 
+6. Effettuare il pull
 ```sh
 cd tagliandonline
 sudo docker compose pull
 ```
-6. Start the containers
+7. Avviare i container
 ```sh
 sudo docker compose up -d
 ```
 
+## Documentazione
+- [Utenti](docs/users.md)
+- [Permessi e numerazione](docs/permits_numerations.md)
+- [Modelli](docs/templates.md)
+- [Domande e tagliandi](docs/applications_vouchers.md)
+- [Ispezioni](docs/inspections.md)
+
+## Contribuire
+Per segnalare problematiche utilizzare le issues direttamente su GitHub
+I contributi sono benvenuti. Per proporre una modifica è possibile aprire una pull request.
+Se le modifiche che si intendono apportare rivoluzionano molto il funzionamento dell'applicativo è meglio prendere prima contatto direttamente con lo sviluppatore ced@comune.castagneto-carducci.li.it
+
+Per configurare l'ambiente di sviluppo consultare [Setup per sviluppatori](docs/dev_env_setup.md)
 
 ## Screenshots
 
-### Gestione utente
-- Multiutente con gestione di permessi basati su livello
-- Recupero password tramite email
-- Configurazione di più tipologie di permesso
-- Ispezioni sul campo per rilevare discrepanze, anche per il numero di veicoli che espone lo stesso tagliando
-- Modelli completamente personalizzabili basati su variabili
-- Generazione automatica dei PDF dei tagliandi
-- Modelli di email personalizzabili per ogni tipologia di permesso
-- Generazione e invio di email direttamente da programma
-- Storicizzazione dettagliata dei campi
+Gestione utenti \
+![edit_user](media/edit_user.png)
+
+Modelli modificabili in docx \
+![edit_document_template](media/edit_document_template.png)
+
+Modelli personalizzabili \
+![docx_tamplate](media/docx_template.png)
+
+Esempio di tagliando \
+![generated_voucher_example](media/generated_voucher_example.png)
+
+Modifica i documenti anche per singolo tagliando \
+![generate_edit_voucher_documents](media/generate_edit_voucher_documents.png)
+
+Storico modifiche \
+![voucher_history](media/voucher_history.png)
+
+
 
 

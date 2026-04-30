@@ -46,6 +46,7 @@ export const populateDefaultData = async () => {
             description: "accettata",
             subject: "Invio tagliando {#numeroTagliandoStr#} - TagliandOnline",
             body: "La sua richiesta, presentata con protocollo n. {#numeroProtocolloStr#} del {#dataProtocolloStr#}, è stata accettata in data {#dataCompletamentoStr#}.<br/>" +
+                "I veicoli autorizzati sono i seguenti: {#targheArr#}<br/>" +
                 "Si trasmette in allegato il contrassegno <b>da stampare e tenere esposto nel veicolo</b> e l'autorizzazione <b>da stampare ed esibire in caso di controllo</b>."
         },
         {
