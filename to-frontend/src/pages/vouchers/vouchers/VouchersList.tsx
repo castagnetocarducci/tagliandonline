@@ -245,6 +245,18 @@ export function VouchersList() {
                                         setNewValidation={setValidation}
                                         inputProps={{type: "text"}}/>
                     </Col>
+                    <Col md={2}>
+                        <ValidatedInput name={"withoutSent"} labelText={"Senza invii"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"}
+                                        persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("withoutSent") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "checkbox", className: "form-check-input"}}/>
+                    </Col>
                 </Row>
 
                 {/*

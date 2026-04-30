@@ -12,7 +12,7 @@ import {
     vouchersHistoryToVehiclesHistory,
     vouchersToVehicles
 } from "../../db/schema.ts";
-import {and, count, desc, eq, exists, gte, ilike, lte} from "drizzle-orm";
+import {and, count, desc, eq, exists, gte, ilike, lte, not} from "drizzle-orm";
 import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 import {getVoucherNumerationNewData} from "./numerations.ts";
@@ -343,6 +343,15 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
 
         page,
     } = req.body;
+    let {
+        withoutSent
+    } = req.body;
+    if (withoutSent != null && ("" + withoutSent).trim() === "true") {
+        withoutSent = true;
+    } else {
+        withoutSent = false;
+    }
+
     const db = DatabaseManager.instance.db;
     const resultsPerPage = ConfigProvider.instance.configs.resultsPerPage;
     // const countConditions = [], queryConditions = [];
@@ -496,12 +505,21 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
     if (applicationsCountConditions.length > 0) {
         existsCountConditions.push(exists(applicationsCountFilterSubQuery));
     }
-    if (emailsCountConditions.length > 0) {
+    if (emailsCountConditions.length > 0 && !withoutSent) {
         existsCountConditions.push(exists(emailsCountFilterSubQuery));
+    }
+    const notExistsEmailCountConditions = [];
+    if (withoutSent) {
+        notExistsEmailCountConditions.push(
+            not(exists(
+                db.select().from(vouchersEmailsHistory)
+                    .where(eq(vouchers.id, vouchersEmailsHistory.voucherId))
+            ))
+        );
     }
 
     const totalAmount = await db.select({count: count()}).from(vouchers)
-        .where(and(...vouchersCountConditions, ...existsCountConditions));
+        .where(and(...vouchersCountConditions, ...existsCountConditions, ...notExistsEmailCountConditions));
     if (totalAmount == null || totalAmount.length !== 1 || totalAmount[0] == null) {
         return res.status(500).json({message: "Errore nel conteggio dei risultati"});
     }
@@ -524,9 +542,11 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
             applications: (applicationsQueryConditions.length === 0 ? undefined : {
                 AND: [...applicationsQueryConditions],
             }),
-            emails: (emailsQueryConditions.length === 0 ? undefined : {
-                AND: [...emailsQueryConditions],
-            }),
+            emails: (withoutSent ? false :
+                    (emailsQueryConditions.length === 0 ? undefined : {
+                        AND: [...emailsQueryConditions],
+                    })
+            ),
         },
 
         with: {
