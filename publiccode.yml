@@ -1,0 +1,79 @@
+publiccodeYmlVersion: 0.5.0
+name: TagliandOnline
+url: https://github.com/castagnetocarducci/tagliandonline.git
+logo: media/logo_tagliandonline.png
+platforms:
+  - web
+  - ios
+  - android
+categories:
+  - regulations-and-directives
+  - other
+  - office
+organisation:
+  name: Comune di Castagneto Carducci
+  uri: urn:x-italian-pa:c_c044
+usedBy:
+  - Comune di Castagneto Carducci
+developmentStatus: beta
+softwareType: standalone/web
+intendedAudience:
+  countries:
+    - IT
+  scope:
+    - government
+    - local-authorities
+    - security
+description:
+  it-IT:
+    localisedName: TagliandOnline
+    shortDescription: Tagliandi, permessi, domande, direttamente da web.
+    longDescription: >-
+      Genera tagliandi in DOCX e PDF da comodi modelli personalizzabili.
+
+      Trasmetti tagliandi e autorizzazioni firmate via email in modo automatico.
+
+      Effettua ispezioni sul posto per rilevare anomalie e discrepanze sui
+      tagliandi esposti sui veicoli. 
+
+      Gestisci le domande presentate.
+    documentation: https://github.com/castagnetocarducci/tagliandonline/blob/main/README.md
+    features:
+      - Configurazione di più tipologie di permesso
+      - Modelli completamente personalizzabili basati su variabili
+      - Generazione automatica dei PDF dei tagliandi
+      - Modelli di email personalizzabili per ogni tipologia di permesso
+      - Generazione e invio di email direttamente da programma
+      - Storicizzazione dettagliata delle modifiche
+      - Numerazione automatica dei tagliandi personalizzabile
+      - Ispezioni sul campo per rilevare discrepanze, anche per il numero di
+        veicoli che espone lo stesso tagliando
+      - PWA per smartphone
+      - Basato su Design React Kit
+      - Immagine Docker con variabili d'ambiente
+      - Multiutente con diversi ruoli
+      - Recupero password tramite email
+    screenshots:
+      - media/generated_voucher_example.png
+      - media/edit_document_template.png
+      - media/docx_template.png
+      - media/generate_edit_voucher_documents.png
+      - media/voucher_history.png
+      - media/edit_user.png
+legal:
+  license: AGPL-3.0-or-later
+maintenance:
+  type: community
+  contacts:
+    - name: Ufficio Informatica e Innovazione Castagneto Carducci
+      email: ced@comune.castagneto-carducci.li.it
+      phone: "0565778207"
+      affiliation: Comune di Castagneto Carducci
+    - name: Francesco Biagioni
+      email: f.biagioni@comune.castagneto-carducci.li.it
+      phone: "3487618915"
+      affiliation: Comune di Castagneto Carducci
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - it-IT

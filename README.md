@@ -136,7 +136,6 @@ sudo docker compose up -d
 ### Inizia ad usarlo
 Consulta la guida dedicata: [Geting started](docs/get_started.md)
 
-
 ## Documentazione
 - [Utenti](docs/users.md)
 - [Permessi e numerazione](docs/permits_numerations.md)
@@ -146,15 +145,10 @@ Consulta la guida dedicata: [Geting started](docs/get_started.md)
 - [Tagliandi](docs/vouchers.md)
 - [Ispezioni](docs/inspections.md)
 
-## Contribuire
-Per segnalare problematiche utilizzare le issues direttamente su GitHub
-I contributi sono benvenuti. Per proporre una modifica è possibile aprire una pull request.
-Se le modifiche che si intendono apportare rivoluzionano molto il funzionamento dell'applicativo è meglio prendere prima contatto direttamente con lo sviluppatore ced@comune.castagneto-carducci.li.it
-
-Per configurare l'ambiente di sviluppo consultare [Setup per sviluppatori](docs/dev_env_setup.md)
+## Contribuisci
+Consulta la guida dedicata: [Contribuire](CONTRIBUTING.md)
 
 ## Screenshots
-
 Gestione utenti \
 ![edit_user](media/edit_user.png)
 
