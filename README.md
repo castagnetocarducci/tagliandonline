@@ -5,19 +5,19 @@
 </p>
 
 ## Funzionalità
-- Multiutente con gestione di permessi basati su ruolo
-- Recupero password tramite email
 - Configurazione di più tipologie di permesso
-- PWA per smartphone
-- Ispezioni sul campo per rilevare discrepanze, anche per il numero di veicoli che espone lo stesso tagliando
 - Modelli completamente personalizzabili basati su variabili
 - Generazione automatica dei PDF dei tagliandi
 - Modelli di email personalizzabili per ogni tipologia di permesso
 - Generazione e invio di email direttamente da programma
 - Storicizzazione dettagliata delle modifiche
 - Numerazione automatica dei tagliandi personalizzabile
+- Ispezioni sul campo per rilevare discrepanze, anche per il numero di veicoli che espone lo stesso tagliando
+- PWA per smartphone
 - Basato su [Design React Kit](https://github.com/italia/design-react-kit)
 - Immagine Docker con variabili d'ambiente
+- Multiutente con diversi ruoli
+- Recupero password tramite email
 
 ## Docker setup
 ### Setup server
