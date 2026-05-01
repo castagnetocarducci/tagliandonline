@@ -104,6 +104,7 @@ export class ConfigProvider {
 
     private createConfig() {
         const toWrite = JSON.stringify({...this.configs.frontend});
+        mkdirSync("./public", {recursive: true});
         writeFileSync("./public/config.json", toWrite);
         console.log("Frontend config file created");
     }

@@ -82,6 +82,7 @@ services:
 ```properties
 # Porta esposta nel container docker
 PORT=3000
+
 # DB psw. Cambiare la propria: meglio generata casualmente
 DB_PASSWORD=CHANGEMECHANGEMECHANGEME
 # DB user
@@ -92,12 +93,22 @@ DB_NAME=tagliandonline
 DB_HOST=postgres
 # DB port
 DB_PORT=5432
+
 # Segreto utilizzato per la gestione delle sessioni. Cambiare la propria: meglio generata casualmente
 JWT_SECRET=CHANGEMECHANGEMECHANGEME
+
+# Percorso dell'eseguibile di libreoffice (non necessario con docker)
+# SOFFICE_PATH: "/usr/bin/soffice"
+
 # Se è la prima volta che si effettua il login o se è stata dimenticata la password dell'utente "admin", inserire qui la nuova password che verrà sostituita forzatamente nel database al prossimo avvio. Per gli avvi successivi si consiglia di rimuovere questa variabile.
 REPLACING_ADMIN_PASSWORD=dEfAuLtPaSsWoRdFoRaDmiNuSeR
+
 # URL pubblico dal quale è possibile raggiungere l'applicativo. Facoltativamente si può specificare la porta (:8080)
 BASE_URL=https://yourdomain.example.com
+
+# Percorso in cui memorizzare file, modelli, allegati (non necessario con docker)
+# DATA_PATH: "../data"
+
 # Informazioni di connessione SMTP. L'applicazione usa SMTP per inviare mail per recupero della password e per trasmettere i tagliandi.
 SMTP_HOST=smtp.example.com
 SMTP_PORT=465
@@ -105,6 +116,7 @@ SMTP_USER=mailusername@example.com
 SMTP_PASSWORD=YOURSMTPACCOUNTPASSWORD
 # Abilita questa opzione per abilitare la connessione sicura al SMTP. Per maggiori informazioni: https://nodemailer.com/smtp#general-options
 SMTP_SECURE=true
+
 # Informazioni che compariranno nel footer e nell'header dell'applicazione, che riportano al vostro sito ufficiale.
 PA_NAME=Comune di ________
 PA_LINK=https://www.comune.______.__.it/
