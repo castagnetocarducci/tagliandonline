@@ -25,6 +25,7 @@ async function testReportGeneration() {
         catastoMappaleAbitazioneDesignataStr: "k",
         catastoSubalternoAbitazioneDesignataStr: "l",
         catastoCategoriaAbitazioneDesignataStr: "z",
+        veicoliSimultanei: "1",
         targheArr: [
             {
                 marcaStr: "x",

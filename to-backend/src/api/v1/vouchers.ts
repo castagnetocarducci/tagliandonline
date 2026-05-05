@@ -1388,6 +1388,7 @@ const getVoucherTemplateDataFromDetailedQuery = (voucher: DetailedVoucherQueryRe
         catastoMappaleAbitazioneDesignataStr: targetApplication.targetHouseLandRegistryMap == null ? "N/A" : targetApplication.targetHouseLandRegistryMap,
         catastoSubalternoAbitazioneDesignataStr: targetApplication.targetHouseLandRegistrySubaltern == null ? "N/A" : targetApplication.targetHouseLandRegistrySubaltern,
         catastoCategoriaAbitazioneDesignataStr: targetApplication.targetHouseLandRegistryCategory == null ? "N/A" : targetApplication.targetHouseLandRegistryCategory,
+        veicoliSimultanei: "" + voucher.permit.simultaneousPlatesAmount,
         targheArr: voucher.vehicles == null ? [] : voucher.vehicles.map(v => {
             return {
                 marcaStr: v.brand,

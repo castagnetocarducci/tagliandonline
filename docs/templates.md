@@ -54,6 +54,9 @@ catastoMappaleAbitazioneDesignataStr: {#catastoMappaleAbitazioneDesignataStr#}
 catastoSubalternoAbitazioneDesignataStr: {#catastoSubalternoAbitazioneDesignataStr#}
 catastoCategoriaAbitazioneDesignataStr: {#catastoCategoriaAbitazioneDesignataStr#}
 
+# Acquisito campo targhe simultanee del permesso associato
+veicoliSimultanei: {#veicoliSimultanei#}
+
 # URL che comparirà anche nel QR Code - Dipende dalla variabile d'ambiente BASE_URL
 # Si basa sull'ID univoco del tagliando
 verificationUrl: {#verificationUrl#}

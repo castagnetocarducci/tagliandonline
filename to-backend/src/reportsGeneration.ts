@@ -36,6 +36,7 @@ export type VoucherTemplateData = {
     catastoMappaleAbitazioneDesignataStr: string,
     catastoSubalternoAbitazioneDesignataStr: string,
     catastoCategoriaAbitazioneDesignataStr: string,
+    veicoliSimultanei: string,
     targheArr: VehicleData[]
     verificationUrl: string,
 }
