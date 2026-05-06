@@ -56,7 +56,8 @@ type VoucherPublicCheck = {
         disabled: boolean,
         simultaneousPlatesAmount: number,
         applicationPlatesAmount: number,
-        voucherDurationDays: number
+        voucherDurationDays: number | null,
+        voucherExpiryDate: Date | null
     },
     vehicles: {
         id: number,
@@ -94,6 +95,8 @@ type VoucherListEntry = {
         firstname: string,
         lastname: string,
         email: string,
+        companyCF: string | null,
+        companyName: string | null,
         targetHousePlace: string | null,
         targetHouseLandRegistrySheet: string | null,
         targetHouseLandRegistryMap: string | null,
@@ -137,7 +140,8 @@ type VoucherDetails = {
         disabled: boolean,
         simultaneousPlatesAmount: number,
         applicationPlatesAmount: number,
-        voucherDurationDays: number,
+        voucherDurationDays: number | null,
+        voucherExpiryDate: Date | null
     },
     applications: {
         id: number,
@@ -147,6 +151,8 @@ type VoucherDetails = {
         firstname: string,
         lastname: string,
         email: string,
+        companyCF: string | null,
+        companyName: string | null,
         outcomeDate: Date | null,
         outcomeDescription: string,
         typeDescription: string,
@@ -330,6 +336,8 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
         firstname,
         lastname,
         email,
+        companyCF,
+        companyName,
         targetHousePlace,
         targetHouseLandRegistrySheet,
         targetHouseLandRegistryMap,
@@ -434,6 +442,14 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
     if (email != null && email.trim() !== "") {
         applicationsCountConditions.push(ilike(applications.email, `%${email}%`));
         applicationsQueryConditions.push({email: {ilike: `%${email}%`}});
+    }
+    if (companyCF != null && companyCF.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.companyCF, `%${companyCF}%`));
+        applicationsQueryConditions.push({companyCF: {ilike: `%${companyCF}%`}});
+    }
+    if (companyName != null && companyName.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.companyName, `%${companyName}%`));
+        applicationsQueryConditions.push({companyName: {ilike: `%${companyName}%`}});
     }
     if (targetHousePlace != null && targetHousePlace.trim() !== "") {
         applicationsCountConditions.push(ilike(applications.targetHousePlace, `%${targetHousePlace}%`));
@@ -589,6 +605,8 @@ vouchersRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vigile"
                 firstname: a.firstname,
                 lastname: a.lastname,
                 email: a.email,
+                companyCF: a.companyCF,
+                companyName: a.companyName,
                 targetHousePlace: a.targetHousePlace,
                 targetHouseLandRegistrySheet: a.targetHouseLandRegistrySheet,
                 targetHouseLandRegistryMap: a.targetHouseLandRegistryMap,
@@ -704,7 +722,7 @@ const getVoucherDetails = async (voucher: DetailedVoucherQueryResult) => {
             simultaneousPlatesAmount: voucher.permit.simultaneousPlatesAmount,
             applicationPlatesAmount: voucher.permit.applicationPlatesAmount,
             voucherDurationDays: voucher.permit.voucherDurationDays,
-
+            voucherExpiryDate: voucher.permit.voucherExpiryDate == null ? null : new Date(voucher.permit.voucherExpiryDate)
         },
         applications: voucher.applications.map(a => ({
             id: a.id,
@@ -714,6 +732,8 @@ const getVoucherDetails = async (voucher: DetailedVoucherQueryResult) => {
             firstname: a.firstname,
             lastname: a.lastname,
             email: a.email,
+            companyCF: a.companyCF,
+            companyName: a.companyName,
             outcomeDate: a.outcomeDate == null ? null : new Date(a.outcomeDate),
             outcomeDescription: a.outcome == null ? "" : a.outcome.description,
             typeDescription: a.type == null ? "" : a.type.description,
@@ -864,6 +884,8 @@ vouchersRouter.get("/byID/:voucherID", middlewareAuthCheck(["admin", "operatore"
             firstname: a.firstname,
             lastname: a.lastname,
             email: a.email,
+            companyCF: a.companyCF,
+            companyName: a.companyName,
             targetHousePlace: a.targetHousePlace,
             targetHouseLandRegistrySheet: a.targetHouseLandRegistrySheet,
             targetHouseLandRegistryMap: a.targetHouseLandRegistryMap,
@@ -977,7 +999,8 @@ vouchersRouter.get("/check/:voucherID", async (req, res) => {
             disabled: voucher.permit.disabled,
             simultaneousPlatesAmount: voucher.permit.simultaneousPlatesAmount,
             applicationPlatesAmount: voucher.permit.applicationPlatesAmount,
-            voucherDurationDays: voucher.permit.voucherDurationDays
+            voucherDurationDays: voucher.permit.voucherDurationDays,
+            voucherExpiryDate: voucher.permit.voucherExpiryDate == null ? null : new Date(voucher.permit.voucherExpiryDate)
         },
         vehicles: voucher.vehicles.map(v => ({
             id: v.id,
@@ -1548,7 +1571,8 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
             const permit = await getPermit(tx, permitId);
             const permitHistoryId = permit.lastPermitHistoryId as number;
 
-            if (vehicles.length > permit.applicationPlatesAmount) {
+            //-1 senza limite
+            if (permit.applicationPlatesAmount !== -1 && vehicles.length > permit.applicationPlatesAmount) {
                 throw new Error("Numero di veicoli non valido");
             }
 
@@ -1643,7 +1667,8 @@ vouchersRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (
                 const permit = await getPermit(tx, permitId);
                 const permitHistoryId = permit.lastPermitHistoryId as number;
 
-                if (vehicles.length > permit.applicationPlatesAmount) {
+                // -1 senza limite
+                if (permit.applicationPlatesAmount !== -1 && vehicles.length > permit.applicationPlatesAmount) {
                     throw new Error("Numero di veicoli non valido");
                 }
 
@@ -1724,12 +1749,18 @@ export const createNewVoucher = async (tx: DbTransactionType, creationData: Vouc
     if (validFromDateT.toString() === "Invalid Date") {
         throw new Error("Errore durante la creazione del tagliando: data inizio validità tagliando non valida");
     }
-    const {number, durationDays} = await getVoucherNumerationNewData(tx, creationData.permitId);
+    const {number, durationDays, expiryDate} = await getVoucherNumerationNewData(tx, creationData.permitId);
     let expiryDateT: Date = new Date(validFromDateT);
     if (creationData.validToDate != null && creationData.validToDate.trim() !== "") {
         expiryDateT = new Date(creationData.validToDate);
     } else {
-        expiryDateT.setDate(validFromDateT.getDate() + durationDays);
+        if (expiryDate != null) {
+            expiryDateT = new Date(expiryDate);
+        } else if (durationDays != null) {
+            expiryDateT.setDate(expiryDateT.getDate() + durationDays);
+        } else {
+            throw new Error("Errore durante la creazione del tagliando: scadenze permesso non popolate");
+        }
     }
     if (expiryDateT.toString() === "Invalid Date") {
         throw new Error("Errore durante la creazione del tagliando: data scadenza tagliando non valida");
@@ -1841,8 +1872,14 @@ export const updateVoucherWithApplication = async (tx: DbTransactionType, applic
     if (validFromDateT.toString() === "Invalid Date") {
         throw new Error("Errore durante l'aggiornamento del tagliando: data esito non valida");
     }
-    const expiryDateT: Date = new Date(validFromDateT);
-    expiryDateT.setDate(expiryDateT.getDate() + permit.voucherDurationDays);
+    let expiryDateT: Date = new Date(validFromDateT);
+    if (permit.voucherExpiryDate != null) {
+        expiryDateT = new Date(permit.voucherExpiryDate);
+    } else if (permit.voucherDurationDays != null) {
+        expiryDateT.setDate(expiryDateT.getDate() + permit.voucherDurationDays);
+    } else {
+        throw new Error("Errore durante l'aggiornamento del tagliando: scadenze permesso non popolate");
+    }
 
     const updatedVoucher = await tx.update(vouchers).set({
         number: foundVoucher.number,

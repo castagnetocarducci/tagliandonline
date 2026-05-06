@@ -158,7 +158,12 @@ numerationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asyn
     }
 );
 
-export const getVoucherNumerationNewData = async (tx: DbTransactionType, permitID: number): Promise<{number: number, durationDays: number}> => {
+export const getVoucherNumerationNewData = async (tx: DbTransactionType, permitID: number):
+    Promise<{
+        number: number,
+        durationDays: number | null,
+        expiryDate: Date | null
+    }> => {
     const numerationRes =
         await tx.select().from(permits).where(eq(permits.id, permitID)).leftJoin(numerationRegisters, eq(permits.numerationRegisterId, numerationRegisters.id));
     if (numerationRes == null || numerationRes.length !== 1 || numerationRes[0] == null ||
@@ -172,6 +177,7 @@ export const getVoucherNumerationNewData = async (tx: DbTransactionType, permitI
     const permit = numerationRes[0].permits;
     const nextNumber = numeration.nextNumber;
     const durationDays = permit.voucherDurationDays;
+    const expiryDate = permit.voucherExpiryDate == null ? null : new Date(permit.voucherExpiryDate);
     const updateResult = await tx.update(numerationRegisters).set(
         {
             nextNumber: nextNumber + 1
@@ -181,7 +187,8 @@ export const getVoucherNumerationNewData = async (tx: DbTransactionType, permitI
     }
     return {
         number: nextNumber,
-        durationDays: durationDays
+        durationDays: durationDays,
+        expiryDate: expiryDate
     };
 }
 

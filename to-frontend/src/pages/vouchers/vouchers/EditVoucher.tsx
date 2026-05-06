@@ -505,6 +505,9 @@ export function EditVoucher() {
                                                                     </Col>
                                                                     <Col lg={2} className={"text-wrap"}>
                                                                         {application.firstname} {application.lastname} {application.cf}
+                                                                        {application.companyName != null || application.companyCF != null && (
+                                                                            <> per {application.companyName} {application.companyCF}</>
+                                                                        )}
                                                                     </Col>
                                                                     <Col lg={1} className={"text-wrap"}>
                                                                         {application.typeDescription}

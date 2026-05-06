@@ -17,6 +17,7 @@ import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
+import {dateStrToISOString} from "../../../utils/CommonFunctions.ts";
 
 export function EditPermit() {
     const navigate = useNavigate();
@@ -27,6 +28,7 @@ export function EditPermit() {
     const [docTemplateList, setdocTemplateList] = useState<DocTemplateListEntry[]>([]);
     const [emailTemplateList, setemailTemplateList] = useState<EmailTemplateListEntry[]>([]);
     const [numerationRegistersList, setNumerationRegistersList] = useState<NumerationRegisterListEntry[]>([]);
+    const [useExpiryDate, setUseExpiryDate] = useState<boolean>(false);
 
     useEffect(() => {
         if (urlParams.permitID == null || urlParams.permitID == "") {
@@ -58,6 +60,7 @@ export function EditPermit() {
             callback: (data) => {
                 if (data != null) {
                     setPermitDetails(data.permit);
+                    setUseExpiryDate(data.permit.voucherExpiryDate != null);
                 }
             }
         });
@@ -71,6 +74,11 @@ export function EditPermit() {
             return;
         }
         const formValues = getValueObject();
+        if (useExpiryDate) {
+            formValues.voucherDurationDays = null;
+        } else {
+            formValues.voucherExpiryDate = null;
+        }
         fetchApiAsync<DataMessage>({
             urlFromApiRoot: "/permits/edit/" + urlParams.permitID,
             errSuccLoading: {setErr, setSucc, setLoading},
@@ -186,10 +194,12 @@ export function EditPermit() {
                                                 inputProps={{type: "text"}}/>
                             </Col>
                         </Row>
+
                         <Row>
-                            <Col md={3}>
-                                <ValidatedInput name={"simultaneousPlatesAmount"} labelText={"Targhe simultanee"}
-                                                validationFunc={() => true}
+                            <Col md={4}>
+                                <ValidatedInput name={"simultaneousPlatesAmount"}
+                                                labelText={"Targhe simultanee (-1 = senza limite)"}
+                                                validationFunc={(value) => parseInt("" + value) >= -1}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
                                                 defaultValue={permitDetails.simultaneousPlatesAmount}
@@ -198,23 +208,13 @@ export function EditPermit() {
                                                 setNewValidation={setValidation}
                                                 inputProps={{type: "number"}}/>
                             </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"applicationPlatesAmount"} labelText={"Targhe in domanda"}
-                                                validationFunc={() => true}
+                            <Col md={4}>
+                                <ValidatedInput name={"applicationPlatesAmount"}
+                                                labelText={"Targhe in domanda (-1 = senza limite)"}
+                                                validationFunc={(value) => parseInt("" + value) >= -1}
                                                 validationText={"Campo obbligatorio"} persistingValidationText={false}
                                                 validationMark={false}
                                                 defaultValue={permitDetails.applicationPlatesAmount}
-                                                isMandatory={true}
-                                                errorMessage={"Compilare i campi obbligatori"}
-                                                setNewValidation={setValidation}
-                                                inputProps={{type: "number"}}/>
-                            </Col>
-                            <Col md={3}>
-                                <ValidatedInput name={"voucherDurationDays"} labelText={"Durata tagliando (giorni)"}
-                                                validationFunc={(value) => parseInt("" + value) > 0}
-                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
-                                                validationMark={false}
-                                                defaultValue={permitDetails.voucherDurationDays}
                                                 isMandatory={true}
                                                 errorMessage={"Compilare i campi obbligatori"}
                                                 setNewValidation={setValidation}
@@ -236,6 +236,45 @@ export function EditPermit() {
                                                 }}/>
                             </Col>
                         </Row>
+                        <Row>
+                            <Col md={4}>
+                                <ValidatedInput name={"useExpiryDate"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"}
+                                                persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={permitDetails.voucherExpiryDate != null}
+                                                isMandatory={true}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                labelText={"Usa data di scadenza"}
+                                                valueChangedCallback={(newValue) => {setUseExpiryDate("" + newValue === "true")}}
+                                                inputProps={{type: "checkbox", className: "form-check-input"}}/>
+                            </Col>
+                            <Col md={4}>
+                                <ValidatedInput name={"voucherDurationDays"} labelText={"Durata tagliando (giorni)"}
+                                                validationFunc={(value) => parseInt("" + value) >= 0}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={permitDetails.voucherDurationDays == null ? "" : permitDetails.voucherDurationDays}
+                                                isMandatory={!useExpiryDate}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "number", disabled: useExpiryDate}}/>
+                            </Col>
+                            <Col md={4}>
+                                <ValidatedInput name={"voucherExpiryDate"} labelText={"Scadenza tagliando"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={dateStrToISOString(permitDetails.voucherExpiryDate)}
+                                                isMandatory={useExpiryDate}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "date", disabled: !useExpiryDate}}/>
+                            </Col>
+                        </Row>
+
                         <Row>
                             <Col md={4}>
                                 <ValidatedSelect name={"approveEmailTemplateId"} validationFunc={() => true}

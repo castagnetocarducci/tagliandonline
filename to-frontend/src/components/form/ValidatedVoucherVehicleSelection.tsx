@@ -382,6 +382,37 @@ export function ValidatedVoucherVehicleSelection(
                             </Row>
 
                             <Row>
+                                <Col md={6}>
+                                    <Row>
+                                        <Col xs={6}>
+                                            <ValidatedInput name={"companyCF"} namePrefix={"voucherSelectSearch_"}
+                                                            labelText={"CF Persona giuridica"}
+                                                            validationFunc={() => true}
+                                                            validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                            validationMark={false}
+                                                            defaultValue={""}
+                                                            isMandatory={false}
+                                                            errorMessage={"Compilare i campi obbligatori"}
+                                                            setNewValidation={setValidation}
+                                                            inputProps={{type: "text"}}/>
+                                        </Col>
+                                        <Col xs={6}>
+                                            <ValidatedInput name={"companyName"} namePrefix={"voucherSelectSearch_"}
+                                                            labelText={"Ragione sociale"}
+                                                            validationFunc={() => true}
+                                                            validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                            validationMark={false}
+                                                            defaultValue={""}
+                                                            isMandatory={false}
+                                                            errorMessage={"Compilare i campi obbligatori"}
+                                                            setNewValidation={setValidation}
+                                                            inputProps={{type: "text"}}/>
+                                        </Col>
+                                    </Row>
+                                </Col>
+                            </Row>
+
+                            <Row>
                                 <Col xl={6}>
                                     <Row>
                                         <Col xs={6}>
@@ -566,6 +597,9 @@ export function ValidatedVoucherVehicleSelection(
                                             ) : (
                                                 <>
                                                     <strong>{voucherListEntry.applications[0].cf}</strong> {voucherListEntry.applications[0].firstname} {voucherListEntry.applications[0].lastname}<br/>
+                                                    {voucherListEntry.applications[0].companyName != null || voucherListEntry.applications[0].companyCF != null && (
+                                                        <> per {voucherListEntry.applications[0].companyName} {voucherListEntry.applications[0].companyCF}</>
+                                                    )}<br/>
                                                     {voucherListEntry.applications[0].email}<br/>
                                                     Protocollo: {voucherListEntry.applications[0].registerNumber} del {new Date(voucherListEntry.applications[0].registerDate).toLocaleDateString()}<br/>
                                                     {voucherListEntry.applications[0].targetHousePlace != null && voucherListEntry.applications[0].targetHousePlace.trim() !== "" &&
@@ -634,6 +668,9 @@ export function ValidatedVoucherVehicleSelection(
                                         <span>
                                         Ultima domanda associata: <strong>{selectedVoucher.applications[0].id}</strong><br/>
                                             <strong>{selectedVoucher.applications[0].cf}</strong> {selectedVoucher.applications[0].firstname} {selectedVoucher.applications[0].lastname}<br/>
+                                            {selectedVoucher.applications[0].companyName != null || selectedVoucher.applications[0].companyCF != null && (
+                                                <> per {selectedVoucher.applications[0].companyName} {selectedVoucher.applications[0].companyCF}</>
+                                            )}<br/>
                                             {selectedVoucher.applications[0].email}<br/>
                                         Protocollo: {selectedVoucher.applications[0].registerNumber} del {new Date(selectedVoucher.applications[0].registerDate).toLocaleDateString()}<br/>
                                         Riferita all'immobile: {selectedVoucher.applications[0].targetHousePlace}{" - "}

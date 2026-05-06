@@ -379,7 +379,34 @@ export function VouchersList() {
                                         inputProps={{type: "text"}}/>
                     </Col>
                 </Row>
-
+                {/*
+                companyCF,
+                companyName
+                */}
+                <Row>
+                    <Col md={3}>
+                        <ValidatedInput name={"companyCF"} labelText={"CF Persona giuridica"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={4}>
+                        <ValidatedInput name={"companyName"} labelText={"Ragione sociale"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                </Row>
                 {/*
         targetHousePlace,
         targetHouseLandRegistrySheet,
@@ -578,6 +605,9 @@ export function VouchersList() {
                             <>
                                 <Col lg={1} className={"text-wrap"}>
                                     {voucherListEntry.applications[0].firstname} {voucherListEntry.applications[0].lastname}
+                                    {voucherListEntry.applications[0].companyName != null || voucherListEntry.applications[0].companyCF != null && (
+                                        <> per {voucherListEntry.applications[0].companyName} {voucherListEntry.applications[0].companyCF}</>
+                                    )}
                                 </Col>
                                 <Col lg={1} className={"text-wrap"}>
                                     {voucherListEntry.applications[0].registerNumber} del {new Date(voucherListEntry.applications[0].registerDate).toLocaleDateString()}

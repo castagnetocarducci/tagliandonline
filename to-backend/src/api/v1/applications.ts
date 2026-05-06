@@ -9,7 +9,7 @@ import {
     vehicles,
     vouchers
 } from "../../db/schema.ts";
-import {and, count, eq, exists, gte, ilike, lte, or} from "drizzle-orm";
+import {and, count, eq, exists, gte, ilike, lte} from "drizzle-orm";
 import {Router} from "express";
 import {getPermit, getPermitsList} from "./permits.ts";
 import {
@@ -23,7 +23,6 @@ import {getLastVehicleHistoryId} from "./vehicles.ts";
 import {ConfigProvider} from "../../configProvider.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
-import {adjustPathForDownload} from "./downloadFile.ts";
 
 export const applicationsRouter = Router();
 
@@ -55,6 +54,8 @@ type ApplicationListEntry = {
     firstname: string,
     lastname: string,
     email: string,
+    companyCF: string,
+    companyName: string,
     targetHousePlace: string,
     targetHouseLandRegistrySheet: string,
     targetHouseLandRegistryMap: string,
@@ -108,6 +109,8 @@ type ApplicationDetails = {
     firstname: string,
     lastname: string,
     email: string,
+    companyCF: string | null,
+    companyName: string | null,
     birthDate: Date | null,
     birthCity: string | null,
     residenceCity: string | null,
@@ -174,6 +177,8 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
     cf: string,
     firstname: string,
     lastname: string,
+    companyCF: string,
+    companyName: string,
     targetHousePlace: string,
     permit: {
         id: number,
@@ -223,6 +228,8 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
         firstname,
         lastname,
         email,
+        companyCF,
+        companyName,
         birthDate,
         birthCity,
         residenceCity,
@@ -291,6 +298,14 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
     if (email != null && email.trim() !== "") {
         applicationsCountConditions.push(ilike(applications.email, `%${email}%`));
         applicationsQueryConditions.push({email: {ilike: `%${email}%`}});
+    }
+    if (companyCF != null && companyCF.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.companyCF, `%${companyCF}%`));
+        applicationsQueryConditions.push({companyCF: {ilike: `%${companyCF}%`}});
+    }
+    if (companyName != null && companyName.trim() !== "") {
+        applicationsCountConditions.push(ilike(applications.companyName, `%${companyName}%`));
+        applicationsQueryConditions.push({companyName: {ilike: `%${companyName}%`}});
     }
     if (birthDate != null && new Date(birthDate).toString() !== "Invalid Date") {
         applicationsCountConditions.push(eq(applications.birthDate, new Date(birthDate).toISOString()));
@@ -473,6 +488,8 @@ applicationsRouter.post("/list", middlewareAuthCheck(["admin", "operatore", "vig
             firstname: app.firstname,
             lastname: app.lastname,
             email: app.email,
+            companyCF: app.companyCF ?? "",
+            companyName: app.companyName ?? "",
             targetHousePlace: app.targetHousePlace ?? "",
             targetHouseLandRegistrySheet: app.targetHouseLandRegistrySheet ?? "",
             targetHouseLandRegistryMap: app.targetHouseLandRegistryMap ?? "",
@@ -567,6 +584,8 @@ const getApplicationDetails = async (application: DetailedApplicationQueryResult
         firstname: application.firstname,
         lastname: application.lastname,
         email: application.email,
+        companyCF: application.companyCF,
+        companyName: application.companyName,
         birthDate: application.birthDate != null ? new Date(application.birthDate) : null,
         birthCity: application.birthCity,
         residenceCity: application.residenceCity,
@@ -722,6 +741,14 @@ applicationsRouter.get("/history/:applicationID", middlewareAuthCheck(["admin", 
                 description: "Email",
                 value: historyElem.email
             });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "companyCF", {
+                description: "CF Persona giuridica",
+                value: historyElem.companyCF != null ? historyElem.companyCF : ""
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "companyName", {
+                description: "Ragione sociale",
+                value: historyElem.companyName != null ? historyElem.companyName : ""
+            });
             checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "birthDate", {
                 description: "Data di nascita",
                 value: historyElem.birthDate != null ? historyElem.birthDate : ""
@@ -815,6 +842,12 @@ const checkApplicationParameters = (req: AuthRequest) => {
         req.body.vehicles == null || !Array.isArray(req.body.vehicles) || req.body.vehicles.some((elem: any) => typeof elem !== 'number')) {
         return false;
     }
+    if (req.body.companyCF != null && req.body.companyCF.trim() === "") {
+        req.body.companyCF = null;
+    }
+    if (req.body.companyName != null && req.body.companyName.trim() === "") {
+        req.body.companyName = null;
+    }
     if (req.body.requestDate != null && req.body.requestDate.trim() === "") {
         req.body.requestDate = null;
     }
@@ -902,6 +935,8 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
         firstname,
         lastname,
         email,
+        companyCF,
+        companyName,
         birthDate,
         birthCity,
         residenceCity,
@@ -942,6 +977,8 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             firstname === toUpdateApplication.firstname &&
             lastname === toUpdateApplication.lastname &&
             email === toUpdateApplication.email &&
+            companyCF === toUpdateApplication.companyCF &&
+            companyName === toUpdateApplication.companyName &&
             birthDate === toUpdateApplication.birthDate &&
             birthCity === toUpdateApplication.birthCity &&
             residenceCity === toUpdateApplication.residenceCity &&
@@ -969,7 +1006,8 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                 const permit = await getPermit(tx, permitId);
                 const permitHistoryId = permit.lastPermitHistoryId as number;
 
-                if (vehicles.length > permit.applicationPlatesAmount) {
+                // -1 senza limite
+                if (permit.applicationPlatesAmount !== -1 && vehicles.length > permit.applicationPlatesAmount) {
                     throw new Error("Numero di veicoli non valido");
                 }
 
@@ -1009,6 +1047,8 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                     firstname: firstname,
                     lastname: lastname,
                     email: email,
+                    companyCF: companyCF,
+                    companyName: companyName,
                     birthDate: birthDate,
                     birthCity: birthCity,
                     residenceCity: residenceCity,
@@ -1062,6 +1102,8 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
                     firstname: updatedApplication[0].firstname,
                     lastname: updatedApplication[0].lastname,
                     email: updatedApplication[0].email,
+                    companyCF: updatedApplication[0].companyCF,
+                    companyName: updatedApplication[0].companyName,
                     birthDate: updatedApplication[0].birthDate,
                     birthCity: updatedApplication[0].birthCity,
                     residenceCity: updatedApplication[0].residenceCity,
@@ -1150,6 +1192,8 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
         firstname,
         lastname,
         email,
+        companyCF,
+        companyName,
         birthDate,
         birthCity,
         residenceCity,
@@ -1179,7 +1223,8 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                 const permit = await getPermit(tx, permitId);
                 const permitHistoryId = permit.lastPermitHistoryId as number;
 
-                if (vehicles.length > permit.applicationPlatesAmount) {
+                // -1 senza limite
+                if (permit.applicationPlatesAmount !== -1 && vehicles.length > permit.applicationPlatesAmount) {
                     throw new Error("Numero di veicoli non valido");
                 }
 
@@ -1219,6 +1264,8 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                     firstname: firstname,
                     lastname: lastname,
                     email: email,
+                    companyCF: companyCF,
+                    companyName: companyName,
                     birthDate: birthDate,
                     birthCity: birthCity,
                     residenceCity: residenceCity,
@@ -1274,6 +1321,8 @@ applicationsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), asy
                     firstname: createdApplication[0].firstname,
                     lastname: createdApplication[0].lastname,
                     email: createdApplication[0].email,
+                    companyCF: createdApplication[0].companyCF,
+                    companyName: createdApplication[0].companyName,
                     birthDate: createdApplication[0].birthDate,
                     birthCity: createdApplication[0].birthCity,
                     residenceCity: createdApplication[0].residenceCity,

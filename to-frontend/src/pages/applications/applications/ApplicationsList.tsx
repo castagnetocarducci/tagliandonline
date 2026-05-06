@@ -327,6 +327,28 @@ export function ApplicationsList() {
                     </Col>
                 </Row>
                 <Row>
+                    <Col md={3}>
+                        <ValidatedInput name={"companyCF"} labelText={"CF Persona giuridica"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("companyCF") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={4}>
+                        <ValidatedInput name={"companyName"} labelText={"Ragione sociale"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={searchParams.get("companyName") ?? ""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
                     <Col md={5}>
                         <ValidatedInput name={"emailTo"} labelText={"Mail inviate a questo destinatario"}
                                         validationFunc={validateEmail}
@@ -583,6 +605,9 @@ export function ApplicationsList() {
                         </Col>
                         <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.firstname} {applicationListEntry.lastname}
+                            {applicationListEntry.companyName != null || applicationListEntry.companyCF != null && (
+                                <> per {applicationListEntry.companyName} {applicationListEntry.companyCF}</>
+                            )}
                         </Col>
                         <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.type.description}

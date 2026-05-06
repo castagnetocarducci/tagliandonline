@@ -107,6 +107,9 @@ export function ValidatedVehiclesList(
             return true;
         }
         if (!isEmpty && (value instanceof Array)) { //testo per Array perché non posso testare direttamente number[]
+            if (amount === -1) { //-1 senza limite
+                return true;
+            }
             if (value.length > amount) {
                 return false;
             }
@@ -222,11 +225,16 @@ export function ValidatedVehiclesList(
                         </span>
                     )}
 
-                    {exactAmount ? (
-                        <span>Sono richiesti esattamente {amount} veicoli</span>
-                    ) : (
-                        <span>Sono ammessi {isMandatory ? "da 1 a" : "al più"} {amount} veicoli</span>
-                    )}
+                    {amount === -1 ? (
+                        <span>Non ci sono limiti sul numero di veicoli associabili</span>
+                    ) : (<>
+                        {exactAmount ? (
+                            <span>Sono richiesti esattamente {amount} veicoli</span>
+                        ) : (
+                            <span>Sono ammessi {isMandatory ? "da 1 a" : "al più"} {amount} veicoli</span>
+                        )}
+                    </>)}
+
                     <br/>
 
                     {selectedVehiclesList.length > 0 ? (

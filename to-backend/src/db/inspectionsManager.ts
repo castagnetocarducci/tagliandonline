@@ -7,7 +7,7 @@ import {
 } from "../api/v1/inspections.ts";
 import {Mutex} from "../utils/mutex.ts";
 import type {VoucherCurrentState} from "../api/v1/vouchers.ts";
-import {dateToLocaleString, dateToLocaleStringOrEmpty} from "../utils/commonFunctions.ts";
+import {dateToLocaleString} from "../utils/commonFunctions.ts";
 
 
 type CachedVehicle = {
@@ -24,7 +24,8 @@ type CachedPermit = {
     disabled: boolean,
     simultaneousPlatesAmount: number,
     applicationPlatesAmount: number,
-    voucherDurationDays: number
+    voucherDurationDays: number | null,
+    voucherExpiryDate: Date | null,
 }
 
 export type CachedVoucher = {
@@ -118,6 +119,7 @@ export class InspectionsManager {
             simultaneousPlatesAmount: check.voucherHistory.permitHistory.simultaneousPlatesAmount,
             applicationPlatesAmount: check.voucherHistory.permitHistory.applicationPlatesAmount,
             voucherDurationDays: check.voucherHistory.permitHistory.voucherDurationDays,
+            voucherExpiryDate: check.voucherHistory.permitHistory.voucherExpiryDate,
         }
         if (!InspectionsManager.isAlreadyChecked(check, vouchersMap)) {
             cachedVehicles.push(toAddVehicle);
@@ -173,7 +175,8 @@ export class InspectionsManager {
         if (voucher.permit.disabled) {
             reasons.push("Permesso disabilitato o decaduto");
         }
-        if (voucher.vehicles.length > voucher.permit.simultaneousPlatesAmount) {
+        //-1 senza limite
+        if (voucher.permit.simultaneousPlatesAmount !== -1 && voucher.vehicles.length > voucher.permit.simultaneousPlatesAmount) {
             reasons.push("Sono consentiti solo " + voucher.permit.simultaneousPlatesAmount + " veicoli per volta, ma ne sono stati trovati " + voucher.vehicles.length);
         }
         if (reasons.length > 0) {

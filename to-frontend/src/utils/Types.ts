@@ -185,7 +185,8 @@ export type PermitDetails = {
     applicationPlatesAmount: number,
     disabled: boolean,
     notes: string,
-    voucherDurationDays: number,
+    voucherDurationDays: number | null,
+    voucherExpiryDate: Date | null,
     approveEmailTemplateId: number,
     revokeEmailTemplateId: number,
     refuseEmailTemplateId: number,
@@ -287,6 +288,8 @@ export type ApplicationListEntry = {
     firstname: string,
     lastname: string,
     email: string,
+    companyCF: string,
+    companyName: string,
     targetHousePlace: string,
     targetHouseLandRegistrySheet: string,
     targetHouseLandRegistryMap: string,
@@ -346,6 +349,8 @@ export type ApplicationDetails = {
     firstname: string,
     lastname: string,
     email: string,
+    companyCF: string | null,
+    companyName: string | null,
     birthDate: Date | null,
     birthCity: string | null,
     residenceCity: string | null,
@@ -467,6 +472,8 @@ export type VoucherListEntry = {
         firstname: string,
         lastname: string,
         email: string,
+        companyCF: string | null,
+        companyName: string | null,
         targetHousePlace: string | null,
         targetHouseLandRegistrySheet: string | null,
         targetHouseLandRegistryMap: string | null,
@@ -507,6 +514,8 @@ export type VoucherDetails = {
         firstname: string,
         lastname: string,
         email: string,
+        companyCF: string | null,
+        companyName: string | null,
         outcomeDate: Date | null,
         outcomeDescription: string,
         typeDescription: string,
@@ -646,7 +655,8 @@ export type VoucherHistory = {
         disabled: boolean,
         simultaneousPlatesAmount: number,
         applicationPlatesAmount: number,
-        voucherDurationDays: number
+        voucherDurationDays: number | null,
+        voucherExpiryDate: Date | null,
     },
 };
 
@@ -690,7 +700,8 @@ type CachedPermit = {
     disabled: boolean,
     simultaneousPlatesAmount: number,
     applicationPlatesAmount: number,
-    voucherDurationDays: number
+    voucherDurationDays: number | null,
+    voucherExpiryDate: Date | null,
 }
 
 export type CachedVoucher = {

@@ -270,6 +270,34 @@ export function NewApplication() {
                                         inputProps={{type: "text"}}/>
                     </Col>
                 </Row>
+                {/*
+                companyCF,
+                companyName
+                */}
+                <Row>
+                    <Col md={3}>
+                        <ValidatedInput name={"companyCF"} labelText={"CF Persona giuridica"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                    <Col md={4}>
+                        <ValidatedInput name={"companyName"} labelText={"Ragione sociale"}
+                                        validationFunc={() => true}
+                                        validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                        validationMark={false}
+                                        defaultValue={""}
+                                        isMandatory={false}
+                                        errorMessage={"Compilare i campi obbligatori"}
+                                        setNewValidation={setValidation}
+                                        inputProps={{type: "text"}}/>
+                    </Col>
+                </Row>
                 <Row>
                     {/*
         birthDate,
@@ -277,7 +305,6 @@ export function NewApplication() {
         residenceCity,
         residencePlace,
         targetHousePlace,*/}
-
                     <Col md={3}>
                         <ValidatedInput name={"birthDate"} labelText={"Data di nascita"}
                                         validationFunc={() => true}

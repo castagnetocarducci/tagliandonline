@@ -284,6 +284,34 @@ export function EditApplication() {
                                                 inputProps={{type: "text"}}/>
                             </Col>
                         </Row>
+                        {/*
+                companyCF,
+                companyName
+                */}
+                        <Row>
+                            <Col md={3}>
+                                <ValidatedInput name={"companyCF"} labelText={"CF Persona giuridica"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={applicationDetails.companyCF != null ? applicationDetails.companyCF : ""}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "text"}}/>
+                            </Col>
+                            <Col md={4}>
+                                <ValidatedInput name={"companyName"} labelText={"Ragione sociale"}
+                                                validationFunc={() => true}
+                                                validationText={"Campo obbligatorio"} persistingValidationText={false}
+                                                validationMark={false}
+                                                defaultValue={applicationDetails.companyName != null ? applicationDetails.companyName : ""}
+                                                isMandatory={false}
+                                                errorMessage={"Compilare i campi obbligatori"}
+                                                setNewValidation={setValidation}
+                                                inputProps={{type: "text"}}/>
+                            </Col>
+                        </Row>
                         <Row>
                             {/*
        birthDate,
@@ -492,7 +520,8 @@ export function EditApplication() {
                                                      updateName={"updateVoucher"} permitFilter={selectedPermitListEntry}
                                                      validationFunc={() => true}
                                                      validationText={"Campo obbligatorio"}
-                                                     defaultValue={applicationDetails.voucher == null ? null : applicationDetails.voucher.id} isMandatory={false}
+                                                     defaultValue={applicationDetails.voucher == null ? null : applicationDetails.voucher.id}
+                                                     isMandatory={false}
                                                      errorMessage={"Devi associare un tagliando"}
                                                      setNewValidation={setValidation}
                                                      labelText={"Tagliando associato"}/>

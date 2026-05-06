@@ -8,7 +8,6 @@ import type {DocTemplateListEntry} from "./docTemplates.ts";
 import {type EmailTemplateListEntry} from "./emailTemplates.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
-import {PgAsyncTransaction} from "drizzle-orm/pg-core";
 
 export const permitsRouter = Router();
 
@@ -34,7 +33,8 @@ type PermitDetails = {
     applicationPlatesAmount: number,
     disabled: boolean,
     notes: string,
-    voucherDurationDays: number,
+    voucherDurationDays: number | null,
+    voucherExpiryDate: Date | null,
     approveEmailTemplateId: number,
     revokeEmailTemplateId: number,
     refuseEmailTemplateId: number,
@@ -119,7 +119,8 @@ permitsRouter.get("/detail/:permitID", middlewareAuthCheck(["admin", "operatore"
         applicationPlatesAmount: permit.applicationPlatesAmount,
         disabled: permit.disabled,
         notes: permit.notes,
-        voucherDurationDays: permit.voucherDurationDays,
+        voucherDurationDays: permit.voucherDurationDays == null ? null : permit.voucherDurationDays,
+        voucherExpiryDate: permit.voucherExpiryDate == null ? null : new Date(permit.voucherExpiryDate),
         approveEmailTemplateId: permit.approveEmailTemplateId,
         revokeEmailTemplateId: permit.revokeEmailTemplateId,
         refuseEmailTemplateId: permit.refuseEmailTemplateId,
@@ -174,20 +175,63 @@ permitsRouter.get("/history/:permitID", middlewareAuthCheck(["admin", "operatore
         const currModificationEntries: HistoryModificationMap = {};
         permitHistory.forEach((historyElem) => {
             const diffModificationEntries: HistoryModificationMap = {};
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "description", {description: "Descrizione", value: historyElem.description});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "printedName", {description: "Nome nel modello", value: historyElem.printedName});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "disabled", {description: "Disabilitato", value: "" + historyElem.disabled});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "simultaneousPlatesAmount", {description: "Targhe simultanee", value: "" + historyElem.simultaneousPlatesAmount});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "applicationPlatesAmount", {description: "Targhe in domanda", value: "" + historyElem.applicationPlatesAmount});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "notes", {description: "Note", value: historyElem.notes});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherDurationDays", {description: "Durata tagliando (giorni)", value: "" + historyElem.voucherDurationDays});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "approveEmailTemplate", {description: "Mail approvazione", value: historyElem.approveEmailTemplate ? historyElem.approveEmailTemplate.id + ": " + historyElem.approveEmailTemplate.description : "sconosciuto"});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "revokeEmailTemplate", {description: "Mail revoca", value: historyElem.revokeEmailTemplate ? historyElem.revokeEmailTemplate.id + ": " + historyElem.revokeEmailTemplate.description : "sconosciuto"});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "refuseEmailTemplate", {description: "Mail rifiuto", value: historyElem.refuseEmailTemplate ? historyElem.refuseEmailTemplate.id + ": " + historyElem.refuseEmailTemplate.description : "sconosciuto"});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherDocTemplate", {description: "Modello tagliando", value: historyElem.voucherDocTemplate ? historyElem.voucherDocTemplate.id + ": " + historyElem.voucherDocTemplate.description : "sconosciuto"});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "authorizationDocTemplate", {description: "Modello autorizzazione", value: historyElem.authorizationDocTemplate ? historyElem.authorizationDocTemplate.id + ": " + historyElem.authorizationDocTemplate.description : "sconosciuto"});
-            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "numerationRegister", {description: "Registro numerazione", value: historyElem.numerationRegister  ? historyElem.numerationRegister.id + ": " + historyElem.numerationRegister.description : "sconosciuto"});
-            permitHistoryRes.push( {
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "description", {
+                description: "Descrizione",
+                value: historyElem.description
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "printedName", {
+                description: "Nome nel modello",
+                value: historyElem.printedName
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "disabled", {
+                description: "Disabilitato",
+                value: "" + historyElem.disabled
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "simultaneousPlatesAmount", {
+                description: "Targhe simultanee",
+                value: "" + historyElem.simultaneousPlatesAmount
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "applicationPlatesAmount", {
+                description: "Targhe in domanda",
+                value: "" + historyElem.applicationPlatesAmount
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "notes", {
+                description: "Note",
+                value: historyElem.notes
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherDurationDays", {
+                description: "Durata tagliando (giorni)",
+                value: "" + historyElem.voucherDurationDays
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherExpiryDate", {
+                description: "Scadenza tagliando",
+                value: "" + historyElem.voucherExpiryDate
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "approveEmailTemplate", {
+                description: "Mail approvazione",
+                value: historyElem.approveEmailTemplate ? historyElem.approveEmailTemplate.id + ": " + historyElem.approveEmailTemplate.description : "sconosciuto"
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "revokeEmailTemplate", {
+                description: "Mail revoca",
+                value: historyElem.revokeEmailTemplate ? historyElem.revokeEmailTemplate.id + ": " + historyElem.revokeEmailTemplate.description : "sconosciuto"
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "refuseEmailTemplate", {
+                description: "Mail rifiuto",
+                value: historyElem.refuseEmailTemplate ? historyElem.refuseEmailTemplate.id + ": " + historyElem.refuseEmailTemplate.description : "sconosciuto"
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "voucherDocTemplate", {
+                description: "Modello tagliando",
+                value: historyElem.voucherDocTemplate ? historyElem.voucherDocTemplate.id + ": " + historyElem.voucherDocTemplate.description : "sconosciuto"
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "authorizationDocTemplate", {
+                description: "Modello autorizzazione",
+                value: historyElem.authorizationDocTemplate ? historyElem.authorizationDocTemplate.id + ": " + historyElem.authorizationDocTemplate.description : "sconosciuto"
+            });
+            checkAndUpdateValueModificationsMap(diffModificationEntries, currModificationEntries, "numerationRegister", {
+                description: "Registro numerazione",
+                value: historyElem.numerationRegister ? historyElem.numerationRegister.id + ": " + historyElem.numerationRegister.description : "sconosciuto"
+            });
+            permitHistoryRes.push({
                 userId: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.id : 0,
                 username: historyElem.modifiedByAuthUser ? historyElem.modifiedByAuthUser.username : "unknown",
                 timestamp: historyElem.createdAt,
@@ -225,7 +269,9 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
         req.body.simultaneousPlatesAmount == null || isNaN(parseInt(req.body.simultaneousPlatesAmount)) ||
         req.body.applicationPlatesAmount == null || isNaN(parseInt(req.body.applicationPlatesAmount)) ||
         req.body.notes == null ||
-        req.body.voucherDurationDays == null || isNaN(parseInt(req.body.voucherDurationDays)) ||
+        (req.body.voucherDurationDays == null && req.body.voucherExpiryDate == null) ||
+        (req.body.voucherDurationDays != null && isNaN(parseInt(req.body.voucherDurationDays))) ||
+        (req.body.voucherExpiryDate != null && new Date(req.body.voucherExpiryDate).toString() === "Invalid Date") ||
         req.body.approveEmailTemplateId == null || isNaN(parseInt(req.body.approveEmailTemplateId)) ||
         req.body.revokeEmailTemplateId == null || isNaN(parseInt(req.body.revokeEmailTemplateId)) ||
         req.body.refuseEmailTemplateId == null || isNaN(parseInt(req.body.refuseEmailTemplateId)) ||
@@ -234,6 +280,12 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
         req.body.numerationRegisterId == null || isNaN(parseInt(req.body.numerationRegisterId))) {
         res.status(400).json({message: "Richiesta con campi mancanti"});
         return;
+    }
+    if (req.body.voucherDurationDays != null && ("" + req.body.voucherDurationDays).trim() === "") {
+        req.body.voucherDurationDays = null;
+    }
+    if (req.body.voucherExpiryDate != null && ("" + req.body.voucherExpiryDate).trim() === "") {
+        req.body.voucherExpiryDate = null;
     }
     if (req.body.disabled != null && typeof req.body.disabled === "string") {
         req.body.disabled = req.body.disabled === "true";
@@ -246,6 +298,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
         applicationPlatesAmount,
         notes,
         voucherDurationDays,
+        voucherExpiryDate,
         approveEmailTemplateId,
         revokeEmailTemplateId,
         refuseEmailTemplateId,
@@ -270,6 +323,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
             applicationPlatesAmount === toUpdatePermit.applicationPlatesAmount &&
             notes === toUpdatePermit.notes &&
             voucherDurationDays === toUpdatePermit.voucherDurationDays &&
+            voucherExpiryDate === toUpdatePermit.voucherExpiryDate &&
             approveEmailTemplateId === toUpdatePermit.approveEmailTemplateId &&
             revokeEmailTemplateId === toUpdatePermit.revokeEmailTemplateId &&
             refuseEmailTemplateId === toUpdatePermit.refuseEmailTemplateId &&
@@ -289,6 +343,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
                 applicationPlatesAmount,
                 notes,
                 voucherDurationDays,
+                voucherExpiryDate,
                 approveEmailTemplateId,
                 revokeEmailTemplateId,
                 refuseEmailTemplateId,
@@ -310,6 +365,7 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
                 applicationPlatesAmount: updatedPermit[0].applicationPlatesAmount,
                 notes: updatedPermit[0].notes,
                 voucherDurationDays: updatedPermit[0].voucherDurationDays,
+                voucherExpiryDate: updatedPermit[0].voucherExpiryDate,
                 approveEmailTemplateId: updatedPermit[0].approveEmailTemplateId,
                 revokeEmailTemplateId: updatedPermit[0].revokeEmailTemplateId,
                 refuseEmailTemplateId: updatedPermit[0].refuseEmailTemplateId,
@@ -354,7 +410,9 @@ permitsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (r
             req.body.simultaneousPlatesAmount == null || isNaN(parseInt(req.body.simultaneousPlatesAmount)) ||
             req.body.applicationPlatesAmount == null || isNaN(parseInt(req.body.applicationPlatesAmount)) ||
             req.body.notes == null ||
-            req.body.voucherDurationDays == null || isNaN(parseInt(req.body.voucherDurationDays)) ||
+            (req.body.voucherDurationDays == null && req.body.voucherExpiryDate == null) ||
+            (req.body.voucherDurationDays != null && isNaN(parseInt(req.body.voucherDurationDays))) ||
+            (req.body.voucherExpiryDate != null && new Date(req.body.voucherExpiryDate).toString() === "Invalid Date") ||
             req.body.approveEmailTemplateId == null || isNaN(parseInt(req.body.approveEmailTemplateId)) ||
             req.body.revokeEmailTemplateId == null || isNaN(parseInt(req.body.revokeEmailTemplateId)) ||
             req.body.refuseEmailTemplateId == null || isNaN(parseInt(req.body.refuseEmailTemplateId)) ||
@@ -364,6 +422,14 @@ permitsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (r
             res.status(400).json({message: "Richiesta con campi mancanti"});
             return;
         }
+        if (req.body.voucherDurationDays != null && ("" + req.body.voucherDurationDays).trim() === "") {
+            req.body.voucherDurationDays = null;
+        }
+        if (req.body.voucherExpiryDate != null && ("" + req.body.voucherExpiryDate).trim() === "") {
+            req.body.voucherExpiryDate = null;
+        }
+
+
         const {
             description,
             printedName,
@@ -371,6 +437,7 @@ permitsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (r
             applicationPlatesAmount,
             notes,
             voucherDurationDays,
+            voucherExpiryDate,
             approveEmailTemplateId,
             revokeEmailTemplateId,
             refuseEmailTemplateId,
@@ -388,6 +455,7 @@ permitsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (r
                     applicationPlatesAmount,
                     notes,
                     voucherDurationDays,
+                    voucherExpiryDate,
                     approveEmailTemplateId,
                     revokeEmailTemplateId,
                     refuseEmailTemplateId,
@@ -410,6 +478,7 @@ permitsRouter.post("/new", middlewareAuthCheck(["admin", "operatore"]), async (r
                     applicationPlatesAmount: insertedPermit[0].applicationPlatesAmount,
                     notes: insertedPermit[0].notes,
                     voucherDurationDays: insertedPermit[0].voucherDurationDays,
+                    voucherExpiryDate: insertedPermit[0].voucherExpiryDate,
                     approveEmailTemplateId: insertedPermit[0].approveEmailTemplateId,
                     revokeEmailTemplateId: insertedPermit[0].revokeEmailTemplateId,
                     refuseEmailTemplateId: insertedPermit[0].refuseEmailTemplateId,

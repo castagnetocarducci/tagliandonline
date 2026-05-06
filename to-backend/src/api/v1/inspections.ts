@@ -35,7 +35,8 @@ export type VoucherHistory = {
         disabled: boolean,
         simultaneousPlatesAmount: number,
         applicationPlatesAmount: number,
-        voucherDurationDays: number
+        voucherDurationDays: number | null,
+        voucherExpiryDate: Date | null,
     },
 };
 
@@ -297,7 +298,8 @@ const getInspectionCheckDetails = (check: InspectionCheckQueryResult) => {
                 disabled: check.voucherHistory.permitHistory.disabled,
                 simultaneousPlatesAmount: check.voucherHistory.permitHistory.simultaneousPlatesAmount,
                 applicationPlatesAmount: check.voucherHistory.permitHistory.applicationPlatesAmount,
-                voucherDurationDays: check.voucherHistory.permitHistory.voucherDurationDays
+                voucherDurationDays: check.voucherHistory.permitHistory.voucherDurationDays,
+                voucherExpiryDate: check.voucherHistory.permitHistory.voucherExpiryDate == null ? null : new Date(check.voucherHistory.permitHistory.voucherExpiryDate),
             },
         },
         checkedByAuthUser: {
