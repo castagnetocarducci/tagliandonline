@@ -13,6 +13,8 @@ async function testReportGeneration() {
         dataFineValiditaStr: "u",
         cognomeIstruttoreStr: "i",
         nomeIstruttoreStr: "o",
+        codiceFiscalePersonaGiuridica: "cfrs",
+        ragioneSociale: "rs",
         cognomeRichiedenteStr: "p",
         nomeRichiedenteStr: "a",
         comuneNascitaRichiedenteStr: "s",

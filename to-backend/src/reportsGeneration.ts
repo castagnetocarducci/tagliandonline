@@ -24,6 +24,8 @@ export type VoucherTemplateData = {
     dataFineValiditaStr: string,
     cognomeIstruttoreStr: string,
     nomeIstruttoreStr: string,
+    codiceFiscalePersonaGiuridica: string,
+    ragioneSociale: string,
     cognomeRichiedenteStr: string,
     nomeRichiedenteStr: string,
     comuneNascitaRichiedenteStr: string,

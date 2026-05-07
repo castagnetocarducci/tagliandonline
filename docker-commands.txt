@@ -2,7 +2,7 @@ docker build --target development --tag cedcastagneto/tagliandonline-dev .
 
 
 docker build --target production --tag cedcastagneto/tagliandonline:latest .
-docker image tag cedcastagneto/tagliandonline:latest cedcastagneto/tagliandonline:0.2.1
+docker image tag cedcastagneto/tagliandonline:latest cedcastagneto/tagliandonline:0.3.0
 docker image push --all-tags cedcastagneto/tagliandonline
 
 

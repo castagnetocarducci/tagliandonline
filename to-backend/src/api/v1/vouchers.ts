@@ -1397,6 +1397,8 @@ const getVoucherTemplateDataFromDetailedQuery = (voucher: DetailedVoucherQueryRe
         dataCompletamentoStr: dateToLocaleStringOrEmpty(targetApplication.outcomeDate ?? voucher.validFromDate),
         dataInizioValiditaStr: dateToLocaleStringOrEmpty(voucher.validFromDate),
         dataFineValiditaStr: dateToLocaleStringOrEmpty(voucher.validToDate),
+        codiceFiscalePersonaGiuridica: targetApplication.companyCF == null ? "N/A" : targetApplication.companyCF,
+        ragioneSociale: targetApplication.companyName == null ? "N/A" : targetApplication.companyName,
         cognomeIstruttoreStr: targetApplication.outcomeAuthUser == null ? "N/A" : targetApplication.outcomeAuthUser.lastname,
         nomeIstruttoreStr: targetApplication.outcomeAuthUser == null ? "N/A" : targetApplication.outcomeAuthUser.firstname,
         cognomeRichiedenteStr: targetApplication.lastname,
