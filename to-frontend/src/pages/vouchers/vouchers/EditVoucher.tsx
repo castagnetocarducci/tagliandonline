@@ -38,7 +38,7 @@ import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {LoadingSpinner} from "../../../components/LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
-import {dateStrToISOString} from "../../../utils/CommonFunctions.ts";
+import {allStringsEmpty, dateStrToISOString} from "../../../utils/CommonFunctions.ts";
 import {ValidatedVehiclesList} from "../../../components/form/ValidatedVehiclesList.tsx";
 import {RouterDesignLink} from "../../../components/links/RouterDesignLink.tsx";
 import {RouterDesignTabLink} from "../../../components/links/RouterDesignTabLink.tsx";
@@ -505,7 +505,7 @@ export function EditVoucher() {
                                                                     </Col>
                                                                     <Col lg={2} className={"text-wrap"}>
                                                                         {application.firstname} {application.lastname} {application.cf}
-                                                                        {application.companyName != null || application.companyCF != null && (
+                                                                        {!allStringsEmpty(application.companyName, application.companyCF) && (
                                                                             <> per {application.companyName} {application.companyCF}</>
                                                                         )}
                                                                     </Col>

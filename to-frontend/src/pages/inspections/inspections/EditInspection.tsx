@@ -153,7 +153,7 @@ export function EditInspection() {
                 if (data != null && data.anomaly != null) {
                     setAnomalies((prevState) => [...prevState, data.anomaly]);
                     setExpandedAnomaly(data.anomaly.voucherId);
-                    navigate("/inspections/list/" + urlParams.inspectionID + "/anomalies/" + data.id); // /anomalies/checkID
+                    navigate("/inspections/list/" + urlParams.inspectionID + "/anomalies"); //  /" + data.id); /anomalies/checkID
                     return;
                 }
                 setToggleDetailsRefresh(!toggleDetailsRefresh);
@@ -368,8 +368,8 @@ export function EditInspection() {
                                                                 <br/>
 
                                                                 Permesso{" #"}
-                                                                ({check.voucherHistory.permitHistory.permitId}): {check.voucherHistory.permitHistory.description}{" "}
-                                                                <strong>{check.voucherHistory.permitHistory.disabled && "Decaduto"}</strong>
+                                                                ({check.permitHistory.permitId}): {check.permitHistory.description}{" "}
+                                                                <strong>{check.permitHistory.disabled && "Decaduto"}</strong>
                                                                 <br/>
                                                                 Rilevato il {new Date(check.createdAt).toLocaleString()}<br/><br/>
                                                                 {inspectionDetails.currentState === "In corso" && (
@@ -471,7 +471,7 @@ export function EditInspection() {
                                                     ))}
 
                                                     Permesso{" #"}
-                                                    ({anomaly.permit.permitId}): {anomaly.permit.description}{" "}
+                                                    ({anomaly.permit.id}): {anomaly.permit.description}{" "}
                                                     <strong>{anomaly.permit.disabled && "Decaduto"}</strong>
                                                     <br/>
                                                 </AccordionBody>

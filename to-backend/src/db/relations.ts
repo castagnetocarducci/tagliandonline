@@ -1,5 +1,6 @@
 import {defineRelations} from "drizzle-orm";
 import * as schema from "./schema.ts";
+import {inspectionChecks} from "./schema.ts";
 
 export const relations = defineRelations(schema, (r) => ({
     permits: {
@@ -83,6 +84,7 @@ export const relations = defineRelations(schema, (r) => ({
             to: r.emailTemplates.id,
             alias: "permitsHistoryRefuseEmailTemplateRel"
         }),
+        inspectionChecks: r.many.inspectionChecks(),
     },
 
     numerationRegisters: {
@@ -345,6 +347,10 @@ export const relations = defineRelations(schema, (r) => ({
         voucherHistory: r.one.vouchersHistory({
             from: r.inspectionChecks.voucherHistoryId,
             to: r.vouchersHistory.id,
+        }),
+        permitHistory: r.one.permitsHistory({
+            from: r.inspectionChecks.permitHistoryId,
+            to: r.permitsHistory.id,
         }),
         checkedByAuthUser: r.one.authUsers({
             from: r.inspectionChecks.checkedByAuthUserId,

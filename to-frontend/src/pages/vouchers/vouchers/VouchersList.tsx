@@ -20,7 +20,7 @@ import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
 import {AutoPager, type PagerPageData} from "../../../components/AutoPager.tsx";
-import {validateEmail} from "../../../utils/CommonFunctions.ts";
+import {allStringsEmpty, validateEmail} from "../../../utils/CommonFunctions.ts";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
 
 export function VouchersList() {
@@ -605,7 +605,7 @@ export function VouchersList() {
                             <>
                                 <Col lg={1} className={"text-wrap"}>
                                     {voucherListEntry.applications[0].firstname} {voucherListEntry.applications[0].lastname}
-                                    {voucherListEntry.applications[0].companyName != null || voucherListEntry.applications[0].companyCF != null && (
+                                    {!allStringsEmpty(voucherListEntry.applications[0].companyName, voucherListEntry.applications[0].companyCF) && (
                                         <> per {voucherListEntry.applications[0].companyName} {voucherListEntry.applications[0].companyCF}</>
                                     )}
                                 </Col>

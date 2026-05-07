@@ -24,6 +24,7 @@ import {Link} from "react-router";
 import {type SelectOption, ValidatedSelect} from "./ValidatedSelect.tsx";
 import {Scanner} from "@yudiel/react-qr-scanner";
 import type {IDetectedBarcode} from "@yudiel/react-qr-scanner/dist/types/IDetectedBarcode";
+import {allStringsEmpty} from "../../utils/CommonFunctions.ts";
 
 
 type ValidatedVoucherVehicleSelectionListProps = {
@@ -597,7 +598,7 @@ export function ValidatedVoucherVehicleSelection(
                                             ) : (
                                                 <>
                                                     <strong>{voucherListEntry.applications[0].cf}</strong> {voucherListEntry.applications[0].firstname} {voucherListEntry.applications[0].lastname}<br/>
-                                                    {voucherListEntry.applications[0].companyName != null || voucherListEntry.applications[0].companyCF != null && (
+                                                    {!allStringsEmpty(voucherListEntry.applications[0].companyName, voucherListEntry.applications[0].companyCF) && (
                                                         <> per {voucherListEntry.applications[0].companyName} {voucherListEntry.applications[0].companyCF}</>
                                                     )}<br/>
                                                     {voucherListEntry.applications[0].email}<br/>
@@ -668,7 +669,7 @@ export function ValidatedVoucherVehicleSelection(
                                         <span>
                                         Ultima domanda associata: <strong>{selectedVoucher.applications[0].id}</strong><br/>
                                             <strong>{selectedVoucher.applications[0].cf}</strong> {selectedVoucher.applications[0].firstname} {selectedVoucher.applications[0].lastname}<br/>
-                                            {selectedVoucher.applications[0].companyName != null || selectedVoucher.applications[0].companyCF != null && (
+                                            {!allStringsEmpty(selectedVoucher.applications[0].companyName, selectedVoucher.applications[0].companyCF) && (
                                                 <> per {selectedVoucher.applications[0].companyName} {selectedVoucher.applications[0].companyCF}</>
                                             )}<br/>
                                             {selectedVoucher.applications[0].email}<br/>

@@ -6,9 +6,9 @@ import {Router} from "express";
 import {ConfigProvider} from "../../configProvider.ts";
 import {getLastVehicleHistoryId} from "./vehicles.ts";
 import {Mutex} from "../../utils/mutex.ts";
-import {getLastVoucherHistoryId, getVoucherCurrentState, type VoucherCurrentState, vouchersRouter} from "./vouchers.ts";
+import {getLastVoucherHistoryId, getVoucher, getVoucherCurrentState, type VoucherCurrentState} from "./vouchers.ts";
 import {type CachedVoucher, InspectionsManager} from "../../db/inspectionsManager.ts";
-import {getPermitsList} from "./permits.ts";
+import {getLastPermitHistoryId, getPermitsList} from "./permits.ts";
 
 export const inspectionsRouter = Router();
 
@@ -29,16 +29,17 @@ export type VoucherHistory = {
     currentState: VoucherCurrentState,
     validFromDate: Date,
     validToDate: Date,
-    permitHistory: {
-        permitId: number,
-        description: string,
-        disabled: boolean,
-        simultaneousPlatesAmount: number,
-        applicationPlatesAmount: number,
-        voucherDurationDays: number | null,
-        voucherExpiryDate: Date | null,
-    },
 };
+
+export type PermitHistory = {
+    permitId: number,
+    description: string,
+    disabled: boolean,
+    simultaneousPlatesAmount: number,
+    applicationPlatesAmount: number,
+    voucherDurationDays: number | null,
+    voucherExpiryDate: Date | null,
+}
 
 export type InspectionCheck = {
     id: number,
@@ -50,6 +51,7 @@ export type InspectionCheck = {
         brand: string,
     },
     voucherHistory: VoucherHistory,
+    permitHistory: PermitHistory,
     checkedByAuthUser: {
         username: string,
         firstname: string,
@@ -183,11 +185,8 @@ const getDetailedInspectionPaged = async (tx: DbTransactionType, inspectionID: n
                 orderBy: {id: "desc"},
                 with: {
                     checkedByAuthUser: true,
-                    voucherHistory: {
-                        with: {
-                            permitHistory: true
-                        }
-                    },
+                    voucherHistory: true,
+                    permitHistory: true,
                     vehicleHistory: true
                 }
             }
@@ -213,11 +212,8 @@ export const getDetailedOngoingInspectionsFull = async (tx: DbTransactionType) =
                 orderBy: {id: "desc"},
                 with: {
                     checkedByAuthUser: true,
-                    voucherHistory: {
-                        with: {
-                            permitHistory: true
-                        }
-                    },
+                    voucherHistory: true,
+                    permitHistory: true,
                     vehicleHistory: true
                 }
             }
@@ -238,11 +234,8 @@ const getDetailedInspectionFull = async (tx: DbTransactionType, inspectionID: nu
                 orderBy: {id: "desc"},
                 with: {
                     checkedByAuthUser: true,
-                    voucherHistory: {
-                        with: {
-                            permitHistory: true
-                        }
-                    },
+                    voucherHistory: true,
+                    permitHistory: true,
                     vehicleHistory: true
                 }
             }
@@ -259,11 +252,8 @@ const getInspectionCheck = async (tx: DbTransactionType, inspectionCheckID: numb
         },
         with: {
             checkedByAuthUser: true,
-            voucherHistory: {
-                with: {
-                    permitHistory: true
-                }
-            },
+            voucherHistory: true,
+            permitHistory: true,
             vehicleHistory: true
         },
     });
@@ -272,7 +262,7 @@ const getInspectionCheck = async (tx: DbTransactionType, inspectionCheckID: numb
 type InspectionCheckQueryResult = Awaited<ReturnType<typeof getInspectionCheck>>;
 
 const getInspectionCheckDetails = (check: InspectionCheckQueryResult) => {
-    if (check == null || check.vehicleHistory == null || check.checkedByAuthUser == null || check.voucherHistory == null || check.voucherHistory.permitHistory == null) {
+    if (check == null || check.vehicleHistory == null || check.checkedByAuthUser == null || check.voucherHistory == null || check.voucherHistory == null || check.permitHistory == null) {
         throw new Error("Errore nel reperire le associazioni di un rilievo");
     }
     const voucherCurrentState = getVoucherCurrentState(check.voucherHistory.revoked, check.voucherHistory.validFromDate, check.voucherHistory.validToDate);
@@ -292,15 +282,15 @@ const getInspectionCheckDetails = (check: InspectionCheckQueryResult) => {
             currentState: voucherCurrentState,
             validFromDate: new Date(check.voucherHistory.validFromDate),
             validToDate: new Date(check.voucherHistory.validToDate),
-            permitHistory: {
-                permitId: check.voucherHistory.permitHistory.permitId,
-                description: check.voucherHistory.permitHistory.description,
-                disabled: check.voucherHistory.permitHistory.disabled,
-                simultaneousPlatesAmount: check.voucherHistory.permitHistory.simultaneousPlatesAmount,
-                applicationPlatesAmount: check.voucherHistory.permitHistory.applicationPlatesAmount,
-                voucherDurationDays: check.voucherHistory.permitHistory.voucherDurationDays,
-                voucherExpiryDate: check.voucherHistory.permitHistory.voucherExpiryDate == null ? null : new Date(check.voucherHistory.permitHistory.voucherExpiryDate),
-            },
+        },
+        permitHistory: {
+            permitId: check.permitHistory.permitId,
+            description: check.permitHistory.description,
+            disabled: check.permitHistory.disabled,
+            simultaneousPlatesAmount: check.permitHistory.simultaneousPlatesAmount,
+            applicationPlatesAmount: check.permitHistory.applicationPlatesAmount,
+            voucherDurationDays: check.permitHistory.voucherDurationDays,
+            voucherExpiryDate: check.permitHistory.voucherExpiryDate == null ? null : new Date(check.permitHistory.voucherExpiryDate),
         },
         checkedByAuthUser: {
             username: check.checkedByAuthUser.username,
@@ -590,10 +580,17 @@ inspectionsRouter.post("/addCheck/:inspectionID", middlewareAuthCheck(["admin", 
                 if (inspection == null || inspection.endDate != null) {
                     throw new Error("Ispezione non trovata o già conclusa");
                 }
+                const voucher = await getVoucher(tx, voucherId);
+                if (voucher == null) {
+                    throw new Error("Voucher non trovato");
+                }
+                const lastPermitHistoryId = await getLastPermitHistoryId(tx, voucher.permitId);
+
                 const createdInspectionCheck = await tx.insert(inspectionChecks).values({
                     inspectionId: inspectionID,
                     vehicleHistoryId: lastVehicleHistoryId,
                     voucherHistoryId: lastVoucherHistoryId,
+                    permitHistoryId: lastPermitHistoryId,
                     checkedByAuthUserId: modifiedByAuthUserId
                 }).returning();
                 if (createdInspectionCheck == null || createdInspectionCheck.length !== 1 || createdInspectionCheck[0] == null) {
@@ -670,7 +667,7 @@ inspectionsRouter.get("/deleteCheck/:inspectionCheckID", middlewareAuthCheck(["a
     }
 });
 
-const inspectionsApiMutex = new Mutex();
+export const inspectionsApiMutex = new Mutex();
 
 inspectionsRouter.get("/availableOptions", middlewareAuthCheck(["admin", "operatore", "vigile"]), async (req: AuthRequest, res) => {
         if (req.user == null) {

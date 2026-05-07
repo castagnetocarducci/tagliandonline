@@ -969,17 +969,17 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             res.status(500).json({message: "Domanda non trovata"});
             return;
         }
-        if (requestDate === toUpdateApplication.requestDate &&
-            outcomeDate === toUpdateApplication.outcomeDate &&
-            registerNumber === toUpdateApplication.registerNumber &&
-            registerDate === toUpdateApplication.registerDate &&
+        if ("" + requestDate === "" + toUpdateApplication.requestDate &&
+            "" + outcomeDate === "" + toUpdateApplication.outcomeDate &&
+            "" + registerNumber === "" + toUpdateApplication.registerNumber &&
+            "" + registerDate === "" + toUpdateApplication.registerDate &&
             cf === toUpdateApplication.cf &&
             firstname === toUpdateApplication.firstname &&
             lastname === toUpdateApplication.lastname &&
             email === toUpdateApplication.email &&
             companyCF === toUpdateApplication.companyCF &&
             companyName === toUpdateApplication.companyName &&
-            birthDate === toUpdateApplication.birthDate &&
+            "" + birthDate === "" + toUpdateApplication.birthDate &&
             birthCity === toUpdateApplication.birthCity &&
             residenceCity === toUpdateApplication.residenceCity &&
             residencePlace === toUpdateApplication.residencePlace &&
@@ -989,11 +989,11 @@ applicationsRouter.post("/edit/:applicationID", middlewareAuthCheck(["admin", "o
             targetHouseLandRegistrySubaltern === toUpdateApplication.targetHouseLandRegistrySubaltern &&
             targetHouseLandRegistryCategory === toUpdateApplication.targetHouseLandRegistryCategory &&
             notes === toUpdateApplication.notes &&
-            permitId === toUpdateApplication.permitId &&
-            outcomeId === toUpdateApplication.outcomeId &&
-            typeId === toUpdateApplication.typeId &&
+            "" + permitId === "" + toUpdateApplication.permitId &&
+            "" + outcomeId === "" + toUpdateApplication.outcomeId &&
+            "" + typeId === "" + toUpdateApplication.typeId &&
             // outcomeAuthUserId === toUpdateApplication.outcomeAuthUserId &&
-            voucherId === toUpdateApplication.voucherId &&
+            "" + voucherId === "" + toUpdateApplication.voucherId &&
             toUpdateApplication.vehicles.length === vehicles.length &&
             toUpdateApplication.vehicles.map((vehicle) => vehicle.id).every((id) => vehicles.includes(id)) &&
             createVoucher === false && updateVoucher === false) {

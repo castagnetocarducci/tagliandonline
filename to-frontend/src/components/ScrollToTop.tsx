@@ -26,9 +26,7 @@ export function ScrollToTop() {
                 for (const val of split) {
                     if (!isNaN(parseInt(val))) {
                         const idVal = parseInt(val);
-                        if (idVal !== previousID) {
-                            newVal = idVal;
-                        }
+                        newVal = idVal;
                     }
                 }
                 if (newVal !== previousID) {

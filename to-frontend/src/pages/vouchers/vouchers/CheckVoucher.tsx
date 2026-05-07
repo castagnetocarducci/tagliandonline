@@ -101,8 +101,8 @@ export function CheckVoucher() {
                         </h3>
                         <h4>
                             {voucherPublicCheck.permit.disabled && "Decaduto"}<br/>
-                            Veicoli utilizzabili contemporaneamente: {voucherPublicCheck.permit.simultaneousPlatesAmount}<br/>
-                            Numero targhe autorizzabili: {voucherPublicCheck.permit.applicationPlatesAmount}
+                            Veicoli utilizzabili contemporaneamente: {voucherPublicCheck.permit.simultaneousPlatesAmount === -1 ? "N/A" : voucherPublicCheck.permit.simultaneousPlatesAmount}<br/>
+                            Numero targhe autorizzabili: {voucherPublicCheck.permit.applicationPlatesAmount === -1 ? "N/A" : voucherPublicCheck.permit.applicationPlatesAmount}
                         </h4>
                     </Col>
                 </Row>

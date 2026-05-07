@@ -397,6 +397,7 @@ export const inspectionChecks = toSchema.table("inspectionChecks", {
     inspectionId: integer().notNull().references(() => inspections.id),
     vehicleHistoryId: integer().notNull().references(() => vehiclesHistory.id),
     voucherHistoryId: integer().notNull().references(() => vouchersHistory.id),
+    permitHistoryId: integer().notNull().references(() => permitsHistory.id),
     checkedByAuthUserId: integer().notNull().references(() => authUsers.id),
 }, (t) => [
     index("inspectionChecksInspectionIdIndex").on(t.inspectionId),

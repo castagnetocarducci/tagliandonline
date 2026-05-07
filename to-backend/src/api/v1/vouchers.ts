@@ -1411,7 +1411,7 @@ const getVoucherTemplateDataFromDetailedQuery = (voucher: DetailedVoucherQueryRe
         catastoMappaleAbitazioneDesignataStr: targetApplication.targetHouseLandRegistryMap == null ? "N/A" : targetApplication.targetHouseLandRegistryMap,
         catastoSubalternoAbitazioneDesignataStr: targetApplication.targetHouseLandRegistrySubaltern == null ? "N/A" : targetApplication.targetHouseLandRegistrySubaltern,
         catastoCategoriaAbitazioneDesignataStr: targetApplication.targetHouseLandRegistryCategory == null ? "N/A" : targetApplication.targetHouseLandRegistryCategory,
-        veicoliSimultanei: "" + voucher.permit.simultaneousPlatesAmount,
+        veicoliSimultanei: "" + (voucher.permit.simultaneousPlatesAmount === -1 ? "N/A" : voucher.permit.simultaneousPlatesAmount),
         targheArr: voucher.vehicles == null ? [] : voucher.vehicles.map(v => {
             return {
                 marcaStr: v.brand,
@@ -1548,11 +1548,11 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
 
         // controllare che non ci siano campi da aggiornare
         let parametersNeedUpdate = true;
-        if (validFromDate === toUpdateVoucher.validFromDate &&
-            validToDate === toUpdateVoucher.validToDate &&
-            revoked === toUpdateVoucher.revoked &&
+        if ("" + validFromDate === "" + toUpdateVoucher.validFromDate &&
+            "" + validToDate === "" + toUpdateVoucher.validToDate &&
+            "" + revoked === "" + toUpdateVoucher.revoked &&
             notes === toUpdateVoucher.notes &&
-            permitId === toUpdateVoucher.permitId &&
+            "" + permitId ===  "" + toUpdateVoucher.permitId &&
             toUpdateVoucher.vehicles.length === vehicles.length &&
             toUpdateVoucher.vehicles.map((vehicle) => vehicle.id).every((id) => vehicles.includes(id))) {
             parametersNeedUpdate = false;

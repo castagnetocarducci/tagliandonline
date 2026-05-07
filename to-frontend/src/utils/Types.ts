@@ -649,16 +649,17 @@ export type VoucherHistory = {
     currentState: string,
     validFromDate: Date,
     validToDate: Date,
-    permitHistory: {
-        permitId: number,
-        description: string,
-        disabled: boolean,
-        simultaneousPlatesAmount: number,
-        applicationPlatesAmount: number,
-        voucherDurationDays: number | null,
-        voucherExpiryDate: Date | null,
-    },
 };
+
+export type PermitHistory = {
+    permitId: number,
+    description: string,
+    disabled: boolean,
+    simultaneousPlatesAmount: number,
+    applicationPlatesAmount: number,
+    voucherDurationDays: number | null,
+    voucherExpiryDate: Date | null,
+}
 
 export type InspectionCheck = {
     id: number,
@@ -670,6 +671,7 @@ export type InspectionCheck = {
         brand: string,
     },
     voucherHistory: VoucherHistory,
+    permitHistory: PermitHistory,
     checkedByAuthUser: {
         username: string,
         firstname: string,
@@ -695,7 +697,7 @@ type CachedVehicle = {
 }
 
 type CachedPermit = {
-    permitId: number,
+    id: number,
     description: string,
     disabled: boolean,
     simultaneousPlatesAmount: number,

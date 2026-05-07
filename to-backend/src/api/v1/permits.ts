@@ -8,6 +8,8 @@ import type {DocTemplateListEntry} from "./docTemplates.ts";
 import {type EmailTemplateListEntry} from "./emailTemplates.ts";
 import type {HistoryEvent, HistoryModificationMap} from "../../utils/commonTypes.ts";
 import {checkAndUpdateValueModificationsMap} from "../../utils/commonFunctions.ts";
+import {inspectionsApiMutex} from "./inspections.ts";
+import {InspectionsManager} from "../../db/inspectionsManager.ts";
 
 export const permitsRouter = Router();
 
@@ -318,20 +320,25 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
         }
         if (description === toUpdatePermit.description &&
             printedName === toUpdatePermit.printedName &&
-            disabled === toUpdatePermit.disabled &&
-            simultaneousPlatesAmount === toUpdatePermit.simultaneousPlatesAmount &&
-            applicationPlatesAmount === toUpdatePermit.applicationPlatesAmount &&
+            "" + disabled === "" + toUpdatePermit.disabled &&
+            "" + simultaneousPlatesAmount === "" + toUpdatePermit.simultaneousPlatesAmount &&
+            "" + applicationPlatesAmount === "" + toUpdatePermit.applicationPlatesAmount &&
             notes === toUpdatePermit.notes &&
-            voucherDurationDays === toUpdatePermit.voucherDurationDays &&
+            "" + voucherDurationDays === "" + toUpdatePermit.voucherDurationDays &&
             voucherExpiryDate === toUpdatePermit.voucherExpiryDate &&
-            approveEmailTemplateId === toUpdatePermit.approveEmailTemplateId &&
-            revokeEmailTemplateId === toUpdatePermit.revokeEmailTemplateId &&
-            refuseEmailTemplateId === toUpdatePermit.refuseEmailTemplateId &&
-            voucherTemplateId === toUpdatePermit.voucherTemplateId &&
-            authorizationTemplateId === toUpdatePermit.authorizationTemplateId &&
-            numerationRegisterId === toUpdatePermit.numerationRegisterId) {
+            "" + approveEmailTemplateId === "" + toUpdatePermit.approveEmailTemplateId &&
+            "" + revokeEmailTemplateId === "" + toUpdatePermit.revokeEmailTemplateId &&
+            "" + refuseEmailTemplateId === "" + toUpdatePermit.refuseEmailTemplateId &&
+            "" + voucherTemplateId === "" + toUpdatePermit.voucherTemplateId &&
+            "" + authorizationTemplateId === "" + toUpdatePermit.authorizationTemplateId &&
+            "" + numerationRegisterId === "" + toUpdatePermit.numerationRegisterId) {
             res.status(200).json({message: "Nessuna modifica effettuata"});
             return;
+        }
+
+        let refreshInspections = false;
+        if (("" + simultaneousPlatesAmount) !== ("" + toUpdatePermit.simultaneousPlatesAmount)) {
+            refreshInspections = true;
         }
 
         const updatedPermitId = await db.transaction(async (tx) => {
@@ -387,6 +394,11 @@ permitsRouter.post("/edit/:permitID", middlewareAuthCheck(["admin", "operatore"]
         if (updatedPermitId == null) {
             res.status(500).json({message: "Errore durante l'inserimento del permesso"});
             return;
+        }
+        if (refreshInspections) {
+            await inspectionsApiMutex.runExclusive(async () => {
+                await InspectionsManager.instance.reload();
+            });
         }
         res.status(200).json({message: "Permesso aggiornato con successo"});
         return;

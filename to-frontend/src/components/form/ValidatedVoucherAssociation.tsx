@@ -20,7 +20,7 @@ import {defaultGETRequestInit, defaultPOSTRequestInit, fetchApiAsync} from "../.
 import {ValidatedInput} from "./ValidatedInput.tsx";
 import {LoadingSpinner} from "../LoadingSpinner.tsx";
 import {SuccessErrorAlert} from "../SuccessErrorAlert.tsx";
-import {validateEmail} from "../../utils/CommonFunctions.ts";
+import {allStringsEmpty, validateEmail} from "../../utils/CommonFunctions.ts";
 import {Link} from "react-router";
 
 
@@ -258,7 +258,7 @@ export function ValidatedVoucherAssociation(
                                         <span>
                                         Ultima domanda associata: <strong>{selectedVoucher.applications[0].id}</strong><br/>
                                             <strong>{selectedVoucher.applications[0].cf}</strong> {selectedVoucher.applications[0].firstname} {selectedVoucher.applications[0].lastname}<br/>
-                                            {selectedVoucher.applications[0].companyName != null || selectedVoucher.applications[0].companyCF != null && (
+                                            {!allStringsEmpty(selectedVoucher.applications[0].companyName, selectedVoucher.applications[0].companyCF) && (
                                                 <> per {selectedVoucher.applications[0].companyName} {selectedVoucher.applications[0].companyCF}</>
                                             )}<br/>
                                             {selectedVoucher.applications[0].email}<br/>
@@ -798,7 +798,7 @@ export function ValidatedVoucherAssociation(
                                         ) : (
                                             <>
                                                 <strong>{voucherListEntry.applications[0].cf}</strong> {voucherListEntry.applications[0].firstname} {voucherListEntry.applications[0].lastname}<br/>
-                                                {voucherListEntry.applications[0].companyName != null || voucherListEntry.applications[0].companyCF != null && (
+                                                {!allStringsEmpty(voucherListEntry.applications[0].companyName, voucherListEntry.applications[0].companyCF) && (
                                                     <> per {voucherListEntry.applications[0].companyName} {voucherListEntry.applications[0].companyCF}</>
                                                 )}<br/>
                                                 {voucherListEntry.applications[0].email}<br/>

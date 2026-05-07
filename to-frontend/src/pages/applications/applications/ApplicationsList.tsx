@@ -22,7 +22,7 @@ import {SuccessErrorAlert} from "../../../components/SuccessErrorAlert.tsx";
 import {ValidatedInput} from "../../../components/form/ValidatedInput.tsx";
 import {useValidateFormInput} from "../../../hooks/useValidateFormInput.ts";
 import {AutoPager, type PagerPageData} from "../../../components/AutoPager.tsx";
-import {validateEmail} from "../../../utils/CommonFunctions.ts";
+import {allStringsEmpty, validateEmail} from "../../../utils/CommonFunctions.ts";
 import {type SelectOption, ValidatedSelect} from "../../../components/form/ValidatedSelect.tsx";
 
 export function ApplicationsList() {
@@ -605,8 +605,8 @@ export function ApplicationsList() {
                         </Col>
                         <Col lg={1} className={"text-wrap"}>
                             {applicationListEntry.firstname} {applicationListEntry.lastname}
-                            {applicationListEntry.companyName != null || applicationListEntry.companyCF != null && (
-                                <> per {applicationListEntry.companyName} {applicationListEntry.companyCF}</>
+                            {!allStringsEmpty(applicationListEntry.companyName, applicationListEntry.companyCF) && (
+                                <> per {applicationListEntry.companyName}</>
                             )}
                         </Col>
                         <Col lg={1} className={"text-wrap"}>

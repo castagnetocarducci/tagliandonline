@@ -24,3 +24,12 @@ export const dateStrToISOString = (dateStr: Date | string | null) => {
     return dateConv.toISOString().split('T')[0];
 }
 
+export const allStringsEmpty = (...strings: unknown[]): boolean => {
+    if (strings == null) return true;
+    for (const str of strings) {
+        if (str != null && (("" + str).trim() !== "")) return false;
+    }
+    return true;
+}
+
+

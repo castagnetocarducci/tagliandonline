@@ -19,7 +19,7 @@ type CachedVehicle = {
 }
 
 type CachedPermit = {
-    permitId: number,
+    id: number,
     description: string,
     disabled: boolean,
     simultaneousPlatesAmount: number,
@@ -113,13 +113,13 @@ export class InspectionsManager {
             brand: check.vehicleHistory.brand,
         };
         const cachedPermit: CachedPermit = {
-            permitId: check.voucherHistory.permitHistory.permitId,
-            description: check.voucherHistory.permitHistory.description,
-            disabled: check.voucherHistory.permitHistory.disabled,
-            simultaneousPlatesAmount: check.voucherHistory.permitHistory.simultaneousPlatesAmount,
-            applicationPlatesAmount: check.voucherHistory.permitHistory.applicationPlatesAmount,
-            voucherDurationDays: check.voucherHistory.permitHistory.voucherDurationDays,
-            voucherExpiryDate: check.voucherHistory.permitHistory.voucherExpiryDate,
+            id: check.permitHistory.permitId,
+            description: check.permitHistory.description,
+            disabled: check.permitHistory.disabled,
+            simultaneousPlatesAmount: check.permitHistory.simultaneousPlatesAmount,
+            applicationPlatesAmount: check.permitHistory.applicationPlatesAmount,
+            voucherDurationDays: check.permitHistory.voucherDurationDays,
+            voucherExpiryDate: check.permitHistory.voucherExpiryDate,
         }
         if (!InspectionsManager.isAlreadyChecked(check, vouchersMap)) {
             cachedVehicles.push(toAddVehicle);
@@ -319,5 +319,11 @@ export class InspectionsManager {
         }
     }
 
+    public async reload() {
+        await this.#inspectionMutex.runExclusive(async () => {
+            this.#inspectionsCache = {};
+        });
+        await this.loadInspections();
+    }
 
 }
