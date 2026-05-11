@@ -1741,7 +1741,7 @@ export const createNewVoucher = async (tx: DbTransactionType, creationData: Vouc
     newVoucherId: number,
     newVoucherHistoryId: number
 }> => {
-    if (creationData.vehicles.length > creationData.permitApplicationPlatesAmount) {
+    if (creationData.permitApplicationPlatesAmount !== -1 && creationData.vehicles.length > creationData.permitApplicationPlatesAmount) {
         throw new Error("Numero di veicoli superiore al numero di targhe consentite in domanda nel permesso");
     }
     let validFromDateT: Date = new Date();
