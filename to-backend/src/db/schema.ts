@@ -85,7 +85,7 @@ export const numerationRegisters = toSchema.table("numerationRegisters", {
     id: commonColumns.idAutoIncr(),
     createdAt: commonColumns.createdAt(),
     updatedAt: commonColumns.updatedAt(),
-    description: varchar({length: 32}).notNull(),
+    description: varchar({length: 64}).notNull(),
     nextNumber: integer().default(1).notNull(),
     disabled: commonColumns.disabled(),
 })
