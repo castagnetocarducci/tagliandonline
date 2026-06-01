@@ -149,7 +149,7 @@ export const vehicles = toSchema.table("vehicles", {
     id: commonColumns.idAutoIncr(),
     createdAt: commonColumns.createdAt(),
     updatedAt: commonColumns.updatedAt(),
-    plate: varchar({length: 16}).notNull(),
+    plate: varchar({length: 16}).notNull().unique(),
     model: varchar({length: 40}).notNull(),
     brand: varchar({length: 24}).notNull(),
     lastVehiclesHistoryId: integer().references((): AnyPgColumn => vehiclesHistory.id),
