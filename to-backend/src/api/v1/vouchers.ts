@@ -235,9 +235,11 @@ type VoucherDetails = {
 // */
 
 export const getVoucherCurrentState = (revoked: boolean, validFromDate: string, validToDate: string): VoucherCurrentState => {
+    const validToDate235959 = new Date(validToDate);
+    validToDate235959.setHours(23, 59, 59);
     if (revoked) {
         return "Revocato";
-    } else if (new Date() > new Date(validToDate)) {
+    } else if (new Date() > validToDate235959) {
         return "Scaduto";
     } else if (new Date() < new Date(validFromDate)) {
         return "Non ancora valido";
@@ -1569,7 +1571,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
             return;
         }
 
-        const updatedVoucherId = await db.transaction(async (tx) => {
+        const {updatedVoucherId, newVoucherState} = await db.transaction(async (tx) => {
             const permit = await getPermit(tx, permitId);
             const permitHistoryId = permit.lastPermitHistoryId as number;
 
@@ -1613,7 +1615,11 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
             const updatedVoucherHistoryId = await updateVoucherHistory(tx,
                 updatedVoucher[0], vehicles,
                 modifiedByAuthUserId, permitHistoryId);
-            return updatedVoucher[0].id;
+            const newVoucherState = getVoucherCurrentState(updatedVoucher[0].revoked, updatedVoucher[0].validFromDate, updatedVoucher[0].validToDate);
+            return {
+                updatedVoucherId: updatedVoucher[0].id,
+                newVoucherState: newVoucherState
+            };
         });
         if (updatedVoucherId == null) {
             res.status(500).json({message: "Errore durante l'aggiornamento del tagliando"});
@@ -1621,6 +1627,7 @@ vouchersRouter.post("/edit/:voucherID", middlewareAuthCheck(["admin", "operatore
         }
         res.status(200).json({
             message: "Tagliando aggiornato con successo",
+            newVoucherState: newVoucherState,
             needTemplateGeneration: true
         });
         return;

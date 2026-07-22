@@ -585,6 +585,7 @@ export type VoucherByIDApiResponse = {
 
 export type VoucherEditApiResponse = {
     message: string,
+    newVoucherState: string,
     needTemplateGeneration: boolean
 }
 

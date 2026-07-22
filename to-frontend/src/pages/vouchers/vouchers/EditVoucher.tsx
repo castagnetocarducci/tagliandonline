@@ -126,6 +126,17 @@ export function EditVoucher() {
                         setNeedTemplateGeneration(data.needTemplateGeneration);
                     }
                 }
+                if (data != null && data.newVoucherState != null) {
+                    setVoucherDetails((prevState) => {
+                        if (prevState == null) {
+                            return null;
+                        }
+                        return ({
+                            ...prevState,
+                            currentState: data.newVoucherState
+                        });
+                    });
+                }
             }
         });
     }
